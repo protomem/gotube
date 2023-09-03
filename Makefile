@@ -51,3 +51,11 @@ run-stage:
 stop-stage:
 	docker compose -p ${PROJECT_NAME}-stage -f ./build/stage/docker-compose.yaml down
 
+
+.PHONY: migrate-up
+migrate: MIGRATE_ACTION=up
+migrate: MIGRATE_PATH=./assets/migrations
+migrate: MIGRATE_DB="postgres://admin:123456789@localhost:5432/gotubedb?sslmode=disable"
+migrate:
+	migrate -path ${MIGRATE_PATH} -database ${MIGRATE_DB} ${MIGRATE_ACTION}
+
