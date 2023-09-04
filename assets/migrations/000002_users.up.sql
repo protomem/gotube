@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS users (
     is_verified BOOLEAN NOT NULL DEFAULT false,
 
     avatar_path VARCHAR(255) NOT NULL DEFAULT '',
-    description TEXT NOT NULL DEFAULT '',
+    description TEXT NOT NULL DEFAULT ''
 );
 
 COMMIT;

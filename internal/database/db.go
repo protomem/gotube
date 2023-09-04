@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/protomem/gotube/pkg/logging"
 )
@@ -31,6 +32,10 @@ func New(ctx context.Context, logger logging.Logger, connect string) (*DB, error
 		logger: logger.With("system", "db", "dbType", "postgres"),
 		pool:   pool,
 	}, nil
+}
+
+func (db *DB) QueryRow(ctx context.Context, query string, args ...any) pgx.Row {
+	return db.pool.QueryRow(ctx, query, args...)
 }
 
 func (db *DB) Close(_ context.Context) error {

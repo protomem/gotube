@@ -1,8 +1,15 @@
 package postgres
 
 import (
+	"context"
+	"errors"
+	"fmt"
+
 	"github.com/Masterminds/squirrel"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/protomem/gotube/internal/database"
+	"github.com/protomem/gotube/internal/module/user/model"
 	"github.com/protomem/gotube/internal/module/user/repository"
 	"github.com/protomem/gotube/pkg/logging"
 )
@@ -21,4 +28,67 @@ func NewUserRepository(logger logging.Logger, db *database.DB) *UserRepository {
 		db:      db,
 		builder: database.Builder(),
 	}
+}
+
+func (r *UserRepository) FindOneUser(ctx context.Context, id uuid.UUID) (model.User, error) {
+	const op = "UserRepository.FindOneUser"
+	var err error
+
+	query, args, err := r.builder.
+		Select("*").
+		From("users").
+		Where(squirrel.Eq{"id": id}).
+		Limit(1).
+		ToSql()
+	if err != nil {
+		return model.User{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	var user model.User
+	err = r.db.
+		QueryRow(ctx, query, args...).
+		Scan(
+			&user.ID, &user.CreatedAt, &user.UpdatedAt,
+			&user.Nickname, &user.Password,
+			&user.Email, &user.Verified,
+			&user.AvatarPath, &user.Description,
+		)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return model.User{}, fmt.Errorf("%s: %w", op, model.ErrUserNotFound)
+		}
+
+		return model.User{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return user, nil
+}
+
+func (r *UserRepository) CreateUser(ctx context.Context, dto repository.CreateUserDTO) (uuid.UUID, error) {
+	const op = "UserRepository.CreateUser"
+	var err error
+
+	query, args, err := r.builder.
+		Insert("users").
+		Columns("nickname", "password", "email").
+		Values(dto.Nickname, dto.Password, dto.Email).
+		Suffix("RETURNING id").
+		ToSql()
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	var id uuid.UUID
+	err = r.db.
+		QueryRow(ctx, query, args...).
+		Scan(&id)
+	if err != nil {
+		if database.IsDuplicateKeyError(err) {
+			return uuid.Nil, fmt.Errorf("%s: %w", op, model.ErrUserAlreadyExists)
+		}
+
+		return uuid.Nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return id, nil
 }

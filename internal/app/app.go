@@ -126,6 +126,14 @@ func (app *App) setupRoutes() {
 	app.router().Use(app.modules.Common.CORS())
 
 	app.router().GET("/health", app.modules.Common.HandleHealthCheck())
+
+	v1 := app.router().Group("/api/v1")
+	{
+		auth := v1.Group("/auth")
+		{
+			auth.POST("/register", app.modules.Auth.HandleRegister())
+		}
+	}
 }
 
 func (app *App) startServer(_ context.Context, errs chan<- error) {
