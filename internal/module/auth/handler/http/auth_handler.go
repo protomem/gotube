@@ -72,3 +72,50 @@ func (h *AuthHandler) HandleRegister() echo.HandlerFunc {
 		})
 	}
 }
+
+func (h *AuthHandler) HandleLogin() echo.HandlerFunc {
+	type Request struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	type Response struct {
+		model.PairTokens
+		User usermodel.User `json:"user"`
+	}
+
+	return func(c echo.Context) error {
+		const op = "AuthHandler.HandleLogin"
+		var err error
+
+		ctx := c.Request().Context()
+		logger := h.logger.With(
+			"operation", op,
+			requestid.LogKey, requestid.Extract(ctx),
+		)
+
+		var req Request
+		err = c.Bind(&req)
+		if err != nil {
+			logger.Error("failed to bind request", "error", err)
+
+			return echo.ErrBadRequest
+		}
+
+		user, tokens, err := h.authServ.Login(ctx, service.LoginDTO(req))
+		if err != nil {
+			logger.Error("failed to login user", "error", err)
+
+			if errors.Is(err, usermodel.ErrUserNotFound) {
+				return echo.NewHTTPError(http.StatusNotFound, usermodel.ErrUserNotFound.Error())
+			}
+
+			return echo.ErrInternalServerError
+		}
+
+		return c.JSON(http.StatusOK, Response{
+			PairTokens: tokens,
+			User:       user,
+		})
+	}
+}

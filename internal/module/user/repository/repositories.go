@@ -16,6 +16,7 @@ type CreateUserDTO struct {
 type (
 	UserRepository interface {
 		FindOneUser(ctx context.Context, id uuid.UUID) (model.User, error)
+		FindOneUserByEmail(ctx context.Context, email string) (model.User, error)
 		CreateUser(ctx context.Context, dto CreateUserDTO) (uuid.UUID, error)
 	}
 )

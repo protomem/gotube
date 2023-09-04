@@ -132,6 +132,7 @@ func (app *App) setupRoutes() {
 		auth := v1.Group("/auth")
 		{
 			auth.POST("/register", app.modules.Auth.HandleRegister())
+			auth.POST("/login", app.modules.Auth.HandleLogin())
 		}
 	}
 }

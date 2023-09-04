@@ -26,9 +26,15 @@ type RegisterDTO struct {
 	Email    string
 }
 
+type LoginDTO struct {
+	Email    string
+	Password string
+}
+
 type (
 	AuthService interface {
 		Register(ctx context.Context, dto RegisterDTO) (usermodel.User, model.PairTokens, error)
+		Login(ctx context.Context, dto LoginDTO) (usermodel.User, model.PairTokens, error)
 	}
 
 	AuthServiceImpl struct {
@@ -62,7 +68,35 @@ func (s *AuthServiceImpl) Register(ctx context.Context, dto RegisterDTO) (usermo
 		return usermodel.User{}, model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
 	}
 
-	err = s.sessmng.SetSession(ctx, tokens.RefreshToken, storage.Session{})
+	err = s.sessmng.SetSession(ctx, tokens.RefreshToken, storage.Session{
+		UserID:    user.ID,
+		ExpiredAt: time.Now().Add(_refreshTokenTTL),
+	})
+	if err != nil {
+		return usermodel.User{}, model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return user, tokens, nil
+}
+
+func (s *AuthServiceImpl) Login(ctx context.Context, dto LoginDTO) (usermodel.User, model.PairTokens, error) {
+	const op = "AuthService.Login"
+	var err error
+
+	user, err := s.userServ.FindOneUserByEmailAndPassword(ctx, userserv.FindOneUserByEmailAndPasswordDTO(dto))
+	if err != nil {
+		return usermodel.User{}, model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	tokens, err := s.genTokens(user)
+	if err != nil {
+		return usermodel.User{}, model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	err = s.sessmng.SetSession(ctx, tokens.RefreshToken, storage.Session{
+		UserID:    user.ID,
+		ExpiredAt: time.Now().Add(_refreshTokenTTL),
+	})
 	if err != nil {
 		return usermodel.User{}, model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
 	}

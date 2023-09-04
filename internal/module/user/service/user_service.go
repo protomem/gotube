@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/protomem/gotube/internal/module/user/model"
@@ -11,6 +12,11 @@ import (
 
 var _ UserService = (*UserServiceImpl)(nil)
 
+type FindOneUserByEmailAndPasswordDTO struct {
+	Email    string
+	Password string
+}
+
 type CreateUserDTO struct {
 	Nickname string
 	Password string
@@ -19,6 +25,7 @@ type CreateUserDTO struct {
 
 type (
 	UserService interface {
+		FindOneUserByEmailAndPassword(ctx context.Context, dto FindOneUserByEmailAndPasswordDTO) (model.User, error)
 		CreateUser(ctx context.Context, dto CreateUserDTO) (model.User, error)
 	}
 
@@ -34,6 +41,30 @@ func NewUserService(hasher passhash.Hasher, userRepo repository.UserRepository) 
 		hasher:   hasher,
 		userRepo: userRepo,
 	}
+}
+
+func (s *UserServiceImpl) FindOneUserByEmailAndPassword(
+	ctx context.Context,
+	dto FindOneUserByEmailAndPasswordDTO,
+) (model.User, error) {
+	const op = "UserService.FindOneUserByEmailAndPassword"
+	var err error
+
+	user, err := s.userRepo.FindOneUserByEmail(ctx, dto.Email)
+	if err != nil {
+		return model.User{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	err = s.hasher.Compare(dto.Password, user.Password)
+	if err != nil {
+		if errors.Is(err, passhash.ErrWrongPassword) {
+			return model.User{}, fmt.Errorf("%s: %w", op, model.ErrUserNotFound)
+		}
+
+		return model.User{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return user, nil
 }
 
 func (s *UserServiceImpl) CreateUser(ctx context.Context, dto CreateUserDTO) (model.User, error) {
