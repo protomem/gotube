@@ -134,6 +134,9 @@ func (s *AuthServiceImpl) RefreshTokens(ctx context.Context, refreshToken string
 		UserID:    user.ID.String(),
 		ExpiredAt: time.Now().Add(RefreshTokenTTL),
 	})
+	if err != nil {
+		return model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
+	}
 
 	err = s.sessmng.DelSession(ctx, refreshToken)
 	if err != nil {
