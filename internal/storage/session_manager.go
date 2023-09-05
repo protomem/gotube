@@ -3,13 +3,11 @@ package storage
 import (
 	"context"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type Session struct {
-	ExpiredAt time.Time
-	UserID    uuid.UUID
+	ExpiredAt time.Time `redis:"expiredAt"`
+	UserID    string    `redis:"userId"`
 }
 
 type SessionManager interface {

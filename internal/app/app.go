@@ -2,7 +2,9 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -139,7 +141,7 @@ func (app *App) setupRoutes() {
 
 func (app *App) startServer(_ context.Context, errs chan<- error) {
 	err := app.app.Start(app.conf.HTTP.Addr)
-	if err != nil {
+	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		errs <- fmt.Errorf("start server: %w", err)
 	}
 }

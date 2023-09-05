@@ -36,7 +36,14 @@ func (*SessionManager) GetSession(ctx context.Context, token string) (storage.Se
 	return storage.Session{}, nil
 }
 
-func (*SessionManager) SetSession(ctx context.Context, token string, sess storage.Session) error {
+func (sm *SessionManager) SetSession(ctx context.Context, token string, sess storage.Session) error {
+	const op = "sessionManager.SetSession"
+
+	res := sm.client.HSet(ctx, token, sess)
+	if res.Err() != nil {
+		return fmt.Errorf("%s: %w", op, res.Err())
+	}
+
 	return nil
 }
 

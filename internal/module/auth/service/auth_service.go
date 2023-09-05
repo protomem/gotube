@@ -69,7 +69,7 @@ func (s *AuthServiceImpl) Register(ctx context.Context, dto RegisterDTO) (usermo
 	}
 
 	err = s.sessmng.SetSession(ctx, tokens.RefreshToken, storage.Session{
-		UserID:    user.ID,
+		UserID:    user.ID.String(),
 		ExpiredAt: time.Now().Add(_refreshTokenTTL),
 	})
 	if err != nil {
@@ -94,7 +94,7 @@ func (s *AuthServiceImpl) Login(ctx context.Context, dto LoginDTO) (usermodel.Us
 	}
 
 	err = s.sessmng.SetSession(ctx, tokens.RefreshToken, storage.Session{
-		UserID:    user.ID,
+		UserID:    user.ID.String(),
 		ExpiredAt: time.Now().Add(_refreshTokenTTL),
 	})
 	if err != nil {
