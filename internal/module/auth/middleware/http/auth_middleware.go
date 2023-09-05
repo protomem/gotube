@@ -64,3 +64,26 @@ func (m *AuthMiddleware) Authenticator() echo.MiddlewareFunc {
 		}
 	}
 }
+
+func (m *AuthMiddleware) Authorizer() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			const op = "AuthMiddleware.Authorizer"
+
+			ctx := c.Request().Context()
+			logger := m.logger.With(
+				"operation", op,
+				requestid.LogKey, requestid.Extract(ctx),
+			)
+
+			_, ok := jwt.Extract(ctx)
+			if !ok {
+				logger.Error("no auth payload")
+
+				return echo.ErrForbidden
+			}
+
+			return next(c)
+		}
+	}
+}
