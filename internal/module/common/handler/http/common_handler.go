@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"github.com/protomem/gotube/internal/jwt"
 	"github.com/protomem/gotube/pkg/logging"
 )
 
@@ -19,8 +20,17 @@ func NewCommonHandler(logger logging.Logger) *CommonHandler {
 
 func (h *CommonHandler) HandleHealthCheck() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		return c.JSON(http.StatusOK, echo.Map{
+		ctx := c.Request().Context()
+
+		res := echo.Map{
 			"status": "ok",
-		})
+		}
+
+		authPayload, ok := jwt.Extract(ctx)
+		if ok {
+			res["authPayload"] = authPayload
+		}
+
+		return c.JSON(http.StatusOK, res)
 	}
 }

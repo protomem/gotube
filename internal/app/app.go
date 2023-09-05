@@ -127,6 +127,8 @@ func (app *App) setupRoutes() {
 	app.router().Use(app.modules.Common.Recovery())
 	app.router().Use(app.modules.Common.CORS())
 
+	app.router().Use(app.modules.Auth.Authenticator())
+
 	app.router().GET("/health", app.modules.Common.HandleHealthCheck())
 
 	v1 := app.router().Group("/api/v1")
@@ -135,7 +137,7 @@ func (app *App) setupRoutes() {
 		{
 			auth.POST("/register", app.modules.Auth.HandleRegister())
 			auth.POST("/login", app.modules.Auth.HandleLogin())
-			auth.POST("/refresh", app.modules.Auth.HandleRefreshTokens())
+			auth.GET("/refresh", app.modules.Auth.HandleRefreshTokens())
 		}
 	}
 }

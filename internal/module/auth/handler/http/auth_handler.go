@@ -3,6 +3,7 @@ package http
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/protomem/gotube/internal/module/auth/model"
@@ -66,6 +67,14 @@ func (h *AuthHandler) HandleRegister() echo.HandlerFunc {
 			return echo.ErrInternalServerError
 		}
 
+		c.SetCookie(&http.Cookie{
+			Name:     "session",
+			Value:    tokens.RefreshToken,
+			Expires:  time.Now().Add(service.RefreshTokenTTL + (5 * time.Second)),
+			Path:     "/",
+			HttpOnly: true,
+		})
+
 		return c.JSON(http.StatusCreated, Response{
 			PairTokens: tokens,
 			User:       user,
@@ -113,6 +122,14 @@ func (h *AuthHandler) HandleLogin() echo.HandlerFunc {
 			return echo.ErrInternalServerError
 		}
 
+		c.SetCookie(&http.Cookie{
+			Name:     "session",
+			Value:    tokens.RefreshToken,
+			Expires:  time.Now().Add(service.RefreshTokenTTL + (5 * time.Second)),
+			Path:     "/",
+			HttpOnly: true,
+		})
+
 		return c.JSON(http.StatusOK, Response{
 			PairTokens: tokens,
 			User:       user,
@@ -121,10 +138,6 @@ func (h *AuthHandler) HandleLogin() echo.HandlerFunc {
 }
 
 func (h *AuthHandler) HandleRefreshTokens() echo.HandlerFunc {
-	type Request struct {
-		RefreshToken string `json:"refreshToken"`
-	}
-
 	type Response struct {
 		model.PairTokens
 	}
@@ -139,20 +152,29 @@ func (h *AuthHandler) HandleRefreshTokens() echo.HandlerFunc {
 			requestid.LogKey, requestid.Extract(ctx),
 		)
 
-		var req Request
-		err = c.Bind(&req)
+		sessionCookie, err := c.Cookie("session")
 		if err != nil {
-			logger.Error("failed to bind request", "error", err)
+			logger.Error("failed to get session cookie", "error", err)
 
-			return echo.ErrBadRequest
+			return echo.ErrUnauthorized
 		}
 
-		tokens, err := h.authServ.RefreshTokens(ctx, req.RefreshToken)
+		refreshToken := sessionCookie.Value
+
+		tokens, err := h.authServ.RefreshTokens(ctx, refreshToken)
 		if err != nil {
 			logger.Error("failed to refresh tokens", "error", err)
 
 			return echo.ErrInternalServerError
 		}
+
+		c.SetCookie(&http.Cookie{
+			Name:     "session",
+			Value:    tokens.RefreshToken,
+			Expires:  time.Now().Add(service.RefreshTokenTTL + (5 * time.Second)),
+			Path:     "/",
+			HttpOnly: true,
+		})
 
 		return c.JSON(http.StatusOK, Response{
 			PairTokens: tokens,

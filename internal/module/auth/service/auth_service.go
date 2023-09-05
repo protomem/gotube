@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	_accessTokenTTL  = 6 * time.Hour
-	_refreshTokenTTL = 30 * 24 * time.Hour
+	AccessTokenTTL  = 6 * time.Hour
+	RefreshTokenTTL = 30 * 24 * time.Hour
 )
 
 var _ AuthService = (*AuthServiceImpl)(nil)
@@ -36,6 +36,7 @@ type (
 		Register(ctx context.Context, dto RegisterDTO) (usermodel.User, model.PairTokens, error)
 		Login(ctx context.Context, dto LoginDTO) (usermodel.User, model.PairTokens, error)
 		RefreshTokens(ctx context.Context, refreshToken string) (model.PairTokens, error)
+		VerifyToken(ctx context.Context, accessToken string) (usermodel.User, jwt.Payload, error)
 	}
 
 	AuthServiceImpl struct {
@@ -71,7 +72,7 @@ func (s *AuthServiceImpl) Register(ctx context.Context, dto RegisterDTO) (usermo
 
 	err = s.sessmng.SetSession(ctx, tokens.RefreshToken, storage.Session{
 		UserID:    user.ID.String(),
-		ExpiredAt: time.Now().Add(_refreshTokenTTL),
+		ExpiredAt: time.Now().Add(RefreshTokenTTL),
 	})
 	if err != nil {
 		return usermodel.User{}, model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
@@ -96,7 +97,7 @@ func (s *AuthServiceImpl) Login(ctx context.Context, dto LoginDTO) (usermodel.Us
 
 	err = s.sessmng.SetSession(ctx, tokens.RefreshToken, storage.Session{
 		UserID:    user.ID.String(),
-		ExpiredAt: time.Now().Add(_refreshTokenTTL),
+		ExpiredAt: time.Now().Add(RefreshTokenTTL),
 	})
 	if err != nil {
 		return usermodel.User{}, model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
@@ -131,7 +132,7 @@ func (s *AuthServiceImpl) RefreshTokens(ctx context.Context, refreshToken string
 
 	err = s.sessmng.SetSession(ctx, tokens.RefreshToken, storage.Session{
 		UserID:    user.ID.String(),
-		ExpiredAt: time.Now().Add(_refreshTokenTTL),
+		ExpiredAt: time.Now().Add(RefreshTokenTTL),
 	})
 
 	err = s.sessmng.DelSession(ctx, refreshToken)
@@ -142,12 +143,33 @@ func (s *AuthServiceImpl) RefreshTokens(ctx context.Context, refreshToken string
 	return tokens, nil
 }
 
+func (s *AuthServiceImpl) VerifyToken(
+	ctx context.Context,
+	accessToken string,
+) (usermodel.User, jwt.Payload, error) {
+	const op = "AuthService.VerifyTokens"
+	var err error
+
+	params := jwt.ParseParams{SigningKey: s.secret}
+	payload, err := jwt.Parse(accessToken, params)
+	if err != nil {
+		return usermodel.User{}, jwt.Payload{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	user, err := s.userServ.FindOneUser(ctx, payload.UserID)
+	if err != nil {
+		return usermodel.User{}, jwt.Payload{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return user, payload, nil
+}
+
 func (s *AuthServiceImpl) genTokens(user usermodel.User) (model.PairTokens, error) {
 	const op = "generate tokens"
 	var err error
 
 	payload := jwt.Payload{UserID: user.ID, Nickname: user.Nickname, Email: user.Email, Verified: user.Verified}
-	params := jwt.GenerateParams{SigningKey: s.secret, TTL: _accessTokenTTL}
+	params := jwt.GenerateParams{SigningKey: s.secret, TTL: AccessTokenTTL}
 	accessToken, err := jwt.Generate(payload, params)
 	if err != nil {
 		return model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
