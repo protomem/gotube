@@ -32,8 +32,22 @@ func NewSessionManager(ctx context.Context, logger logging.Logger, connect strin
 	}, nil
 }
 
-func (*SessionManager) GetSession(ctx context.Context, token string) (storage.Session, error) {
-	return storage.Session{}, nil
+func (sm *SessionManager) GetSession(ctx context.Context, token string) (storage.Session, error) {
+	const op = "sessionManager.GetSession"
+	var err error
+
+	res := sm.client.HGetAll(ctx, token)
+	if res.Err() != nil {
+		return storage.Session{}, fmt.Errorf("%s: %w", op, res.Err())
+	}
+
+	var sess storage.Session
+	err = res.Scan(&sess)
+	if err != nil {
+		return storage.Session{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return sess, nil
 }
 
 func (sm *SessionManager) SetSession(ctx context.Context, token string, sess storage.Session) error {
@@ -47,7 +61,14 @@ func (sm *SessionManager) SetSession(ctx context.Context, token string, sess sto
 	return nil
 }
 
-func (*SessionManager) DelSession(ctx context.Context, token string) error {
+func (sm *SessionManager) DelSession(ctx context.Context, token string) error {
+	const op = "sessionManager.DelSession"
+
+	res := sm.client.Del(ctx, token)
+	if res.Err() != nil {
+		return fmt.Errorf("%s: %w", op, res.Err())
+	}
+
 	return nil
 }
 

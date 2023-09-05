@@ -119,3 +119,43 @@ func (h *AuthHandler) HandleLogin() echo.HandlerFunc {
 		})
 	}
 }
+
+func (h *AuthHandler) HandleRefreshTokens() echo.HandlerFunc {
+	type Request struct {
+		RefreshToken string `json:"refreshToken"`
+	}
+
+	type Response struct {
+		model.PairTokens
+	}
+
+	return func(c echo.Context) error {
+		const op = "AuthHandler.HandleRefreshTokens"
+		var err error
+
+		ctx := c.Request().Context()
+		logger := h.logger.With(
+			"operation", op,
+			requestid.LogKey, requestid.Extract(ctx),
+		)
+
+		var req Request
+		err = c.Bind(&req)
+		if err != nil {
+			logger.Error("failed to bind request", "error", err)
+
+			return echo.ErrBadRequest
+		}
+
+		tokens, err := h.authServ.RefreshTokens(ctx, req.RefreshToken)
+		if err != nil {
+			logger.Error("failed to refresh tokens", "error", err)
+
+			return echo.ErrInternalServerError
+		}
+
+		return c.JSON(http.StatusOK, Response{
+			PairTokens: tokens,
+		})
+	}
+}

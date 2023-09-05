@@ -2,8 +2,11 @@ package storage
 
 import (
 	"context"
+	"fmt"
 	"time"
 )
+
+var ErrSessionNotFound = fmt.Errorf("session not found")
 
 type Session struct {
 	ExpiredAt time.Time `redis:"expiredAt"`

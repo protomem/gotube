@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/protomem/gotube/internal/module/user/model"
 	"github.com/protomem/gotube/internal/module/user/repository"
 	"github.com/protomem/gotube/internal/passhash"
@@ -25,6 +26,7 @@ type CreateUserDTO struct {
 
 type (
 	UserService interface {
+		FindOneUser(ctx context.Context, id uuid.UUID) (model.User, error)
 		FindOneUserByEmailAndPassword(ctx context.Context, dto FindOneUserByEmailAndPasswordDTO) (model.User, error)
 		CreateUser(ctx context.Context, dto CreateUserDTO) (model.User, error)
 	}
@@ -41,6 +43,17 @@ func NewUserService(hasher passhash.Hasher, userRepo repository.UserRepository) 
 		hasher:   hasher,
 		userRepo: userRepo,
 	}
+}
+
+func (s *UserServiceImpl) FindOneUser(ctx context.Context, id uuid.UUID) (model.User, error) {
+	const op = "UserService.FindOneUser"
+
+	user, err := s.userRepo.FindOneUser(ctx, id)
+	if err != nil {
+		return model.User{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return user, nil
 }
 
 func (s *UserServiceImpl) FindOneUserByEmailAndPassword(

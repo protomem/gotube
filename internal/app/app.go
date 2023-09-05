@@ -135,6 +135,7 @@ func (app *App) setupRoutes() {
 		{
 			auth.POST("/register", app.modules.Auth.HandleRegister())
 			auth.POST("/login", app.modules.Auth.HandleLogin())
+			auth.POST("/refresh", app.modules.Auth.HandleRefreshTokens())
 		}
 	}
 }
