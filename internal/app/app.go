@@ -69,7 +69,7 @@ func New(conf config.Config) (*App, error) {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	modules := module.NewModules(logger, conf.Auth.Secret, db, sessmng)
+	modules := module.NewModules(logger, conf.Auth.Secret, db, bstore, sessmng)
 
 	app := echo.New()
 	app.HideBanner = true
