@@ -142,7 +142,8 @@ func (app *App) setupRoutes() {
 
 		media := v1.Group("/media/files")
 		{
-			media.POST("/:folder/:file", app.modules.Media.HandleSaveFile())
+			media.GET("/:folder/:file", app.modules.Media.HandleGetFile())
+			media.POST("/:folder/:file", app.modules.Media.HandleSaveFile(), app.modules.Auth.Authorizer())
 		}
 	}
 }

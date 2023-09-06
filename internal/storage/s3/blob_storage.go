@@ -3,6 +3,7 @@ package s3
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -40,8 +41,30 @@ func NewBlobStorage(ctx context.Context, logger logging.Logger, opts Options) (*
 	}, nil
 }
 
-func (*BlobStorage) GetObject(ctx context.Context, bucket string, object string) (storage.Object, error) {
-	return storage.Object{}, nil
+func (bs *BlobStorage) GetObject(ctx context.Context, bucket string, object string) (storage.Object, error) {
+	const op = "s3.BlobStorage.GetObject"
+	var err error
+
+	rawObj, err := bs.client.GetObject(ctx, bucket, object, minio.GetObjectOptions{})
+	if err != nil {
+		return storage.Object{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	rawObjInfo, err := rawObj.Stat()
+	if err != nil {
+		resp := minio.ToErrorResponse(err)
+		if resp.StatusCode == http.StatusNotFound {
+			return storage.Object{}, fmt.Errorf("%s: %w", op, storage.ErrObjectNotFound)
+		}
+
+		return storage.Object{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return storage.Object{
+		Data: rawObj,
+		Type: rawObjInfo.ContentType,
+		Size: rawObjInfo.Size,
+	}, nil
 }
 
 func (bs *BlobStorage) PutObject(ctx context.Context, bucket string, object string, src storage.Object) error {

@@ -1,6 +1,7 @@
 package http
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -22,6 +23,35 @@ func NewMediaHandler(logger logging.Logger, mediaServ service.MediaService) *Med
 	return &MediaHandler{
 		logger:    logger.With("handler", "media", "handlerType", "http"),
 		mediaServ: mediaServ,
+	}
+}
+
+func (h *MediaHandler) HandleGetFile() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		const op = "MediaHandler.HandleGetFile"
+		var err error
+
+		ctx := c.Request().Context()
+		logger := h.logger.With(
+			"operation", op,
+			requestid.LogKey, requestid.Extract(ctx),
+		)
+
+		folderName := c.Param("folder")
+		fileName := c.Param("file")
+
+		obj, err := h.mediaServ.GetFile(ctx, folderName, fileName)
+		if err != nil {
+			logger.Error("failed to get file", "error", err)
+
+			if errors.Is(err, storage.ErrObjectNotFound) {
+				return echo.NewHTTPError(http.StatusNotFound, storage.ErrObjectNotFound.Error())
+			}
+
+			return echo.ErrInternalServerError
+		}
+
+		return c.Stream(http.StatusOK, obj.Type, obj.Data)
 	}
 }
 

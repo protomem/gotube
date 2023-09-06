@@ -17,6 +17,7 @@ type SaveFileDTO struct {
 
 type (
 	MediaService interface {
+		GetFile(ctx context.Context, folder, file string) (storage.Object, error)
 		SaveFile(ctx context.Context, dto SaveFileDTO) error
 	}
 
@@ -29,6 +30,17 @@ func NewMediaService(bstore storage.BlobStorage) *MediaServiceImpl {
 	return &MediaServiceImpl{
 		bstore: bstore,
 	}
+}
+
+func (s *MediaServiceImpl) GetFile(ctx context.Context, folder, file string) (storage.Object, error) {
+	const op = "MediaService.GetFile"
+
+	obj, err := s.bstore.GetObject(ctx, folder, file)
+	if err != nil {
+		return storage.Object{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return obj, nil
 }
 
 func (s *MediaServiceImpl) SaveFile(ctx context.Context, dto SaveFileDTO) error {
