@@ -10,7 +10,7 @@ var ErrObjectNotFound = errors.New("object not found")
 
 type Object struct {
 	Type string
-	Size int
+	Size int64
 	Data io.Reader
 }
 

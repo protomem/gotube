@@ -40,18 +40,52 @@ func NewBlobStorage(ctx context.Context, logger logging.Logger, opts Options) (*
 	}, nil
 }
 
-func (*BlobStorage) GetObject(ctx context.Context, parent string, name string) (storage.Object, error) {
+func (*BlobStorage) GetObject(ctx context.Context, bucket string, object string) (storage.Object, error) {
 	return storage.Object{}, nil
 }
 
-func (*BlobStorage) PutObject(ctx context.Context, parent string, name string, obj storage.Object) error {
+func (bs *BlobStorage) PutObject(ctx context.Context, bucket string, object string, src storage.Object) error {
+	const op = "s3.BlobStorage.PutObject"
+	var err error
+
+	err = bs.initBucket(ctx, bucket)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	_, err = bs.client.PutObject(ctx, bucket, object, src.Data, src.Size, minio.PutObjectOptions{
+		ContentType: src.Type,
+	})
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
 	return nil
 }
 
-func (*BlobStorage) DelObject(ctx context.Context, parent string, name string) error {
+func (*BlobStorage) DelObject(ctx context.Context, bucket string, object string) error {
 	return nil
 }
 
 func (*BlobStorage) Close(_ context.Context) error {
+	return nil
+}
+
+func (bs *BlobStorage) initBucket(ctx context.Context, bucket string) error {
+	const op = "init bucket"
+	var err error
+
+	exists, err := bs.client.BucketExists(ctx, bucket)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	if !exists {
+		err = bs.client.MakeBucket(ctx, bucket, minio.MakeBucketOptions{})
+		if err != nil {
+			return fmt.Errorf("%s: %w", op, err)
+		}
+	}
+
 	return nil
 }

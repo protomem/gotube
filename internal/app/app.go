@@ -139,6 +139,11 @@ func (app *App) setupRoutes() {
 			auth.POST("/login", app.modules.Auth.HandleLogin())
 			auth.GET("/refresh", app.modules.Auth.HandleRefreshTokens())
 		}
+
+		media := v1.Group("/media/files")
+		{
+			media.POST("/:folder/:file", app.modules.Media.HandleSaveFile())
+		}
 	}
 }
 
