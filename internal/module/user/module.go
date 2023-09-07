@@ -4,7 +4,7 @@ import (
 	"github.com/protomem/gotube/internal/database"
 	handlhttp "github.com/protomem/gotube/internal/module/user/handler/http"
 	"github.com/protomem/gotube/internal/module/user/repository"
-	"github.com/protomem/gotube/internal/module/user/repository/postgres"
+	repopostgres "github.com/protomem/gotube/internal/module/user/repository/postgres"
 	"github.com/protomem/gotube/internal/module/user/service"
 	"github.com/protomem/gotube/internal/passhash/bcrypt"
 	"github.com/protomem/gotube/pkg/logging"
@@ -19,7 +19,7 @@ type Module struct {
 func New(logger logging.Logger, db *database.DB) *Module {
 	logger = logger.With("module", "user")
 
-	userRepo := postgres.NewUserRepository(logger, db)
+	userRepo := repopostgres.NewUserRepository(logger, db)
 	userServ := service.NewUserService(bcrypt.NewHasher(bcrypt.DefaultCost), userRepo)
 	userHandl := handlhttp.NewUserHandler(logger, userServ)
 

@@ -146,6 +146,11 @@ func (app *App) setupRoutes() {
 			media.GET("/:folder/:file", app.modules.Media.HandleGetFile())
 			media.POST("/:folder/:file", app.modules.Media.HandleSaveFile(), app.modules.Auth.Authorizer())
 		}
+
+		users := v1.Group("/users")
+		{
+			users.GET("/:nickname", app.modules.User.HandleGetUser())
+		}
 	}
 }
 

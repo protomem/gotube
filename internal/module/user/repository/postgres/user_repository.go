@@ -64,6 +64,40 @@ func (r *UserRepository) FindOneUser(ctx context.Context, id uuid.UUID) (model.U
 	return user, nil
 }
 
+func (r *UserRepository) FindOneUserByNickname(ctx context.Context, nickname string) (model.User, error) {
+	const op = "UserRepository.FindOneUserByNickname"
+	var err error
+
+	query, args, err := r.builder.
+		Select("*").
+		From("users").
+		Where(squirrel.Eq{"nickname": nickname}).
+		Limit(1).
+		ToSql()
+	if err != nil {
+		return model.User{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	var user model.User
+	err = r.db.
+		QueryRow(ctx, query, args...).
+		Scan(
+			&user.ID, &user.CreatedAt, &user.UpdatedAt,
+			&user.Nickname, &user.Password,
+			&user.Email, &user.Verified,
+			&user.AvatarPath, &user.Description,
+		)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return model.User{}, fmt.Errorf("%s: %w", op, model.ErrUserNotFound)
+		}
+
+		return model.User{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return user, nil
+}
+
 func (r *UserRepository) FindOneUserByEmail(ctx context.Context, email string) (model.User, error) {
 	const op = "UserRepository.FindOneUserByEmail"
 	var err error
