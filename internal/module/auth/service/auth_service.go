@@ -35,6 +35,7 @@ type (
 	AuthService interface {
 		Register(ctx context.Context, dto RegisterDTO) (usermodel.User, model.PairTokens, error)
 		Login(ctx context.Context, dto LoginDTO) (usermodel.User, model.PairTokens, error)
+		Logout(ctx context.Context, refreshToken string) error
 		RefreshTokens(ctx context.Context, refreshToken string) (model.PairTokens, error)
 		VerifyToken(ctx context.Context, accessToken string) (usermodel.User, jwt.Payload, error)
 	}
@@ -104,6 +105,17 @@ func (s *AuthServiceImpl) Login(ctx context.Context, dto LoginDTO) (usermodel.Us
 	}
 
 	return user, tokens, nil
+}
+
+func (s *AuthServiceImpl) Logout(ctx context.Context, refreshToken string) error {
+	const op = "AuthService.Logout"
+
+	err := s.sessmng.DelSession(ctx, refreshToken)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
 }
 
 func (s *AuthServiceImpl) RefreshTokens(ctx context.Context, refreshToken string) (model.PairTokens, error) {

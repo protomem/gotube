@@ -137,6 +137,36 @@ func (h *AuthHandler) HandleLogin() echo.HandlerFunc {
 	}
 }
 
+func (h *AuthHandler) HandleLogout() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		const op = "AuthHandler.HandleLogout"
+		var err error
+
+		ctx := c.Request().Context()
+		logger := h.logger.With(
+			"operation", op,
+			requestid.LogKey, requestid.Extract(ctx),
+		)
+
+		sessionCookie, err := c.Cookie("session")
+		if err != nil {
+			logger.Error("failed to get session cookie", "error", err)
+
+			return echo.ErrUnauthorized
+		}
+
+		refreshToken := sessionCookie.Value
+		err = h.authServ.Logout(ctx, refreshToken)
+		if err != nil {
+			logger.Error("failed to logout user", "error", err)
+
+			return echo.ErrInternalServerError
+		}
+
+		return c.NoContent(http.StatusNoContent)
+	}
+}
+
 func (h *AuthHandler) HandleRefreshTokens() echo.HandlerFunc {
 	type Response struct {
 		model.PairTokens

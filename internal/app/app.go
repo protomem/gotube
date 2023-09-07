@@ -137,7 +137,8 @@ func (app *App) setupRoutes() {
 		{
 			auth.POST("/register", app.modules.Auth.HandleRegister())
 			auth.POST("/login", app.modules.Auth.HandleLogin())
-			auth.GET("/refresh", app.modules.Auth.HandleRefreshTokens())
+			auth.DELETE("/logout", app.modules.Auth.HandleLogout(), app.modules.Auth.Authorizer())
+			auth.GET("/refresh", app.modules.Auth.HandleRefreshTokens(), app.modules.Auth.Authorizer())
 		}
 
 		media := v1.Group("/media/files")
