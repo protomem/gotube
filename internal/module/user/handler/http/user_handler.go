@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"github.com/protomem/gotube/internal/jwt"
 	"github.com/protomem/gotube/internal/module/user/model"
 	"github.com/protomem/gotube/internal/module/user/service"
 	"github.com/protomem/gotube/pkg/logging"
@@ -63,5 +64,47 @@ func (h *UserHandler) HandleGetUser() echo.HandlerFunc {
 		}
 
 		return c.JSON(http.StatusOK, Response{User: user})
+	}
+}
+
+func (h *UserHandler) HandleDeleteUser() echo.HandlerFunc {
+	type Request struct {
+		Nickname string `param:"nickname"`
+	}
+
+	return func(c echo.Context) error {
+		const op = "UserHandler.HandleDeleteUser"
+		var err error
+
+		ctx := c.Request().Context()
+		logger := h.logger.With(
+			"operation", op,
+			requestid.LogKey, requestid.Extract(ctx),
+		)
+
+		var req Request
+		err = c.Bind(&req)
+		if err != nil {
+			logger.Error("failed to bind request", "error", err)
+
+			return echo.ErrBadRequest
+		}
+
+		authPayload, _ := jwt.Extract(ctx)
+
+		if authPayload.Nickname != req.Nickname {
+			logger.Error("access denied")
+
+			return echo.NewHTTPError(http.StatusForbidden, "access denied")
+		}
+
+		err = h.userServ.DeleteUserByNickname(ctx, req.Nickname)
+		if err != nil {
+			logger.Error("failed to delete user", "error", err)
+
+			return echo.ErrInternalServerError
+		}
+
+		return c.NoContent(http.StatusNoContent)
 	}
 }

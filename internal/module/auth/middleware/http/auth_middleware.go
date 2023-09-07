@@ -1,11 +1,13 @@
 package http
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/labstack/echo/v4"
 	"github.com/protomem/gotube/internal/jwt"
 	"github.com/protomem/gotube/internal/module/auth/service"
+	usermodel "github.com/protomem/gotube/internal/module/user/model"
 	"github.com/protomem/gotube/pkg/logging"
 	"github.com/protomem/gotube/pkg/requestid"
 )
@@ -53,6 +55,10 @@ func (m *AuthMiddleware) Authenticator() echo.MiddlewareFunc {
 			_, authPayload, err := m.authServ.VerifyToken(ctx, accessToken)
 			if err != nil {
 				logger.Error("failed to verify tokens", "error", err)
+
+				if errors.Is(err, usermodel.ErrUserNotFound) {
+					return echo.ErrUnauthorized
+				}
 
 				return echo.ErrInternalServerError
 			}

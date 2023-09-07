@@ -30,6 +30,7 @@ type (
 		FindOneUserByNickname(ctx context.Context, nickname string) (model.User, error)
 		FindOneUserByEmailAndPassword(ctx context.Context, dto FindOneUserByEmailAndPasswordDTO) (model.User, error)
 		CreateUser(ctx context.Context, dto CreateUserDTO) (model.User, error)
+		DeleteUserByNickname(ctx context.Context, nickname string) error
 	}
 
 	UserServiceImpl struct {
@@ -114,4 +115,15 @@ func (s *UserServiceImpl) CreateUser(ctx context.Context, dto CreateUserDTO) (mo
 	}
 
 	return user, nil
+}
+
+func (s *UserServiceImpl) DeleteUserByNickname(ctx context.Context, nickname string) error {
+	const op = "UserService.DeleteUserByNickname"
+
+	err := s.userRepo.DeleteUserByNickname(ctx, nickname)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
 }

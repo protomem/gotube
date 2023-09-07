@@ -150,6 +150,7 @@ func (app *App) setupRoutes() {
 		users := v1.Group("/users")
 		{
 			users.GET("/:nickname", app.modules.User.HandleGetUser())
+			users.DELETE("/:nickname", app.modules.User.HandleDeleteUser(), app.modules.Auth.Authorizer())
 		}
 	}
 }

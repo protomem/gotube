@@ -160,3 +160,23 @@ func (r *UserRepository) CreateUser(ctx context.Context, dto repository.CreateUs
 
 	return id, nil
 }
+
+func (r *UserRepository) DeleteUserByNickname(ctx context.Context, nickname string) error {
+	const op = "UserRepository.DeleteUserByNickname"
+	var err error
+
+	query, args, err := r.builder.
+		Delete("users").
+		Where(squirrel.Eq{"nickname": nickname}).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	_, err = r.db.Exec(ctx, query, args...)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}

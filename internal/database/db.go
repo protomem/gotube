@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/protomem/gotube/pkg/logging"
 )
@@ -32,6 +33,10 @@ func New(ctx context.Context, logger logging.Logger, connect string) (*DB, error
 		logger: logger.With("system", "db", "dbType", "postgres"),
 		pool:   pool,
 	}, nil
+}
+
+func (db *DB) Exec(ctx context.Context, query string, args ...any) (pgconn.CommandTag, error) {
+	return db.pool.Exec(ctx, query, args...)
 }
 
 func (db *DB) QueryRow(ctx context.Context, query string, args ...any) pgx.Row {
