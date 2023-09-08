@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/protomem/gotube/internal/module/subscription/model"
 )
 
 type CreateSubscriptionDTO struct {
@@ -18,6 +19,7 @@ type DeleteSubscriptionDTO struct {
 
 type (
 	SubscriptionRepository interface {
+		FindAllSubscriptionsByFromUserID(ctx context.Context, fromUserID uuid.UUID) ([]model.Subscription, error)
 		CreateSubscription(ctx context.Context, dto CreateSubscriptionDTO) (uuid.UUID, error)
 		DeleteSubscription(ctx context.Context, dto DeleteSubscriptionDTO) error
 	}

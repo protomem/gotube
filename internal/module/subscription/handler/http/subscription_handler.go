@@ -6,6 +6,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/protomem/gotube/internal/jwt"
+	"github.com/protomem/gotube/internal/module/subscription/model"
 	"github.com/protomem/gotube/internal/module/subscription/service"
 	usermodel "github.com/protomem/gotube/internal/module/user/model"
 	"github.com/protomem/gotube/pkg/logging"
@@ -22,6 +23,44 @@ func NewSubscriptionHandler(logger logging.Logger, subscriptionServ service.Subs
 	return &SubscriptionHandler{
 		logger:           logger.With("handler", "subscription", "handlerType", "http"),
 		subscriptionServ: subscriptionServ,
+	}
+}
+
+func (h *SubscriptionHandler) HandleGetAllSubscriptions() echo.HandlerFunc {
+	type Request struct {
+		FromUserNickname string `param:"nickname"`
+	}
+
+	type Response struct {
+		Subscriptions []model.Subscription `json:"subscriptions"`
+	}
+
+	return func(c echo.Context) error {
+		const op = "SubscriptionHandler.HandleGetAllSubscriptions"
+		var err error
+
+		ctx := c.Request().Context()
+		logger := h.logger.With(
+			"operation", op,
+			requestid.LogKey, requestid.Extract(ctx),
+		)
+
+		var req Request
+		err = c.Bind(&req)
+		if err != nil {
+			logger.Error("failed to bind request", "error", err)
+
+			return echo.ErrBadRequest
+		}
+
+		subscriptions, err := h.subscriptionServ.FindAllSubscriptionsByFromUserNickname(ctx, req.FromUserNickname)
+		if err != nil {
+			logger.Error("failed to find all subscriptions", "error", err)
+
+			return echo.ErrInternalServerError
+		}
+
+		return c.JSON(http.StatusOK, Response{Subscriptions: subscriptions})
 	}
 }
 

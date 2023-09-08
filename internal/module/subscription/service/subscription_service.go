@@ -25,6 +25,8 @@ type UnsubscribeDTO struct {
 
 type (
 	SubscriptionService interface {
+		FindAllSubscriptionsByFromUserNickname(ctx context.Context, fromUserNickname string) ([]model.Subscription, error)
+
 		Subscribe(ctx context.Context, dto SubscribeDTO) error
 		Unsubscribe(ctx context.Context, dto UnsubscribeDTO) error
 	}
@@ -44,6 +46,26 @@ func NewSubscriptionService(
 		userServ:         userServ,
 		subscriptionRepo: subscriptionRepo,
 	}
+}
+
+func (s *SubscriptionServiceImpl) FindAllSubscriptionsByFromUserNickname(
+	ctx context.Context,
+	fromUserNickname string,
+) ([]model.Subscription, error) {
+	const op = "SubscriptionService.FindAllSubscriptionsByFromUserNickname"
+	var err error
+
+	fromUser, err := s.userServ.FindOneUserByNickname(ctx, fromUserNickname)
+	if err != nil {
+		return []model.Subscription{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	subscriptions, err := s.subscriptionRepo.FindAllSubscriptionsByFromUserID(ctx, fromUser.ID)
+	if err != nil {
+		return []model.Subscription{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return subscriptions, nil
 }
 
 func (s *SubscriptionServiceImpl) Subscribe(ctx context.Context, dto SubscribeDTO) error {

@@ -39,6 +39,10 @@ func (db *DB) Exec(ctx context.Context, query string, args ...any) (pgconn.Comma
 	return db.pool.Exec(ctx, query, args...)
 }
 
+func (db *DB) Query(ctx context.Context, query string, args ...any) (pgx.Rows, error) {
+	return db.pool.Query(ctx, query, args...)
+}
+
 func (db *DB) QueryRow(ctx context.Context, query string, args ...any) pgx.Row {
 	return db.pool.QueryRow(ctx, query, args...)
 }

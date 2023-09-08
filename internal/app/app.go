@@ -156,6 +156,7 @@ func (app *App) setupRoutes() {
 			{
 				subscriptions.Use(app.modules.Auth.Authorizer())
 
+				subscriptions.GET("/", app.modules.Subscription.HandleGetAllSubscriptions())
 				subscriptions.POST("/", app.modules.Subscription.HandleSubscribe())
 				subscriptions.DELETE("/", app.modules.Subscription.HandleUnsubscribe())
 			}

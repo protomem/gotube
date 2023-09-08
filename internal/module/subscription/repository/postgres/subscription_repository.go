@@ -2,10 +2,12 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/protomem/gotube/internal/database"
 	"github.com/protomem/gotube/internal/module/subscription/model"
 	"github.com/protomem/gotube/internal/module/subscription/repository"
@@ -26,6 +28,66 @@ func NewSubscriptionRepository(logger logging.Logger, db *database.DB) *Subscrip
 		db:      db,
 		builder: database.Builder(),
 	}
+}
+
+func (r *SubscriptionRepository) FindAllSubscriptionsByFromUserID(
+	ctx context.Context,
+	fromUserID uuid.UUID,
+) ([]model.Subscription, error) {
+	const op = "SubscriptionRepository.FindAllSubscriptionsByFromUserID"
+	var err error
+
+	query, args, err := r.builder.
+		Select("subscriptions.*, from_users.*, to_users.*").
+		From("subscriptions").
+		Where(squirrel.Eq{
+			"from_user_id": fromUserID,
+		}).
+		Join("users AS from_users ON from_users.id = subscriptions.from_user_id").
+		Join("users AS to_users ON to_users.id = subscriptions.to_user_id").
+		ToSql()
+	if err != nil {
+		return []model.Subscription{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return []model.Subscription{}, nil
+		}
+
+		return []model.Subscription{}, fmt.Errorf("%s: %w", op, err)
+	}
+	defer rows.Close()
+
+	subscriptions := []model.Subscription{}
+	for rows.Next() {
+		var subscription model.Subscription
+		err = rows.Scan(
+			&subscription.ID, &subscription.CreatedAt, &subscription.UpdatedAt,
+
+			&subscription.FromUser.ID, &subscription.ToUser.ID,
+
+			&subscription.FromUser.ID, &subscription.FromUser.CreatedAt, &subscription.UpdatedAt,
+			&subscription.FromUser.Nickname, &subscription.FromUser.Password,
+			&subscription.FromUser.Email, &subscription.FromUser.Verified,
+			&subscription.FromUser.AvatarPath, &subscription.FromUser.Description,
+
+			&subscription.ToUser.ID, &subscription.ToUser.CreatedAt, &subscription.ToUser.UpdatedAt,
+			&subscription.ToUser.Nickname, &subscription.ToUser.Password,
+			&subscription.ToUser.Email, &subscription.ToUser.Verified,
+			&subscription.ToUser.AvatarPath, &subscription.ToUser.Description,
+		)
+		if err != nil {
+			return []model.Subscription{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		r.logger.Debug("find all subscriptions by rows", "subscription", subscription)
+
+		subscriptions = append(subscriptions, subscription)
+	}
+
+	return subscriptions, nil
 }
 
 func (r *SubscriptionRepository) CreateSubscription(
