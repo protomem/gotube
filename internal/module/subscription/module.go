@@ -6,6 +6,7 @@ import (
 	"github.com/protomem/gotube/internal/module/subscription/repository"
 	repopostgres "github.com/protomem/gotube/internal/module/subscription/repository/postgres"
 	"github.com/protomem/gotube/internal/module/subscription/service"
+	userserv "github.com/protomem/gotube/internal/module/user/service"
 	"github.com/protomem/gotube/pkg/logging"
 )
 
@@ -15,11 +16,11 @@ type Module struct {
 	repository.SubscriptionRepository
 }
 
-func New(logger logging.Logger, db *database.DB) *Module {
+func New(logger logging.Logger, db *database.DB, userServ userserv.UserService) *Module {
 	logger = logger.With("module", "subscription")
 
 	subscriptionRepo := repopostgres.NewSubscriptionRepository(logger, db)
-	subscriptionServ := service.NewSubscriptionService(subscriptionRepo)
+	subscriptionServ := service.NewSubscriptionService(userServ, subscriptionRepo)
 	subscriptionHandl := handlhttp.NewSubscriptionHandler(logger, subscriptionServ)
 
 	return &Module{

@@ -12,10 +12,10 @@ import (
 )
 
 type Modules struct {
-	Common      *common.Module
-	User        *user.Module
-	Auth        *auth.Module
-	Subcription *subscription.Module
+	Common       *common.Module
+	User         *user.Module
+	Auth         *auth.Module
+	Subscription *subscription.Module
 
 	Media *media.Module
 }
@@ -30,15 +30,15 @@ func NewModules(
 	commonMod := common.New(logger)
 	userMod := user.New(logger, db)
 	authMod := auth.New(logger, authSecret, sessmng, userMod.UserService)
-	subMod := subscription.New(logger, db)
+	subMod := subscription.New(logger, db, userMod.UserService)
 
 	mediaMod := media.New(logger, bstore)
 
 	return &Modules{
-		Common:      commonMod,
-		User:        userMod,
-		Auth:        authMod,
-		Subcription: subMod,
-		Media:       mediaMod,
+		Common:       commonMod,
+		User:         userMod,
+		Auth:         authMod,
+		Subscription: subMod,
+		Media:        mediaMod,
 	}
 }

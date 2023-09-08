@@ -151,6 +151,13 @@ func (app *App) setupRoutes() {
 		{
 			users.GET("/:nickname", app.modules.User.HandleGetUser())
 			users.DELETE("/:nickname", app.modules.User.HandleDeleteUser(), app.modules.Auth.Authorizer())
+
+			subscriptions := users.Group("/:nickname/subs")
+			{
+				subscriptions.Use(app.modules.Auth.Authorizer())
+
+				subscriptions.POST("/", app.modules.Subscription.HandleSubscribe())
+			}
 		}
 	}
 }
