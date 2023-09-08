@@ -67,3 +67,46 @@ func (h *SubscriptionHandler) HandleSubscribe() echo.HandlerFunc {
 		return c.NoContent(http.StatusCreated)
 	}
 }
+
+func (h *SubscriptionHandler) HandleUnsubscribe() echo.HandlerFunc {
+	type Request struct {
+		ToUserNickname string `param:"nickname"`
+	}
+
+	return func(c echo.Context) error {
+		const op = "SubscriptionHandler.HandleUnsubscribe"
+		var err error
+
+		ctx := c.Request().Context()
+		logger := h.logger.With(
+			"operation", op,
+			requestid.LogKey, requestid.Extract(ctx),
+		)
+
+		var req Request
+		err = c.Bind(&req)
+		if err != nil {
+			logger.Error("failed to bind request", "error", err)
+
+			return echo.ErrBadRequest
+		}
+
+		authPayload, _ := jwt.Extract(ctx)
+
+		err = h.subscriptionServ.Unsubscribe(ctx, service.UnsubscribeDTO{
+			FromUserID:     authPayload.UserID,
+			ToUserNickname: req.ToUserNickname,
+		})
+		if err != nil {
+			logger.Error("failed to unsubscribe", "error", err)
+
+			if errors.Is(err, usermodel.ErrUserNotFound) {
+				return echo.NewHTTPError(http.StatusNotFound, usermodel.ErrUserNotFound.Error())
+			}
+
+			return echo.ErrInternalServerError
+		}
+
+		return c.NoContent(http.StatusNoContent)
+	}
+}

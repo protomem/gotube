@@ -59,3 +59,29 @@ func (r *SubscriptionRepository) CreateSubscription(
 
 	return id, nil
 }
+
+func (r *SubscriptionRepository) DeleteSubscription(
+	ctx context.Context,
+	dto repository.DeleteSubscriptionDTO,
+) error {
+	const op = "SubscriptionRepository.DeleteSubscription"
+	var err error
+
+	query, args, err := r.builder.
+		Delete("subscriptions").
+		Where(squirrel.Eq{
+			"from_user_id": dto.FromUserID,
+			"to_user_id":   dto.ToUserID,
+		}).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	_, err = r.db.Exec(ctx, query, args...)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}

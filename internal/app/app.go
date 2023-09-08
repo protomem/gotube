@@ -157,6 +157,7 @@ func (app *App) setupRoutes() {
 				subscriptions.Use(app.modules.Auth.Authorizer())
 
 				subscriptions.POST("/", app.modules.Subscription.HandleSubscribe())
+				subscriptions.DELETE("/", app.modules.Subscription.HandleUnsubscribe())
 			}
 		}
 	}

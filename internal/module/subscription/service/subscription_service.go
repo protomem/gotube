@@ -18,9 +18,15 @@ type SubscribeDTO struct {
 	ToUserNickname string
 }
 
+type UnsubscribeDTO struct {
+	FromUserID     uuid.UUID
+	ToUserNickname string
+}
+
 type (
 	SubscriptionService interface {
 		Subscribe(ctx context.Context, dto SubscribeDTO) error
+		Unsubscribe(ctx context.Context, dto UnsubscribeDTO) error
 	}
 
 	SubscriptionServiceImpl struct {
@@ -54,6 +60,26 @@ func (s *SubscriptionServiceImpl) Subscribe(ctx context.Context, dto SubscribeDT
 		ToUserID:   toUser.ID,
 	})
 	if err != nil && !errors.Is(err, model.ErrSubscriptionAlreadyExists) {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}
+
+func (s *SubscriptionServiceImpl) Unsubscribe(ctx context.Context, dto UnsubscribeDTO) error {
+	const op = "SubscriptionService.DeleteSubscription"
+	var err error
+
+	toUser, err := s.userServ.FindOneUserByNickname(ctx, dto.ToUserNickname)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	err = s.subscriptionRepo.DeleteSubscription(ctx, repository.DeleteSubscriptionDTO{
+		FromUserID: dto.FromUserID,
+		ToUserID:   toUser.ID,
+	})
+	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
