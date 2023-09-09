@@ -25,7 +25,7 @@ type Options struct {
 }
 
 func NewBlobStorage(ctx context.Context, logger logging.Logger, opts Options) (*BlobStorage, error) {
-	const op = "s3.BlobStorage.New"
+	const op = "blobStorage.New"
 
 	client, err := minio.New(opts.Addr, &minio.Options{
 		Creds:  credentials.NewStaticV4(opts.AccessKey, opts.SecretKey, ""),
@@ -42,7 +42,7 @@ func NewBlobStorage(ctx context.Context, logger logging.Logger, opts Options) (*
 }
 
 func (bs *BlobStorage) GetObject(ctx context.Context, bucket string, object string) (storage.Object, error) {
-	const op = "s3.BlobStorage.GetObject"
+	const op = "blobStorage.GetObject"
 	var err error
 
 	rawObj, err := bs.client.GetObject(ctx, bucket, object, minio.GetObjectOptions{})
@@ -68,7 +68,7 @@ func (bs *BlobStorage) GetObject(ctx context.Context, bucket string, object stri
 }
 
 func (bs *BlobStorage) PutObject(ctx context.Context, bucket string, object string, src storage.Object) error {
-	const op = "s3.BlobStorage.PutObject"
+	const op = "blobStorage.PutObject"
 	var err error
 
 	err = bs.initBucket(ctx, bucket)

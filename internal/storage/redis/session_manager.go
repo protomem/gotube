@@ -17,7 +17,7 @@ type SessionManager struct {
 }
 
 func NewSessionManager(ctx context.Context, logger logging.Logger, connect string) (*SessionManager, error) {
-	const op = "redis.SessionManager.New"
+	const op = "sessionManager.New"
 
 	opts, err := redis.ParseURL(connect)
 	if err != nil {
