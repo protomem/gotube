@@ -161,6 +161,11 @@ func (app *App) setupRoutes() {
 				subscriptions.DELETE("/", app.modules.Subscription.HandleUnsubscribe())
 			}
 		}
+
+		videos := v1.Group("/videos")
+		{
+			videos.POST("/", app.modules.Video.HandleCreateVideo(), app.modules.Auth.Authorizer())
+		}
 	}
 }
 

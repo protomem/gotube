@@ -1,10 +1,16 @@
 package model
 
 import (
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
 	usermodel "github.com/protomem/gotube/internal/module/user/model"
+)
+
+var (
+	ErrVideoNotFound      = errors.New("video not found")
+	ErrVideoAlreadyExists = errors.New("video already exists")
 )
 
 type Video struct {
