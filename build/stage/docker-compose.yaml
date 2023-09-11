@@ -6,10 +6,10 @@ services:
       context: ./../../web/
       dockerfile: ./Dockerfile
       args:
-        NEXT_PUBLIC_APP_URL: localhost:8080
+        VITE_API_URL: localhost:8080
     restart: unless-stopped
     ports:
-      - 80:3000
+      - 80:80
     depends_on:
       - app
 

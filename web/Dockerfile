@@ -1,42 +1,24 @@
-FROM node:18-alpine AS deps
+FROM node:alpine AS deps
 
 WORKDIR /app
-
-COPY package.json ./
-COPY package-lock.json ./
-RUN npm ci
+COPY package.json yarn.lock .
+RUN yarn install
 
 
 
-FROM node:18-alpine AS builder
+FROM node:alpine AS builder
 
-ARG NEXT_PUBLIC_APP_URL
+ARG VITE_API_URL
 
 WORKDIR /app
-
-COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL npm run build
+COPY --from=deps /app/node_modules ./node_modules
+RUN VITE_API_URL=${VITE_API_URL} yarn build
 
 
 
-FROM node:18-alpine AS runner
+FROM nginx:alpine AS runner
 
-WORKDIR /app
-
-ENV NODE_ENV production
-
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
-
-USER nextjs
-
-EXPOSE 3000
-
-CMD ["npm", "start"]
+COPY nginx.conf /etc/nginx/nginx.conf
+COPY --from=builder /app/dist /usr/share/nginx/html
 

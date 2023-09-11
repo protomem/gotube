@@ -38,8 +38,9 @@ run-local:
 
 
 .PHONY: run-web-local
+run-web-local: API_URL="localhost:8080"
 run-web-local:
-	cd ./web && npm run dev
+	cd ./web && VITE_API_URL=${API_URL} yarn dev
 
 
 .PHONY: run-stage
