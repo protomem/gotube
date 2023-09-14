@@ -7,6 +7,11 @@ import (
 	"github.com/protomem/gotube/internal/module/video/model"
 )
 
+type FindAllVideosOptions struct {
+	Limit  uint64
+	Offset uint64
+}
+
 type CreateVideoDTO struct {
 	Title         string
 	Description   string
@@ -18,6 +23,7 @@ type CreateVideoDTO struct {
 type (
 	VideoRepository interface {
 		FindOneVideo(ctx context.Context, id uuid.UUID) (model.Video, error)
+		FindAllPublicNewVideos(ctx context.Context, opts FindAllVideosOptions) ([]model.Video, error)
 		CreateVideo(ctx context.Context, dto CreateVideoDTO) (uuid.UUID, error)
 	}
 )

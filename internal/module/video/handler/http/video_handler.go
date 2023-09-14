@@ -74,6 +74,52 @@ func (h *VideoHandler) HandleGetVideo() echo.HandlerFunc {
 	}
 }
 
+func (h *VideoHandler) HandleGetAllVideos() echo.HandlerFunc {
+	type Request struct {
+		Limit  uint64 `query:"limit"`
+		Offset uint64 `query:"offset"`
+	}
+
+	type Response struct {
+		Videos []model.Video `json:"videos"`
+	}
+
+	return func(c echo.Context) error {
+		const op = "VideoHandler.HandleGetAllVideos"
+		var err error
+
+		ctx := c.Request().Context()
+		logger := h.logger.With(
+			"operation", op,
+			requestid.LogKey, requestid.Extract(ctx),
+		)
+
+		var req Request
+		err = c.Bind(&req)
+		if err != nil {
+			logger.Error("failed to bind request", "error", err)
+
+			return echo.ErrBadRequest
+		}
+
+		if req.Limit == 0 {
+			req.Limit = 10
+		}
+
+		videos, err := h.videoServ.FindAllPublicNewVideos(ctx, service.FindAllVideosOptions{
+			Limit:  req.Limit,
+			Offset: req.Offset,
+		})
+		if err != nil {
+			logger.Error("failed to find videos", "error", err)
+
+			return echo.ErrInternalServerError
+		}
+
+		return c.JSON(http.StatusOK, Response{Videos: videos})
+	}
+}
+
 func (h *VideoHandler) HandleCreateVideo() echo.HandlerFunc {
 	type Request struct {
 		Title         string `json:"title"`

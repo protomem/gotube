@@ -165,6 +165,7 @@ func (app *App) setupRoutes() {
 		videos := v1.Group("/videos")
 		{
 			videos.GET("/:videoId", app.modules.Video.HandleGetVideo())
+			videos.GET("/", app.modules.Video.HandleGetAllVideos())
 			videos.POST("/", app.modules.Video.HandleCreateVideo(), app.modules.Auth.Authorizer())
 		}
 	}

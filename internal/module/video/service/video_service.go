@@ -11,6 +11,11 @@ import (
 
 var _ VideoService = (*VideoServiceImpl)(nil)
 
+type FindAllVideosOptions struct {
+	Limit  uint64
+	Offset uint64
+}
+
 type CreateVideoDTO struct {
 	Title         string
 	Description   string
@@ -22,6 +27,7 @@ type CreateVideoDTO struct {
 type (
 	VideoService interface {
 		FindOneVideo(ctx context.Context, id uuid.UUID) (model.Video, error)
+		FindAllPublicNewVideos(ctx context.Context, opts FindAllVideosOptions) ([]model.Video, error)
 		CreateVideo(ctx context.Context, dto CreateVideoDTO) (model.Video, error)
 	}
 
@@ -45,6 +51,20 @@ func (s *VideoServiceImpl) FindOneVideo(ctx context.Context, id uuid.UUID) (mode
 	}
 
 	return video, nil
+}
+
+func (s *VideoServiceImpl) FindAllPublicNewVideos(
+	ctx context.Context,
+	opts FindAllVideosOptions,
+) ([]model.Video, error) {
+	const op = "VideoService.FindAllPublicNewVideos"
+
+	videos, err := s.videoRepo.FindAllPublicNewVideos(ctx, repository.FindAllVideosOptions(opts))
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return videos, nil
 }
 
 func (s *VideoServiceImpl) CreateVideo(ctx context.Context, dto CreateVideoDTO) (model.Video, error) {
