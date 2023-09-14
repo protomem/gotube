@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/protomem/gotube/internal/jwt"
 	"github.com/protomem/gotube/internal/module/video/model"
@@ -22,6 +23,54 @@ func NewVideoHandler(logger logging.Logger, videoServ service.VideoService) *Vid
 	return &VideoHandler{
 		logger:    logger.With("handler", "video", "handlerType", "http"),
 		videoServ: videoServ,
+	}
+}
+
+func (h *VideoHandler) HandleGetVideo() echo.HandlerFunc {
+	type Request struct {
+		ID uuid.UUID `param:"videoId"`
+	}
+
+	type Response struct {
+		Video model.Video `json:"video"`
+	}
+
+	return func(c echo.Context) error {
+		const op = "VideoHandler.HandleGetVideo"
+		var err error
+
+		ctx := c.Request().Context()
+		logger := h.logger.With(
+			"operation", op,
+			requestid.LogKey, requestid.Extract(ctx),
+		)
+
+		var req Request
+		err = c.Bind(&req)
+		if err != nil {
+			logger.Error("failed to bind request", "error", err)
+
+			return echo.ErrBadRequest
+		}
+
+		authPayload, _ := jwt.Extract(ctx)
+
+		video, err := h.videoServ.FindOneVideo(ctx, req.ID)
+		if err != nil {
+			logger.Error("failed to find video", "error", err)
+
+			if errors.Is(err, model.ErrVideoNotFound) {
+				return echo.NewHTTPError(http.StatusNotFound, model.ErrVideoNotFound)
+			}
+
+			return echo.ErrInternalServerError
+		}
+
+		if !video.Public && video.User.ID != authPayload.UserID {
+			return echo.NewHTTPError(http.StatusForbidden, "access denied")
+		}
+
+		return c.JSON(http.StatusOK, Response{Video: video})
 	}
 }
 
