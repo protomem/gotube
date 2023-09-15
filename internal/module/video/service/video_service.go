@@ -28,6 +28,7 @@ type (
 	VideoService interface {
 		FindOneVideo(ctx context.Context, id uuid.UUID) (model.Video, error)
 		FindAllPublicNewVideos(ctx context.Context, opts FindAllVideosOptions) ([]model.Video, error)
+		FindAllPublicPopularVideos(ctx context.Context, opts FindAllVideosOptions) ([]model.Video, error)
 		CreateVideo(ctx context.Context, dto CreateVideoDTO) (model.Video, error)
 	}
 
@@ -45,6 +46,8 @@ func NewVideoService(videoRepo repository.VideoRepository) *VideoServiceImpl {
 func (s *VideoServiceImpl) FindOneVideo(ctx context.Context, id uuid.UUID) (model.Video, error) {
 	const op = "VideoService.FindOneVideo"
 
+	// TODO: Increment video.View
+
 	video, err := s.videoRepo.FindOneVideo(ctx, id)
 	if err != nil {
 		return model.Video{}, fmt.Errorf("%s: %w", op, err)
@@ -59,9 +62,23 @@ func (s *VideoServiceImpl) FindAllPublicNewVideos(
 ) ([]model.Video, error) {
 	const op = "VideoService.FindAllPublicNewVideos"
 
-	videos, err := s.videoRepo.FindAllPublicNewVideos(ctx, repository.FindAllVideosOptions(opts))
+	videos, err := s.videoRepo.FindAllVideosWherePublicAndSortByNew(ctx, repository.FindAllVideosOptions(opts))
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return videos, nil
+}
+
+func (s *VideoServiceImpl) FindAllPublicPopularVideos(
+	ctx context.Context,
+	opts FindAllVideosOptions,
+) ([]model.Video, error) {
+	const op = "VideoService.FindAllPublicPopularVideos"
+
+	videos, err := s.videoRepo.FindAllVideosWherePublicAndSortByPopular(ctx, repository.FindAllVideosOptions(opts))
+	if err != nil {
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return videos, nil

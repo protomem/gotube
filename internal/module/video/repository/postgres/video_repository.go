@@ -71,7 +71,7 @@ func (r *VideoRepository) FindOneVideo(ctx context.Context, videoID uuid.UUID) (
 	return video, nil
 }
 
-func (r *VideoRepository) FindAllPublicNewVideos(
+func (r *VideoRepository) FindAllVideosWherePublicAndSortByNew(
 	ctx context.Context,
 	options repository.FindAllVideosOptions,
 ) ([]model.Video, error) {
@@ -84,6 +84,65 @@ func (r *VideoRepository) FindAllPublicNewVideos(
 		Where(squirrel.Eq{"videos.is_public": true}).
 		Join("users ON users.id = videos.user_id").
 		OrderBy("videos.created_at DESC").
+		Limit(options.Limit).
+		Offset(options.Offset).
+		ToSql()
+	if err != nil {
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return []model.Video{}, nil
+		}
+
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+	defer rows.Close()
+
+	var videos []model.Video
+	for rows.Next() {
+		var video model.Video
+		err = rows.Scan(
+			&video.ID, &video.CreatedAt, &video.UpdatedAt,
+			&video.Title, &video.Description,
+			&video.ThumbnailPath, &video.VideoPath,
+			&video.Public, &video.Views,
+			&video.User.ID,
+
+			&video.User.ID, &video.User.CreatedAt, &video.User.UpdatedAt,
+			&video.User.Nickname, &video.User.Password,
+			&video.User.Email, &video.User.Verified,
+			&video.User.AvatarPath, &video.User.Description,
+		)
+		if err != nil {
+			return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		videos = append(videos, video)
+	}
+
+	if len(videos) == 0 {
+		return []model.Video{}, nil
+	}
+
+	return videos, nil
+}
+
+func (r *VideoRepository) FindAllVideosWherePublicAndSortByPopular(
+	ctx context.Context,
+	options repository.FindAllVideosOptions,
+) ([]model.Video, error) {
+	const op = "VideoRepository.FindAllPublicPopularVideos"
+	var err error
+
+	query, args, err := r.builder.
+		Select("videos.*, users.*").
+		From("videos").
+		Where(squirrel.Eq{"videos.is_public": true}).
+		Join("users ON users.id = videos.user_id").
+		OrderBy("videos.views DESC").
 		Limit(options.Limit).
 		Offset(options.Offset).
 		ToSql()

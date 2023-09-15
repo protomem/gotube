@@ -23,7 +23,8 @@ type CreateVideoDTO struct {
 type (
 	VideoRepository interface {
 		FindOneVideo(ctx context.Context, id uuid.UUID) (model.Video, error)
-		FindAllPublicNewVideos(ctx context.Context, opts FindAllVideosOptions) ([]model.Video, error)
+		FindAllVideosWherePublicAndSortByNew(ctx context.Context, opts FindAllVideosOptions) ([]model.Video, error)
+		FindAllVideosWherePublicAndSortByPopular(ctx context.Context, opts FindAllVideosOptions) ([]model.Video, error)
 		CreateVideo(ctx context.Context, dto CreateVideoDTO) (uuid.UUID, error)
 	}
 )

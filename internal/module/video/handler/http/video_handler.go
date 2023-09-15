@@ -78,6 +78,7 @@ func (h *VideoHandler) HandleGetAllVideos() echo.HandlerFunc {
 	type Request struct {
 		Limit  uint64 `query:"limit"`
 		Offset uint64 `query:"offset"`
+		SortBy string `query:"sort_by"`
 	}
 
 	type Response struct {
@@ -106,10 +107,22 @@ func (h *VideoHandler) HandleGetAllVideos() echo.HandlerFunc {
 			req.Limit = 10
 		}
 
-		videos, err := h.videoServ.FindAllPublicNewVideos(ctx, service.FindAllVideosOptions{
-			Limit:  req.Limit,
-			Offset: req.Offset,
-		})
+		if req.SortBy != "new" && req.SortBy != "popular" {
+			req.SortBy = "new"
+		}
+
+		var videos []model.Video
+		if req.SortBy == "new" {
+			videos, err = h.videoServ.FindAllPublicNewVideos(ctx, service.FindAllVideosOptions{
+				Limit:  req.Limit,
+				Offset: req.Offset,
+			})
+		} else {
+			videos, err = h.videoServ.FindAllPublicPopularVideos(ctx, service.FindAllVideosOptions{
+				Limit:  req.Limit,
+				Offset: req.Offset,
+			})
+		}
 		if err != nil {
 			logger.Error("failed to find videos", "error", err)
 
