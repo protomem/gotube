@@ -25,6 +25,7 @@ type (
 		FindOneVideo(ctx context.Context, id uuid.UUID) (model.Video, error)
 		FindAllVideosWherePublicAndSortByNew(ctx context.Context, opts FindAllVideosOptions) ([]model.Video, error)
 		FindAllVideosWherePublicAndSortByPopular(ctx context.Context, opts FindAllVideosOptions) ([]model.Video, error)
+		FindAllVideosByUserIDsAndWherePublicAndSortByNew(ctx context.Context, userIDs []uuid.UUID, opts FindAllVideosOptions) ([]model.Video, error)
 		CreateVideo(ctx context.Context, dto CreateVideoDTO) (uuid.UUID, error)
 	}
 )

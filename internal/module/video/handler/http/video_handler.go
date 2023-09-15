@@ -76,9 +76,10 @@ func (h *VideoHandler) HandleGetVideo() echo.HandlerFunc {
 
 func (h *VideoHandler) HandleGetAllVideos() echo.HandlerFunc {
 	type Request struct {
-		Limit  uint64 `query:"limit"`
-		Offset uint64 `query:"offset"`
-		SortBy string `query:"sort_by"`
+		Limit         uint64 `query:"limit"`
+		Offset        uint64 `query:"offset"`
+		SortBy        string `query:"sort_by"`
+		Subscriptions bool   `query:"is_subs"`
 	}
 
 	type Response struct {
@@ -103,6 +104,8 @@ func (h *VideoHandler) HandleGetAllVideos() echo.HandlerFunc {
 			return echo.ErrBadRequest
 		}
 
+		authPayload, _ := jwt.Extract(ctx)
+
 		if req.Limit == 0 {
 			req.Limit = 10
 		}
@@ -111,17 +114,20 @@ func (h *VideoHandler) HandleGetAllVideos() echo.HandlerFunc {
 			req.SortBy = "new"
 		}
 
+		opts := service.FindAllVideosOptions{
+			Limit:  req.Limit,
+			Offset: req.Offset,
+		}
+
 		var videos []model.Video
-		if req.SortBy == "new" {
-			videos, err = h.videoServ.FindAllPublicNewVideos(ctx, service.FindAllVideosOptions{
-				Limit:  req.Limit,
-				Offset: req.Offset,
-			})
+		if req.Subscriptions {
+			videos, err = h.videoServ.FindAllPublicNewVideosFromSubscriptions(ctx, authPayload.UserID, opts)
 		} else {
-			videos, err = h.videoServ.FindAllPublicPopularVideos(ctx, service.FindAllVideosOptions{
-				Limit:  req.Limit,
-				Offset: req.Offset,
-			})
+			if req.SortBy == "new" {
+				videos, err = h.videoServ.FindAllPublicNewVideos(ctx, opts)
+			} else {
+				videos, err = h.videoServ.FindAllPublicPopularVideos(ctx, opts)
+			}
 		}
 		if err != nil {
 			logger.Error("failed to find videos", "error", err)

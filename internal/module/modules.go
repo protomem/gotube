@@ -34,7 +34,7 @@ func NewModules(
 	userMod := user.New(logger, db)
 	authMod := auth.New(logger, authSecret, sessmng, userMod.UserService)
 	subMod := subscription.New(logger, db, userMod.UserService)
-	videoMod := video.New(logger, db)
+	videoMod := video.New(logger, db, userMod.UserService, subMod.SubscriptionService)
 
 	mediaMod := media.New(logger, bstore)
 

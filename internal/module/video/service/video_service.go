@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	subserv "github.com/protomem/gotube/internal/module/subscription/service"
+	userserv "github.com/protomem/gotube/internal/module/user/service"
 	"github.com/protomem/gotube/internal/module/video/model"
 	"github.com/protomem/gotube/internal/module/video/repository"
 )
@@ -29,16 +31,22 @@ type (
 		FindOneVideo(ctx context.Context, id uuid.UUID) (model.Video, error)
 		FindAllPublicNewVideos(ctx context.Context, opts FindAllVideosOptions) ([]model.Video, error)
 		FindAllPublicPopularVideos(ctx context.Context, opts FindAllVideosOptions) ([]model.Video, error)
+		FindAllPublicNewVideosFromSubscriptions(ctx context.Context, userID uuid.UUID, opts FindAllVideosOptions) ([]model.Video, error)
 		CreateVideo(ctx context.Context, dto CreateVideoDTO) (model.Video, error)
 	}
 
 	VideoServiceImpl struct {
+		userServ userserv.UserService
+		subServ  subserv.SubscriptionService
+
 		videoRepo repository.VideoRepository
 	}
 )
 
-func NewVideoService(videoRepo repository.VideoRepository) *VideoServiceImpl {
+func NewVideoService(userServ userserv.UserService, subServ subserv.SubscriptionService, videoRepo repository.VideoRepository) *VideoServiceImpl {
 	return &VideoServiceImpl{
+		userServ:  userServ,
+		subServ:   subServ,
 		videoRepo: videoRepo,
 	}
 }
@@ -77,6 +85,37 @@ func (s *VideoServiceImpl) FindAllPublicPopularVideos(
 	const op = "VideoService.FindAllPublicPopularVideos"
 
 	videos, err := s.videoRepo.FindAllVideosWherePublicAndSortByPopular(ctx, repository.FindAllVideosOptions(opts))
+	if err != nil {
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return videos, nil
+}
+
+func (s *VideoServiceImpl) FindAllPublicNewVideosFromSubscriptions(
+	ctx context.Context,
+	userID uuid.UUID,
+	opts FindAllVideosOptions,
+) ([]model.Video, error) {
+	const op = "VideoService.FindAllPublicNewVideosFromSubscriptions"
+
+	user, err := s.userServ.FindOneUser(ctx, userID)
+	if err != nil {
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	subs, err := s.subServ.FindAllSubscriptionsByFromUserNickname(ctx, user.Nickname)
+	if err != nil {
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	userIDs := make([]uuid.UUID, 0, len(subs))
+	for _, sub := range subs {
+		userIDs = append(userIDs, sub.ToUser.ID)
+	}
+
+	videos, err := s.videoRepo.
+		FindAllVideosByUserIDsAndWherePublicAndSortByNew(ctx, userIDs, repository.FindAllVideosOptions(opts))
 	if err != nil {
 		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
 	}
