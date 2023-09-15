@@ -3,8 +3,13 @@ import {
   RouterProvider as ReactRouterProvider,
 } from "react-router-dom";
 import NotFound from "@/pages/not-found";
+import Home from "@/pages/home";
 
 const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <Home />,
+  },
   {
     path: "*",
     element: <NotFound />,
