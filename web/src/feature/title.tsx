@@ -7,7 +7,7 @@ export default function Title() {
       component={RouterLink}
       to="/"
       underline="none"
-      style={{ fontSize: "1.7vw", fontWeight: "bold" }}
+      style={{ fontSize: "1.9em", fontWeight: "bold" }}
     >
       GoTube
     </Link>
