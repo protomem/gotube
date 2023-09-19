@@ -80,6 +80,7 @@ func (h *VideoHandler) HandleGetAllVideos() echo.HandlerFunc {
 		Offset        uint64 `query:"offset"`
 		SortBy        string `query:"sort_by"`
 		Subscriptions bool   `query:"is_subs"`
+		UserNickname  string `query:"user"`
 	}
 
 	type Response struct {
@@ -104,7 +105,7 @@ func (h *VideoHandler) HandleGetAllVideos() echo.HandlerFunc {
 			return echo.ErrBadRequest
 		}
 
-		authPayload, _ := jwt.Extract(ctx)
+		authPayload, authPayloadOk := jwt.Extract(ctx)
 
 		if req.Limit == 0 {
 			req.Limit = 10
@@ -120,7 +121,13 @@ func (h *VideoHandler) HandleGetAllVideos() echo.HandlerFunc {
 		}
 
 		var videos []model.Video
-		if req.Subscriptions {
+		if req.UserNickname != "" {
+			videos, err = h.videoServ.FindAllNewVideosByUserNickname(ctx, req.UserNickname)
+		} else if req.Subscriptions {
+			if !authPayloadOk {
+				return echo.NewHTTPError(http.StatusForbidden, "access denied")
+			}
+
 			videos, err = h.videoServ.FindAllPublicNewVideosFromSubscriptions(ctx, authPayload.UserID, opts)
 		} else {
 			if req.SortBy == "new" {
@@ -135,7 +142,18 @@ func (h *VideoHandler) HandleGetAllVideos() echo.HandlerFunc {
 			return echo.ErrInternalServerError
 		}
 
-		return c.JSON(http.StatusOK, Response{Videos: videos})
+		logger.Debug("videos", "videos", videos)
+
+		// Auth filter
+		filteredVideos := make([]model.Video, 0, len(videos))
+		for _, video := range videos {
+			if video.Public ||
+				(authPayloadOk && !video.Public && video.User.ID == authPayload.UserID) {
+				filteredVideos = append(filteredVideos, video)
+			}
+		}
+
+		return c.JSON(http.StatusOK, Response{Videos: filteredVideos})
 	}
 }
 

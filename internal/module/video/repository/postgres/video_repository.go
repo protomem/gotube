@@ -71,6 +71,63 @@ func (r *VideoRepository) FindOneVideo(ctx context.Context, videoID uuid.UUID) (
 	return video, nil
 }
 
+func (r *VideoRepository) FindAllVideosByUserIDAndSortByNew(
+	ctx context.Context,
+	userID uuid.UUID,
+) ([]model.Video, error) {
+	const op = "VideoRepository.FindAllVideosByUserIDAndSortByNew"
+	var err error
+
+	query, args, err := r.builder.
+		Select("videos.*, users.*").
+		From("videos").
+		Where(squirrel.Eq{"videos.user_id": userID}).
+		Join("users ON users.id = videos.user_id").
+		OrderBy("videos.created_at DESC").
+		ToSql()
+	if err != nil {
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return []model.Video{}, nil
+		}
+
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+	defer rows.Close()
+
+	var videos []model.Video
+	for rows.Next() {
+		var video model.Video
+		err = rows.Scan(
+			&video.ID, &video.CreatedAt, &video.UpdatedAt,
+			&video.Title, &video.Description,
+			&video.ThumbnailPath, &video.VideoPath,
+			&video.Public, &video.Views,
+			&video.User.ID,
+
+			&video.User.ID, &video.User.CreatedAt, &video.User.UpdatedAt,
+			&video.User.Nickname, &video.User.Password,
+			&video.User.Email, &video.User.Verified,
+			&video.User.AvatarPath, &video.User.Description,
+		)
+		if err != nil {
+			return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		videos = append(videos, video)
+	}
+
+	if len(videos) == 0 {
+		return []model.Video{}, nil
+	}
+
+	return videos, nil
+}
+
 func (r *VideoRepository) FindAllVideosWherePublicAndSortByNew(
 	ctx context.Context,
 	options repository.FindAllVideosOptions,
@@ -277,4 +334,24 @@ func (r *VideoRepository) CreateVideo(ctx context.Context, dto repository.Create
 	}
 
 	return id, nil
+}
+
+func (r *VideoRepository) IncrementVideoView(ctx context.Context, id uuid.UUID) error {
+	const op = "VideoRepository.IncrementVideoView"
+	var err error
+
+	query := `
+        UPDATE videos SET views = views + 1 WHERE id = $1
+    `
+
+	args := []any{
+		id,
+	}
+
+	_, err = r.db.Exec(ctx, query, args...)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
 }

@@ -29,6 +29,7 @@ type CreateVideoDTO struct {
 type (
 	VideoService interface {
 		FindOneVideo(ctx context.Context, id uuid.UUID) (model.Video, error)
+		FindAllNewVideosByUserNickname(ctx context.Context, userNickname string) ([]model.Video, error)
 		FindAllPublicNewVideos(ctx context.Context, opts FindAllVideosOptions) ([]model.Video, error)
 		FindAllPublicPopularVideos(ctx context.Context, opts FindAllVideosOptions) ([]model.Video, error)
 		FindAllPublicNewVideosFromSubscriptions(ctx context.Context, userID uuid.UUID, opts FindAllVideosOptions) ([]model.Video, error)
@@ -43,7 +44,11 @@ type (
 	}
 )
 
-func NewVideoService(userServ userserv.UserService, subServ subserv.SubscriptionService, videoRepo repository.VideoRepository) *VideoServiceImpl {
+func NewVideoService(
+	userServ userserv.UserService,
+	subServ subserv.SubscriptionService,
+	videoRepo repository.VideoRepository,
+) *VideoServiceImpl {
 	return &VideoServiceImpl{
 		userServ:  userServ,
 		subServ:   subServ,
@@ -54,14 +59,37 @@ func NewVideoService(userServ userserv.UserService, subServ subserv.Subscription
 func (s *VideoServiceImpl) FindOneVideo(ctx context.Context, id uuid.UUID) (model.Video, error) {
 	const op = "VideoService.FindOneVideo"
 
-	// TODO: Increment video.View
-
 	video, err := s.videoRepo.FindOneVideo(ctx, id)
 	if err != nil {
 		return model.Video{}, fmt.Errorf("%s: %w", op, err)
 	}
 
+	err = s.videoRepo.IncrementVideoView(ctx, id)
+	if err != nil {
+		return model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+
 	return video, nil
+}
+
+func (s *VideoServiceImpl) FindAllNewVideosByUserNickname(
+	ctx context.Context,
+	userNickname string,
+) ([]model.Video, error) {
+	const op = "VideoService.FindAllNewVideosByUserID"
+	var err error
+
+	user, err := s.userServ.FindOneUserByNickname(ctx, userNickname)
+	if err != nil {
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	videos, err := s.videoRepo.FindAllVideosByUserIDAndSortByNew(ctx, user.ID)
+	if err != nil {
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return videos, nil
 }
 
 func (s *VideoServiceImpl) FindAllPublicNewVideos(
