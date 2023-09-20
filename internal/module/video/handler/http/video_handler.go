@@ -81,6 +81,7 @@ func (h *VideoHandler) HandleGetAllVideos() echo.HandlerFunc {
 		SortBy        string `query:"sort_by"`
 		Subscriptions bool   `query:"is_subs"`
 		UserNickname  string `query:"user"`
+		Query         string `query:"query"`
 	}
 
 	type Response struct {
@@ -121,7 +122,9 @@ func (h *VideoHandler) HandleGetAllVideos() echo.HandlerFunc {
 		}
 
 		var videos []model.Video
-		if req.UserNickname != "" {
+		if req.Query != "" {
+			videos, err = h.videoServ.SearchVideos(ctx, req.Query, opts)
+		} else if req.UserNickname != "" {
 			videos, err = h.videoServ.FindAllNewVideosByUserNickname(ctx, req.UserNickname)
 		} else if req.Subscriptions {
 			if !authPayloadOk {
@@ -141,8 +144,6 @@ func (h *VideoHandler) HandleGetAllVideos() echo.HandlerFunc {
 
 			return echo.ErrInternalServerError
 		}
-
-		logger.Debug("videos", "videos", videos)
 
 		// Auth filter
 		filteredVideos := make([]model.Video, 0, len(videos))

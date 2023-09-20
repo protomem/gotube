@@ -33,6 +33,7 @@ type (
 		FindAllPublicNewVideos(ctx context.Context, opts FindAllVideosOptions) ([]model.Video, error)
 		FindAllPublicPopularVideos(ctx context.Context, opts FindAllVideosOptions) ([]model.Video, error)
 		FindAllPublicNewVideosFromSubscriptions(ctx context.Context, userID uuid.UUID, opts FindAllVideosOptions) ([]model.Video, error)
+		SearchVideos(ctx context.Context, query string, opts FindAllVideosOptions) ([]model.Video, error)
 		CreateVideo(ctx context.Context, dto CreateVideoDTO) (model.Video, error)
 	}
 
@@ -144,6 +145,25 @@ func (s *VideoServiceImpl) FindAllPublicNewVideosFromSubscriptions(
 
 	videos, err := s.videoRepo.
 		FindAllVideosByUserIDsAndWherePublicAndSortByNew(ctx, userIDs, repository.FindAllVideosOptions(opts))
+	if err != nil {
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return videos, nil
+}
+
+func (s *VideoServiceImpl) SearchVideos(
+	ctx context.Context,
+	query string,
+	opts FindAllVideosOptions,
+) ([]model.Video, error) {
+	const op = "VideoService.SearchVideos"
+
+	videos, err := s.videoRepo.FindAllVideosLikeByTitleAndWherePublicAndSortByNew(
+		ctx,
+		query,
+		repository.FindAllVideosOptions(opts),
+	)
 	if err != nil {
 		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
 	}
