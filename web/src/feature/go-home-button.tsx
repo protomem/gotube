@@ -1,17 +1,19 @@
-import { Button, Typography } from "@mui/joy";
+import React from "react";
+import { ArrowBackIos } from "@mui/icons-material";
+import { Button } from "@mui/joy";
 import { useNavigate } from "react-router-dom";
 
-export default function LoginButton() {
+export default function GoHomeButton() {
   const nav = useNavigate();
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    nav("/auth", { replace: true });
+    nav("/", { replace: true });
   };
 
   return (
     <Button onClick={handleClick}>
-      <Typography>login</Typography>
+      <ArrowBackIos /> Go Home
     </Button>
   );
 }
