@@ -31,4 +31,7 @@ type (
 		CreateVideo(ctx context.Context, dto CreateVideoDTO) (uuid.UUID, error)
 		IncrementVideoView(ctx context.Context, id uuid.UUID) error
 	}
+
+	RatingRepository interface {
+	}
 )

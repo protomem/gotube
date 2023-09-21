@@ -31,3 +31,24 @@ type Video struct {
 
 	User usermodel.User `json:"user"`
 }
+
+const (
+	Like    RatingType = "like"
+	Dislike RatingType = "dislike"
+)
+
+type RatingType string
+
+var ErrRatingAlreadyExists = errors.New("rating already exists")
+
+type Rating struct {
+	ID uuid.UUID `json:"id"`
+
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+
+	Type RatingType `json:"type"`
+
+	VideoID uuid.UUID `json:"videoID"`
+	UserID  uuid.UUID `json:"userID"`
+}

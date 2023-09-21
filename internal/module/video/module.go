@@ -13,8 +13,13 @@ import (
 
 type Module struct {
 	*handlhttp.VideoHandler
+	*handlhttp.RatingHandler
+
 	service.VideoService
+	service.RatingService
+
 	repository.VideoRepository
+	repository.RatingRepository
 }
 
 func New(
@@ -26,12 +31,20 @@ func New(
 	logger = logger.With("module", "video")
 
 	videoRepo := repopostgres.NewVideoRepository(logger, db)
+	ratingRepo := repopostgres.NewRatingRepository(logger, db)
+
 	videoServ := service.NewVideoService(userServ, subServ, videoRepo)
+	ratingServ := service.NewRatingService(ratingRepo)
+
 	videoHandl := handlhttp.NewVideoHandler(logger, videoServ)
+	ratingHandl := handlhttp.NewRatingHandler(logger, ratingServ)
 
 	return &Module{
-		VideoHandler:    videoHandl,
-		VideoService:    videoServ,
-		VideoRepository: videoRepo,
+		VideoHandler:     videoHandl,
+		RatingHandler:    ratingHandl,
+		VideoService:     videoServ,
+		RatingService:    ratingServ,
+		VideoRepository:  videoRepo,
+		RatingRepository: ratingRepo,
 	}
 }
