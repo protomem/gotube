@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -24,6 +23,7 @@ type DislikeDTO struct {
 
 type (
 	RatingService interface {
+		FindAllRatingsByVideoID(ctx context.Context, videoID uuid.UUID) ([]model.Rating, error)
 		Like(ctx context.Context, dto LikeDTO) error
 		Dislike(ctx context.Context, dto DislikeDTO) error
 	}
@@ -39,13 +39,24 @@ func NewRatingService(ratingRepo repository.RatingRepository) *RatingServiceImpl
 	}
 }
 
+func (s *RatingServiceImpl) FindAllRatingsByVideoID(ctx context.Context, videoID uuid.UUID) ([]model.Rating, error) {
+	const op = "RatingService.FindAllRatingsByVideoID"
+
+	ratings, err := s.ratingRepo.FindAllRatingsByVideoID(ctx, videoID)
+	if err != nil {
+		return []model.Rating{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return ratings, nil
+}
+
 func (s *RatingServiceImpl) Like(ctx context.Context, dto LikeDTO) error {
 	const op = "RatingService.Like"
 
 	_, err := s.ratingRepo.CreateRating(ctx, repository.CreateRatingDTO{
-		UserID: dto.UserID,
-		VideID: dto.VideoID,
-		Type:   model.Like,
+		UserID:  dto.UserID,
+		VideoID: dto.VideoID,
+		Type:    model.Like,
 	})
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
@@ -58,9 +69,9 @@ func (s *RatingServiceImpl) Dislike(ctx context.Context, dto DislikeDTO) error {
 	const op = "RatingService.Dislike"
 
 	_, err := s.ratingRepo.CreateRating(ctx, repository.CreateRatingDTO{
-		UserID: dto.UserID,
-		VideID: dto.VideoID,
-		Type:   model.Dislike,
+		UserID:  dto.UserID,
+		VideoID: dto.VideoID,
+		Type:    model.Dislike,
 	})
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)

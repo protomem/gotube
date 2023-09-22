@@ -26,6 +26,44 @@ func NewRatingHandler(logger logging.Logger, ratingServ service.RatingService) *
 	}
 }
 
+func (h *RatingHandler) HandleGetAllRatings() echo.HandlerFunc {
+	type Request struct {
+		VideoID uuid.UUID `param:"videoId"`
+	}
+
+	type Response struct {
+		Ratings []model.Rating `json:"ratings"`
+	}
+
+	return func(c echo.Context) error {
+		const op = "RatingHandler.HandleGetAllRatings"
+		var err error
+
+		ctx := c.Request().Context()
+		logger := h.logger.With(
+			"operation", op,
+			requestid.LogKey, requestid.Extract(ctx),
+		)
+
+		var req Request
+		err = c.Bind(&req)
+		if err != nil {
+			logger.Error("failed to bind request", "error", err)
+
+			return echo.ErrBadRequest
+		}
+
+		ratings, err := h.ratingServ.FindAllRatingsByVideoID(ctx, req.VideoID)
+		if err != nil {
+			logger.Error("failed to find ratings", "error", err)
+
+			return echo.ErrInternalServerError
+		}
+
+		return c.JSON(http.StatusOK, Response{Ratings: ratings})
+	}
+}
+
 func (h *RatingHandler) HandleLike() echo.HandlerFunc {
 	type Request struct {
 		VideoID uuid.UUID `param:"videoId"`

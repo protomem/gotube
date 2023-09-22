@@ -28,6 +28,47 @@ func NewRatingRepository(logger logging.Logger, db *database.DB) *RatingReposito
 	}
 }
 
+func (r *RatingRepository) FindAllRatingsByVideoID(ctx context.Context, videoID uuid.UUID) ([]model.Rating, error) {
+	const op = "RatingRepository.FindAllRatingsByVideoID"
+	var err error
+
+	qeury, args, err := r.builder.
+		Select("*").
+		From("video_ratings").
+		Where(squirrel.Eq{"video_id": videoID}).
+		ToSql()
+	if err != nil {
+		return []model.Rating{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	rows, err := r.db.Query(ctx, qeury, args...)
+	if err != nil {
+		return []model.Rating{}, fmt.Errorf("%s: %w", op, err)
+	}
+	defer rows.Close()
+
+	var ratings []model.Rating
+	for rows.Next() {
+		var rating model.Rating
+		err = rows.Scan(
+			&rating.ID, &rating.CreatedAt, &rating.UpdatedAt,
+			&rating.VideoID, &rating.UserID,
+			&rating.Type,
+		)
+		if err != nil {
+			return []model.Rating{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		ratings = append(ratings, rating)
+	}
+
+	if len(ratings) == 0 {
+		return []model.Rating{}, nil
+	}
+
+	return ratings, nil
+}
+
 func (r *RatingRepository) CreateRating(ctx context.Context, dto repository.CreateRatingDTO) (uuid.UUID, error) {
 	const op = "RatingRepository.CreateRating"
 	var err error
@@ -35,7 +76,7 @@ func (r *RatingRepository) CreateRating(ctx context.Context, dto repository.Crea
 	query, args, err := r.builder.
 		Insert("video_ratings").
 		Columns("user_id", "video_id", "rating").
-		Values(dto.UserID, dto.VideID, dto.Type).
+		Values(dto.UserID, dto.VideoID, dto.Type).
 		Suffix("RETURNING id").
 		ToSql()
 	if err != nil {

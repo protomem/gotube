@@ -170,6 +170,7 @@ func (app *App) setupRoutes() {
 
 			ratings := videos.Group("/:videoId/ratings")
 			{
+				ratings.GET("/", app.modules.Video.HandleGetAllRatings())
 				ratings.POST("/like", app.modules.Video.HandleLike(), app.modules.Auth.Authorizer())
 				ratings.POST("/dislike", app.modules.Video.HandleDislike(), app.modules.Auth.Authorizer())
 			}

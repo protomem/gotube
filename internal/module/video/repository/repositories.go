@@ -21,9 +21,9 @@ type CreateVideoDTO struct {
 }
 
 type CreateRatingDTO struct {
-	UserID uuid.UUID
-	VideID uuid.UUID
-	Type   model.RatingType
+	UserID  uuid.UUID
+	VideoID uuid.UUID
+	Type    model.RatingType
 }
 
 type (
@@ -39,6 +39,7 @@ type (
 	}
 
 	RatingRepository interface {
+		FindAllRatingsByVideoID(ctx context.Context, videoID uuid.UUID) ([]model.Rating, error)
 		CreateRating(ctx context.Context, dto CreateRatingDTO) (uuid.UUID, error)
 	}
 )
