@@ -167,6 +167,12 @@ func (app *App) setupRoutes() {
 			videos.GET("/:videoId", app.modules.Video.HandleGetVideo())
 			videos.GET("/", app.modules.Video.HandleGetAllVideos())
 			videos.POST("/", app.modules.Video.HandleCreateVideo(), app.modules.Auth.Authorizer())
+
+			ratings := videos.Group("/:videoId/ratings")
+			{
+				ratings.POST("/like", app.modules.Video.HandleLike(), app.modules.Auth.Authorizer())
+				ratings.POST("/dislike", app.modules.Video.HandleDislike(), app.modules.Auth.Authorizer())
+			}
 		}
 	}
 }
