@@ -173,6 +173,7 @@ func (app *App) setupRoutes() {
 				ratings.GET("/", app.modules.Video.HandleGetAllRatings())
 				ratings.POST("/like", app.modules.Video.HandleLike(), app.modules.Auth.Authorizer())
 				ratings.POST("/dislike", app.modules.Video.HandleDislike(), app.modules.Auth.Authorizer())
+				ratings.DELETE("/", app.modules.Video.HandleDeleteRating(), app.modules.Auth.Authorizer())
 			}
 		}
 	}

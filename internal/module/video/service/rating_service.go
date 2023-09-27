@@ -21,11 +21,17 @@ type DislikeDTO struct {
 	VideoID uuid.UUID
 }
 
+type DeleteRatingDTO struct {
+	UserID  uuid.UUID
+	VideoID uuid.UUID
+}
+
 type (
 	RatingService interface {
 		FindAllRatingsByVideoID(ctx context.Context, videoID uuid.UUID) ([]model.Rating, error)
 		Like(ctx context.Context, dto LikeDTO) error
 		Dislike(ctx context.Context, dto DislikeDTO) error
+		DeleteRating(ctx context.Context, dto DeleteRatingDTO) error
 	}
 
 	RatingServiceImpl struct {
@@ -73,6 +79,17 @@ func (s *RatingServiceImpl) Dislike(ctx context.Context, dto DislikeDTO) error {
 		VideoID: dto.VideoID,
 		Type:    model.Dislike,
 	})
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}
+
+func (s *RatingServiceImpl) DeleteRating(ctx context.Context, dto DeleteRatingDTO) error {
+	const op = "RatingService.DeleteRating"
+
+	err := s.ratingRepo.DeleteRating(ctx, repository.DeleteRatingDTO(dto))
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}

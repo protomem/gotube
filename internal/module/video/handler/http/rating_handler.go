@@ -149,3 +149,42 @@ func (h *RatingHandler) HandleDislike() echo.HandlerFunc {
 		return c.NoContent(http.StatusCreated)
 	}
 }
+
+func (h *RatingHandler) HandleDeleteRating() echo.HandlerFunc {
+	type Request struct {
+		VideoID uuid.UUID `param:"videoId"`
+	}
+
+	return func(c echo.Context) error {
+		const op = "RatingHandler.HandleDeleteRating"
+		var err error
+
+		ctx := c.Request().Context()
+		logger := h.logger.With(
+			"operation", op,
+			requestid.LogKey, requestid.Extract(ctx),
+		)
+
+		var req Request
+		err = c.Bind(&req)
+		if err != nil {
+			logger.Error("failed to bind request", "error", err)
+
+			return echo.ErrBadRequest
+		}
+
+		authPaylod, _ := jwt.Extract(ctx)
+
+		err = h.ratingServ.DeleteRating(ctx, service.DeleteRatingDTO{
+			UserID:  authPaylod.UserID,
+			VideoID: req.VideoID,
+		})
+		if err != nil {
+			logger.Error("failed to delete rating", "error", err)
+
+			return echo.ErrInternalServerError
+		}
+
+		return c.NoContent(http.StatusNoContent)
+	}
+}

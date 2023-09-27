@@ -26,6 +26,11 @@ type CreateRatingDTO struct {
 	Type    model.RatingType
 }
 
+type DeleteRatingDTO struct {
+	UserID  uuid.UUID
+	VideoID uuid.UUID
+}
+
 type (
 	VideoRepository interface {
 		FindOneVideo(ctx context.Context, id uuid.UUID) (model.Video, error)
@@ -41,5 +46,6 @@ type (
 	RatingRepository interface {
 		FindAllRatingsByVideoID(ctx context.Context, videoID uuid.UUID) ([]model.Rating, error)
 		CreateRating(ctx context.Context, dto CreateRatingDTO) (uuid.UUID, error)
+		DeleteRating(ctx context.Context, dto DeleteRatingDTO) error
 	}
 )

@@ -97,3 +97,23 @@ func (r *RatingRepository) CreateRating(ctx context.Context, dto repository.Crea
 
 	return id, nil
 }
+
+func (s *RatingRepository) DeleteRating(ctx context.Context, dto repository.DeleteRatingDTO) error {
+	const op = "RatingRepository.DeleteRating"
+	var err error
+
+	query, args, err := s.builder.
+		Delete("video_ratings").
+		Where(squirrel.Eq{"user_id": dto.UserID, "video_id": dto.VideoID}).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	_, err = s.db.Exec(ctx, query, args...)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}
