@@ -1,7 +1,7 @@
 package subscription
 
 import (
-	"github.com/protomem/gotube/internal/database"
+	"github.com/protomem/gotube/internal/database/postgres"
 	handlhttp "github.com/protomem/gotube/internal/module/subscription/handler/http"
 	"github.com/protomem/gotube/internal/module/subscription/repository"
 	repopostgres "github.com/protomem/gotube/internal/module/subscription/repository/postgres"
@@ -16,7 +16,7 @@ type Module struct {
 	repository.SubscriptionRepository
 }
 
-func New(logger logging.Logger, db *database.DB, userServ userserv.UserService) *Module {
+func New(logger logging.Logger, db *postgres.DB, userServ userserv.UserService) *Module {
 	logger = logger.With("module", "subscription")
 
 	subscriptionRepo := repopostgres.NewSubscriptionRepository(logger, db)

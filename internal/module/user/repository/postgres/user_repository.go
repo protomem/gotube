@@ -8,7 +8,7 @@ import (
 	"github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/protomem/gotube/internal/database"
+	"github.com/protomem/gotube/internal/database/postgres"
 	"github.com/protomem/gotube/internal/module/user/model"
 	"github.com/protomem/gotube/internal/module/user/repository"
 	"github.com/protomem/gotube/pkg/logging"
@@ -18,15 +18,15 @@ var _ repository.UserRepository = (*UserRepository)(nil)
 
 type UserRepository struct {
 	logger  logging.Logger
-	db      *database.DB
+	db      *postgres.DB
 	builder squirrel.StatementBuilderType
 }
 
-func NewUserRepository(logger logging.Logger, db *database.DB) *UserRepository {
+func NewUserRepository(logger logging.Logger, db *postgres.DB) *UserRepository {
 	return &UserRepository{
 		logger:  logger.With("repository", "user", "repositoryType", "postgres"),
 		db:      db,
-		builder: database.Builder(),
+		builder: postgres.Builder(),
 	}
 }
 
@@ -151,7 +151,7 @@ func (r *UserRepository) CreateUser(ctx context.Context, dto repository.CreateUs
 		QueryRow(ctx, query, args...).
 		Scan(&id)
 	if err != nil {
-		if database.IsDuplicateKeyError(err) {
+		if postgres.IsDuplicateKeyError(err) {
 			return uuid.Nil, fmt.Errorf("%s: %w", op, model.ErrUserAlreadyExists)
 		}
 

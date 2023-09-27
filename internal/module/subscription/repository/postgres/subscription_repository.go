@@ -8,7 +8,7 @@ import (
 	"github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/protomem/gotube/internal/database"
+	"github.com/protomem/gotube/internal/database/postgres"
 	"github.com/protomem/gotube/internal/module/subscription/model"
 	"github.com/protomem/gotube/internal/module/subscription/repository"
 	"github.com/protomem/gotube/pkg/logging"
@@ -18,15 +18,15 @@ var _ repository.SubscriptionRepository = (*SubscriptionRepository)(nil)
 
 type SubscriptionRepository struct {
 	logger  logging.Logger
-	db      *database.DB
+	db      *postgres.DB
 	builder squirrel.StatementBuilderType
 }
 
-func NewSubscriptionRepository(logger logging.Logger, db *database.DB) *SubscriptionRepository {
+func NewSubscriptionRepository(logger logging.Logger, db *postgres.DB) *SubscriptionRepository {
 	return &SubscriptionRepository{
 		logger:  logger.With("repository", "subscription", "repositoryType", "postgres"),
 		db:      db,
-		builder: database.Builder(),
+		builder: postgres.Builder(),
 	}
 }
 
@@ -112,7 +112,7 @@ func (r *SubscriptionRepository) CreateSubscription(
 		QueryRow(ctx, query, args...).
 		Scan(&id)
 	if err != nil {
-		if database.IsDuplicateKeyError(err) {
+		if postgres.IsDuplicateKeyError(err) {
 			return uuid.Nil, fmt.Errorf("%s: %w", op, model.ErrSubscriptionAlreadyExists)
 		}
 

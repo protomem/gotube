@@ -10,6 +10,9 @@ log:
 postgres:
   connect: "postgres://admin:123456789@postgres:5432/gotubedb?sslmode=disable"
 
+mongo:
+  connect: "mongodb://admin:123456789@mongo:27017"
+
 s3:
   addr: "s3:9000"
   access_key: "admin"

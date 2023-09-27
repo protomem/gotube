@@ -1,7 +1,7 @@
 package module
 
 import (
-	"github.com/protomem/gotube/internal/database"
+	"github.com/protomem/gotube/internal/database/postgres"
 	"github.com/protomem/gotube/internal/module/auth"
 	"github.com/protomem/gotube/internal/module/common"
 	"github.com/protomem/gotube/internal/module/media"
@@ -25,7 +25,7 @@ type Modules struct {
 func NewModules(
 	logger logging.Logger,
 	authSecret string,
-	db *database.DB,
+	db *postgres.DB,
 	bstore storage.BlobStorage,
 	sessmng storage.SessionManager,
 ) *Modules {

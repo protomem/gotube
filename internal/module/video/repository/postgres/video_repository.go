@@ -8,7 +8,7 @@ import (
 	"github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/protomem/gotube/internal/database"
+	"github.com/protomem/gotube/internal/database/postgres"
 	"github.com/protomem/gotube/internal/module/video/model"
 	"github.com/protomem/gotube/internal/module/video/repository"
 	"github.com/protomem/gotube/pkg/logging"
@@ -18,15 +18,15 @@ var _ repository.VideoRepository = (*VideoRepository)(nil)
 
 type VideoRepository struct {
 	logger  logging.Logger
-	db      *database.DB
+	db      *postgres.DB
 	builder squirrel.StatementBuilderType
 }
 
-func NewVideoRepository(logger logging.Logger, db *database.DB) *VideoRepository {
+func NewVideoRepository(logger logging.Logger, db *postgres.DB) *VideoRepository {
 	return &VideoRepository{
 		logger:  logger.With("repository", "video", "repositoryType", "postgres"),
 		db:      db,
-		builder: database.Builder(),
+		builder: postgres.Builder(),
 	}
 }
 
@@ -387,7 +387,7 @@ func (r *VideoRepository) CreateVideo(ctx context.Context, dto repository.Create
 		QueryRow(ctx, query, args...).
 		Scan(&id)
 	if err != nil {
-		if database.IsDuplicateKeyError(err) {
+		if postgres.IsDuplicateKeyError(err) {
 			return uuid.Nil, fmt.Errorf("%s: %w", op, model.ErrVideoAlreadyExists)
 		}
 

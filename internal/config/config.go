@@ -23,6 +23,10 @@ type Config struct {
 		Connect string `yaml:"connect" env-required:"true"`
 	} `yaml:"postgres"`
 
+	Mongo struct {
+		Connect string `yaml:"connect" env-required:"true"`
+	} `yaml:"mongo"`
+
 	S3 struct {
 		Addr      string `yaml:"addr" env-required:"true"`
 		AccessKey string `yaml:"access_key" env-required:"true"`

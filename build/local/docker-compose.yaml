@@ -11,6 +11,16 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql/data
 
+  mongo:
+    image: mongo:4.4
+    restart: unless-stopped
+    ports:
+      - 27017:27017
+    env_file:
+      - ../../configs/local/mongo.env
+    volumes:
+      - mg_data:/data
+
   s3:
     image: quay.io/minio/minio:RELEASE.2023-08-31T15-31-16Z
     command: server --console-address :9001 /data
@@ -31,4 +41,5 @@ services:
 
 volumes:
   pg_data:
+  mg_data:
   obj_data:

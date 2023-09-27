@@ -12,7 +12,8 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/protomem/gotube/internal/config"
-	"github.com/protomem/gotube/internal/database"
+	"github.com/protomem/gotube/internal/database/mongodb"
+	"github.com/protomem/gotube/internal/database/postgres"
 	"github.com/protomem/gotube/internal/module"
 	"github.com/protomem/gotube/internal/storage"
 	"github.com/protomem/gotube/internal/storage/redis"
@@ -26,7 +27,8 @@ type App struct {
 	conf   config.Config
 	logger logging.Logger
 
-	db *database.DB
+	pgdb *postgres.DB
+	mgdb *mongodb.DB
 
 	bstore  storage.BlobStorage
 	sessmng storage.SessionManager
@@ -50,7 +52,12 @@ func New(conf config.Config) (*App, error) {
 
 	logger.Debug("app configured ...", "conf", conf)
 
-	db, err := database.New(ctx, logger, conf.Postgres.Connect)
+	pgdb, err := postgres.New(ctx, logger, conf.Postgres.Connect)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	mgdb, err := mongodb.New(ctx, logger, conf.Mongo.Connect)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -69,7 +76,7 @@ func New(conf config.Config) (*App, error) {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	modules := module.NewModules(logger, conf.Auth.Secret, db, bstore, sessmng)
+	modules := module.NewModules(logger, conf.Auth.Secret, pgdb, bstore, sessmng)
 
 	app := echo.New()
 	app.HideBanner = true
@@ -80,7 +87,8 @@ func New(conf config.Config) (*App, error) {
 	return &App{
 		conf:    conf,
 		logger:  logger,
-		db:      db,
+		pgdb:    pgdb,
+		mgdb:    mgdb,
 		bstore:  bstore,
 		sessmng: sessmng,
 		modules: modules,
@@ -117,7 +125,8 @@ func (app *App) registerOnShutdown() {
 	app.closer.Add(app.app.Shutdown)
 	app.closer.Add(app.sessmng.Close)
 	app.closer.Add(app.bstore.Close)
-	app.closer.Add(app.db.Close)
+	app.closer.Add(app.mgdb.Close)
+	app.closer.Add(app.pgdb.Close)
 	app.closer.Add(app.logger.Sync)
 }
 

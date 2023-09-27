@@ -1,7 +1,7 @@
 package video
 
 import (
-	"github.com/protomem/gotube/internal/database"
+	"github.com/protomem/gotube/internal/database/postgres"
 	subserv "github.com/protomem/gotube/internal/module/subscription/service"
 	userserv "github.com/protomem/gotube/internal/module/user/service"
 	handlhttp "github.com/protomem/gotube/internal/module/video/handler/http"
@@ -24,7 +24,7 @@ type Module struct {
 
 func New(
 	logger logging.Logger,
-	db *database.DB,
+	db *postgres.DB,
 	userServ userserv.UserService,
 	subServ subserv.SubscriptionService,
 ) *Module {
