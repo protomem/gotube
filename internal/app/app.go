@@ -18,7 +18,7 @@ import (
 	"github.com/protomem/gotube/internal/storage"
 	"github.com/protomem/gotube/internal/storage/redis"
 	"github.com/protomem/gotube/internal/storage/s3"
-	"github.com/protomem/gotube/pkg/closer"
+	"github.com/protomem/gotube/pkg/closing"
 	"github.com/protomem/gotube/pkg/logging"
 	"github.com/protomem/gotube/pkg/logging/zap"
 )
@@ -37,7 +37,7 @@ type App struct {
 
 	app *echo.Echo
 
-	closer *closer.Closer
+	closer *closing.Closer
 }
 
 func New(conf config.Config) (*App, error) {
@@ -82,7 +82,7 @@ func New(conf config.Config) (*App, error) {
 	app.HideBanner = true
 	app.HidePort = true
 
-	closer := closer.New()
+	closer := closing.New()
 
 	return &App{
 		conf:    conf,
