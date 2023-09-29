@@ -11,7 +11,7 @@ postgres:
   connect: "postgres://admin:123456789@localhost:5432/gotubedb?sslmode=disable"
 
 mongo:
-  connect: "mongodb://admin:123456789@mongo:27017"
+  connect: "mongodb://admin:123456789@localhost:27017"
 
 s3:
   addr: "localhost:9000"
