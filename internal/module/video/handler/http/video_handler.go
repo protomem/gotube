@@ -85,7 +85,8 @@ func (h *VideoHandler) HandleGetAllVideos() echo.HandlerFunc {
 	}
 
 	type Response struct {
-		Videos []model.Video `json:"videos"`
+		TotalCount uint64        `json:"totalCount,omitempty"`
+		Videos     []model.Video `json:"videos"`
 	}
 
 	return func(c echo.Context) error {
@@ -121,7 +122,10 @@ func (h *VideoHandler) HandleGetAllVideos() echo.HandlerFunc {
 			Offset: req.Offset,
 		}
 
-		var videos []model.Video
+		var (
+			videos     []model.Video
+			totalCount uint64
+		)
 		if req.Query != "" {
 			videos, err = h.videoServ.SearchVideos(ctx, req.Query, opts)
 		} else if req.UserNickname != "" {
@@ -134,7 +138,7 @@ func (h *VideoHandler) HandleGetAllVideos() echo.HandlerFunc {
 			videos, err = h.videoServ.FindAllPublicNewVideosFromSubscriptions(ctx, authPayload.UserID, opts)
 		} else {
 			if req.SortBy == "new" {
-				videos, err = h.videoServ.FindAllPublicNewVideos(ctx, opts)
+				videos, totalCount, err = h.videoServ.FindAllPublicNewVideos(ctx, opts)
 			} else {
 				videos, err = h.videoServ.FindAllPublicPopularVideos(ctx, opts)
 			}
@@ -154,7 +158,7 @@ func (h *VideoHandler) HandleGetAllVideos() echo.HandlerFunc {
 			}
 		}
 
-		return c.JSON(http.StatusOK, Response{Videos: filteredVideos})
+		return c.JSON(http.StatusOK, Response{Videos: filteredVideos, TotalCount: totalCount})
 	}
 }
 

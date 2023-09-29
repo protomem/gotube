@@ -47,6 +47,10 @@ func (db *DB) QueryRow(ctx context.Context, query string, args ...any) pgx.Row {
 	return db.pool.QueryRow(ctx, query, args...)
 }
 
+func (db *DB) Begin(ctx context.Context) (pgx.Tx, error) {
+	return db.pool.Begin(ctx)
+}
+
 func (db *DB) Close(_ context.Context) error {
 	db.pool.Close()
 	return nil
