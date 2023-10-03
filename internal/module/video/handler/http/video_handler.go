@@ -140,7 +140,7 @@ func (h *VideoHandler) HandleGetAllVideos() echo.HandlerFunc {
 			if req.SortBy == "new" {
 				videos, totalCount, err = h.videoServ.FindAllPublicNewVideos(ctx, opts)
 			} else {
-				videos, err = h.videoServ.FindAllPublicPopularVideos(ctx, opts)
+				videos, totalCount, err = h.videoServ.FindAllPublicPopularVideos(ctx, opts)
 			}
 		}
 		if err != nil {

@@ -223,11 +223,24 @@ func (r *VideoRepository) FindAllVideosWherePublicAndSortByNew(
 func (r *VideoRepository) FindAllVideosWherePublicAndSortByPopular(
 	ctx context.Context,
 	options repository.FindAllVideosOptions,
-) ([]model.Video, error) {
+) ([]model.Video, uint64, error) {
 	const op = "VideoRepository.FindAllPublicPopularVideos"
 	var err error
 
-	query, args, err := r.builder.
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return []model.Video{}, 0, fmt.Errorf("%s: begin: %w", op, err)
+	}
+	defer func() {
+		if err != nil {
+			err = tx.Rollback(ctx)
+			if err != nil {
+				r.logger.Error("failed to cancel transaction", "error", err, "operation", op)
+			}
+		}
+	}()
+
+	selectQuery, selectArgs, err := r.builder.
 		Select("videos.*, users.*").
 		From("videos").
 		Where(squirrel.Eq{"videos.is_public": true}).
@@ -237,16 +250,16 @@ func (r *VideoRepository) FindAllVideosWherePublicAndSortByPopular(
 		Offset(options.Offset).
 		ToSql()
 	if err != nil {
-		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+		return []model.Video{}, 0, fmt.Errorf("%s: %w", op, err)
 	}
 
-	rows, err := r.db.Query(ctx, query, args...)
+	rows, err := tx.Query(ctx, selectQuery, selectArgs...)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return []model.Video{}, nil
+			return []model.Video{}, 0, nil
 		}
 
-		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+		return []model.Video{}, 0, fmt.Errorf("%s: %w", op, err)
 	}
 	defer rows.Close()
 
@@ -266,17 +279,37 @@ func (r *VideoRepository) FindAllVideosWherePublicAndSortByPopular(
 			&video.User.AvatarPath, &video.User.Description,
 		)
 		if err != nil {
-			return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+			return []model.Video{}, 0, fmt.Errorf("%s: %w", op, err)
 		}
 
 		videos = append(videos, video)
 	}
 
 	if len(videos) == 0 {
-		return []model.Video{}, nil
+		return []model.Video{}, 0, nil
 	}
 
-	return videos, nil
+	countQuery, countArgs, err := r.builder.
+		Select("COUNT(*)").
+		From("videos").
+		Where(squirrel.Eq{"videos.is_public": true}).
+		ToSql()
+	if err != nil {
+		return []model.Video{}, 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	var count uint64
+	err = tx.QueryRow(ctx, countQuery, countArgs...).Scan(&count)
+	if err != nil {
+		return []model.Video{}, 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		return []model.Video{}, 0, fmt.Errorf("%s: commit: %w", op, err)
+	}
+
+	return videos, count, nil
 }
 
 func (r *VideoRepository) FindAllVideosByUserIDsAndWherePublicAndSortByNew(
