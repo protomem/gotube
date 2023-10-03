@@ -135,7 +135,7 @@ func (h *VideoHandler) HandleGetAllVideos() echo.HandlerFunc {
 				return echo.NewHTTPError(http.StatusForbidden, "access denied")
 			}
 
-			videos, err = h.videoServ.FindAllPublicNewVideosFromSubscriptions(ctx, authPayload.UserID, opts)
+			videos, totalCount, err = h.videoServ.FindAllPublicNewVideosFromSubscriptions(ctx, authPayload.UserID, opts)
 		} else {
 			if req.SortBy == "new" {
 				videos, totalCount, err = h.videoServ.FindAllPublicNewVideos(ctx, opts)

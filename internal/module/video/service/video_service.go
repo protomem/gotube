@@ -32,7 +32,7 @@ type (
 		FindAllNewVideosByUserNickname(ctx context.Context, userNickname string) ([]model.Video, error)
 		FindAllPublicNewVideos(ctx context.Context, opts FindAllVideosOptions) ([]model.Video, uint64, error)
 		FindAllPublicPopularVideos(ctx context.Context, opts FindAllVideosOptions) ([]model.Video, uint64, error)
-		FindAllPublicNewVideosFromSubscriptions(ctx context.Context, userID uuid.UUID, opts FindAllVideosOptions) ([]model.Video, error)
+		FindAllPublicNewVideosFromSubscriptions(ctx context.Context, userID uuid.UUID, opts FindAllVideosOptions) ([]model.Video, uint64, error)
 		SearchVideos(ctx context.Context, query string, opts FindAllVideosOptions) ([]model.Video, error)
 		CreateVideo(ctx context.Context, dto CreateVideoDTO) (model.Video, error)
 	}
@@ -125,17 +125,17 @@ func (s *VideoServiceImpl) FindAllPublicNewVideosFromSubscriptions(
 	ctx context.Context,
 	userID uuid.UUID,
 	opts FindAllVideosOptions,
-) ([]model.Video, error) {
+) ([]model.Video, uint64, error) {
 	const op = "VideoService.FindAllPublicNewVideosFromSubscriptions"
 
 	user, err := s.userServ.FindOneUser(ctx, userID)
 	if err != nil {
-		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+		return []model.Video{}, 0, fmt.Errorf("%s: %w", op, err)
 	}
 
 	subs, err := s.subServ.FindAllSubscriptionsByFromUserNickname(ctx, user.Nickname)
 	if err != nil {
-		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+		return []model.Video{}, 0, fmt.Errorf("%s: %w", op, err)
 	}
 
 	userIDs := make([]uuid.UUID, 0, len(subs))
@@ -143,13 +143,13 @@ func (s *VideoServiceImpl) FindAllPublicNewVideosFromSubscriptions(
 		userIDs = append(userIDs, sub.ToUser.ID)
 	}
 
-	videos, err := s.videoRepo.
+	videos, count, err := s.videoRepo.
 		FindAllVideosByUserIDsAndWherePublicAndSortByNew(ctx, userIDs, repository.FindAllVideosOptions(opts))
 	if err != nil {
-		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+		return []model.Video{}, 0, fmt.Errorf("%s: %w", op, err)
 	}
 
-	return videos, nil
+	return videos, count, nil
 }
 
 func (s *VideoServiceImpl) SearchVideos(
