@@ -38,7 +38,7 @@ type (
 		FindAllVideosWherePublicAndSortByNew(ctx context.Context, opts FindAllVideosOptions) ([]model.Video, uint64, error)
 		FindAllVideosWherePublicAndSortByPopular(ctx context.Context, opts FindAllVideosOptions) ([]model.Video, uint64, error)
 		FindAllVideosByUserIDsAndWherePublicAndSortByNew(ctx context.Context, userIDs []uuid.UUID, opts FindAllVideosOptions) ([]model.Video, uint64, error)
-		FindAllVideosLikeByTitleAndWherePublicAndSortByNew(ctx context.Context, title string, opts FindAllVideosOptions) ([]model.Video, error)
+		FindAllVideosLikeByTitleAndWherePublicAndSortByNew(ctx context.Context, title string, opts FindAllVideosOptions) ([]model.Video, uint64, error)
 		CreateVideo(ctx context.Context, dto CreateVideoDTO) (uuid.UUID, error)
 		IncrementVideoView(ctx context.Context, id uuid.UUID) error
 	}

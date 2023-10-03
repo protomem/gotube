@@ -127,7 +127,7 @@ func (h *VideoHandler) HandleGetAllVideos() echo.HandlerFunc {
 			totalCount uint64
 		)
 		if req.Query != "" {
-			videos, err = h.videoServ.SearchVideos(ctx, req.Query, opts)
+			videos, totalCount, err = h.videoServ.SearchVideos(ctx, req.Query, opts)
 		} else if req.UserNickname != "" {
 			videos, err = h.videoServ.FindAllNewVideosByUserNickname(ctx, req.UserNickname)
 		} else if req.Subscriptions {
