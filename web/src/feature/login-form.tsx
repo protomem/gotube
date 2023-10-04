@@ -1,5 +1,10 @@
 import React from "react";
 import { Box, Button, FormControl, FormLabel, Input } from "@mui/joy";
+import { useAppDispatch } from "@/feature/store/hooks";
+import { useNavigate } from "react-router-dom";
+import { useMutation } from "@tanstack/react-query";
+import { authService } from "@/entities/auth.service";
+import { authActions } from "@/feature/store/auth/auth.slice";
 
 interface FormElements extends HTMLFormControlsCollection {
   email: HTMLInputElement;
@@ -11,8 +16,27 @@ interface LoginFormElements extends HTMLFormElement {
 }
 
 export default function LoginForm() {
+  const dispatch = useAppDispatch();
+  const nav = useNavigate();
+
+  const mutation = useMutation({
+    mutationFn: authService.login,
+    onSuccess: (data) => {
+      dispatch(authActions.setCredentials(data));
+
+      nav("/", { replace: true });
+    },
+  });
+
   const handleSubmit = (e: React.FormEvent<LoginFormElements>) => {
     e.preventDefault();
+
+    mutation.mutate({
+      email: e.currentTarget.elements.email.value,
+      password: e.currentTarget.elements.password.value,
+    });
+
+    e.currentTarget.reset();
   };
 
   return (
