@@ -148,14 +148,13 @@ func (h *AuthHandler) HandleLogout() echo.HandlerFunc {
 			requestid.LogKey, requestid.Extract(ctx),
 		)
 
-		sessionCookie, err := c.Cookie("session")
+		refreshToken, err := getSession(c)
 		if err != nil {
-			logger.Error("failed to get session cookie", "error", err)
+			logger.Error("failed to get session", "error", err)
 
 			return echo.ErrUnauthorized
 		}
 
-		refreshToken := sessionCookie.Value
 		err = h.authServ.Logout(ctx, refreshToken)
 		if err != nil {
 			logger.Error("failed to logout user", "error", err)
@@ -182,14 +181,12 @@ func (h *AuthHandler) HandleRefreshTokens() echo.HandlerFunc {
 			requestid.LogKey, requestid.Extract(ctx),
 		)
 
-		sessionCookie, err := c.Cookie("session")
+		refreshToken, err := getSession(c)
 		if err != nil {
-			logger.Error("failed to get session cookie", "error", err)
+			logger.Error("failed to get session", "error", err)
 
 			return echo.ErrUnauthorized
 		}
-
-		refreshToken := sessionCookie.Value
 
 		tokens, err := h.authServ.RefreshTokens(ctx, refreshToken)
 		if err != nil {
@@ -210,4 +207,18 @@ func (h *AuthHandler) HandleRefreshTokens() echo.HandlerFunc {
 			PairTokens: tokens,
 		})
 	}
+}
+
+func getSession(c echo.Context) (string, error) {
+	sessionToken := c.QueryParam("session")
+	if sessionToken != "" {
+		return sessionToken, nil
+	}
+
+	sessionCookie, err := c.Cookie("session")
+	if err != nil {
+		return "", err
+	}
+
+	return sessionCookie.Value, nil
 }
