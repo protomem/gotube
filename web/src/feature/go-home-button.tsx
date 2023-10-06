@@ -3,7 +3,13 @@ import { ArrowBackIos } from "@mui/icons-material";
 import { Button } from "@mui/joy";
 import { useNavigate } from "react-router-dom";
 
-export default function GoHomeButton() {
+export interface GoHomeButtonProps {
+  withArrow?: boolean;
+}
+
+export default function GoHomeButton({ withArrow }: GoHomeButtonProps) {
+  if (withArrow === undefined) withArrow = true;
+
   const nav = useNavigate();
 
   const handleClick = (e: React.MouseEvent) => {
@@ -13,7 +19,7 @@ export default function GoHomeButton() {
 
   return (
     <Button onClick={handleClick}>
-      <ArrowBackIos /> Go Home
+      {withArrow && <ArrowBackIos />} Go Home
     </Button>
   );
 }

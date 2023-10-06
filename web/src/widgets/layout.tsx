@@ -1,7 +1,7 @@
 import React from "react";
 import { Box } from "@mui/joy";
 
-interface LayoutProps {
+export interface LayoutProps {
   children: React.ReactNode[];
   withSideBar?: boolean;
 }

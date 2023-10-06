@@ -1,3 +1,4 @@
+import GoHomeButton from "@/feature/go-home-button";
 import { Box, Typography } from "@mui/joy";
 
 export default function NotFound() {
@@ -6,8 +7,10 @@ export default function NotFound() {
       style={{
         height: "100vh",
         display: "flex",
+        flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
+        gap: "18px",
       }}
     >
       <Box
@@ -27,6 +30,8 @@ export default function NotFound() {
           Not found
         </Typography>
       </Box>
+
+      <GoHomeButton withArrow={false} />
     </Box>
   );
 }
