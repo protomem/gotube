@@ -1,8 +1,13 @@
 import LoginButton from "@/feature/login-button";
+import LogoutButton from "@/feature/logout-button";
+import { selectIsLoggedIn } from "@/feature/store/auth/auth.selectors";
+import { useAppSelector } from "@/feature/store/hooks";
 import Title from "@/feature/title";
 import { Box } from "@mui/joy";
 
 export default function AppBar() {
+  const isLoggedIn = useAppSelector(selectIsLoggedIn);
+
   return (
     <Box
       style={{
@@ -17,7 +22,7 @@ export default function AppBar() {
     >
       <Title />
 
-      <LoginButton />
+      {isLoggedIn ? <LogoutButton /> : <LoginButton />}
     </Box>
   );
 }

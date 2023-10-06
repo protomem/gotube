@@ -24,6 +24,11 @@ export interface LoginResponse {
   user: User;
 }
 
+export interface LogoutRequest {
+  accessToken: string;
+  refreshToken: string;
+}
+
 export const authService = {
   async register(request: RegisterRequest) {
     const response = await apiClient.post<RegisterResponse>(
@@ -39,5 +44,13 @@ export const authService = {
       request,
     );
     return response.data;
+  },
+
+  async logout(request: LogoutRequest) {
+    await apiClient.delete(`/auth/logout?session=${request.refreshToken}`, {
+      headers: {
+        Authorization: `Bearer ${request.accessToken}`,
+      },
+    });
   },
 };

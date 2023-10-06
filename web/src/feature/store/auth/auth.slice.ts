@@ -9,9 +9,9 @@ export interface AuthState {
 }
 
 const initialState: AuthState = {
-  user: null,
-  accessToken: null,
-  refreshToken: null,
+  user: authRepo.getUser(),
+  accessToken: authRepo.getAccessToken(),
+  refreshToken: authRepo.getRefreshToken(),
 };
 
 const authSlice = createSlice({
