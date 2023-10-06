@@ -26,4 +26,16 @@ export const authRepo = {
   removeAccessToken() {
     localStorage.removeItem("auth_accessToken");
   },
+
+  setRefreshToken(refreshToken: string) {
+    localStorage.setItem("auth_refreshToken", refreshToken);
+  },
+
+  getRefreshToken() {
+    return localStorage.getItem("auth_refreshToken");
+  },
+
+  removeRefreshToken() {
+    localStorage.removeItem("auth_refreshToken");
+  },
 };
