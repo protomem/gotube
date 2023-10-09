@@ -35,7 +35,7 @@ export default function LogoutButton() {
   };
 
   return (
-    <Button onClick={handleClick}>
+    <Button onClick={handleClick} color="danger" variant="soft">
       <Typography>logout</Typography>
     </Button>
   );

@@ -5,7 +5,7 @@ import { Typography } from "@mui/joy";
 
 export default function Home() {
   return (
-    <Layout>
+    <Layout debug={true}>
       <AppBar />
 
       <SideBar />
