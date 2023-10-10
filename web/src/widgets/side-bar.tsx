@@ -1,7 +1,12 @@
-import { Box } from "@mui/joy";
-import NavMenu from "./nav-menu";
+import { Box, Divider } from "@mui/joy";
+import NavMenu from "@/feature/nav-menu";
+import { selectIsLoggedIn } from "@/feature/store/auth/auth.selectors";
+import { useAppSelector } from "@/feature/store/hooks";
+import SubscriptionsList from "@/feature/subscriptions-list";
 
 export default function SideBar() {
+  const isLoggedIn = useAppSelector(selectIsLoggedIn);
+
   return (
     <Box
       style={{
@@ -11,6 +16,10 @@ export default function SideBar() {
       }}
     >
       <NavMenu />
+
+      <Divider />
+
+      {isLoggedIn && <SubscriptionsList />}
     </Box>
   );
 }

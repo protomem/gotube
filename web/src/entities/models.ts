@@ -11,3 +11,8 @@ export interface User extends BaseModel {
   avatarPath: string;
   description: string;
 }
+
+export interface Subscription extends BaseModel {
+  fromUser: User;
+  toUser: User;
+}
