@@ -1,15 +1,13 @@
 import React from "react";
-import { Box } from "@mui/joy";
+import { Box, Divider } from "@mui/joy";
 
 export interface LayoutProps {
   children: React.ReactNode[];
   withSideBar?: boolean;
-  debug?: boolean;
 }
 
-export default function Layout({ children, withSideBar, debug }: LayoutProps) {
+export default function Layout({ children, withSideBar }: LayoutProps) {
   if (withSideBar === undefined) withSideBar = true;
-  if (debug === undefined) debug = false;
 
   return (
     <Box
@@ -27,7 +25,6 @@ export default function Layout({ children, withSideBar, debug }: LayoutProps) {
           style={{
             width: "100%",
             height: "7%",
-            borderBottom: debug ? "1px solid gray" : "none",
             display: "flex",
             flexDirection: "row",
             alignItems: "center",
@@ -37,6 +34,8 @@ export default function Layout({ children, withSideBar, debug }: LayoutProps) {
           {children[0]}
         </Box>
       )}
+
+      <Divider />
 
       {children.length > 1 && (
         <Box
@@ -58,11 +57,12 @@ export default function Layout({ children, withSideBar, debug }: LayoutProps) {
                   width: "20%",
                   height: "100%",
                   overflowY: "auto",
-                  borderRight: debug ? "1px solid gray" : "none",
                 }}
               >
                 {children[1]}
               </Box>
+
+              <Divider orientation="vertical" />
 
               <Box
                 style={{
