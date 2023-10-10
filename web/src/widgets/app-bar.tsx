@@ -1,12 +1,18 @@
 import LoginButton from "@/feature/login-button";
 import LogoutButton from "@/feature/logout-button";
-import { selectIsLoggedIn } from "@/feature/store/auth/auth.selectors";
+import {
+  selectIsLoggedIn,
+  selectUser,
+} from "@/feature/store/auth/auth.selectors";
 import { useAppSelector } from "@/feature/store/hooks";
 import Title from "@/feature/title";
-import { Box } from "@mui/joy";
+import { ProfileMenu } from "@/shared/profile-menu";
+import { Add } from "@mui/icons-material";
+import { Box, IconButton } from "@mui/joy";
 
 export default function AppBar() {
   const isLoggedIn = useAppSelector(selectIsLoggedIn);
+  const user = useAppSelector(selectUser);
 
   return (
     <Box
@@ -22,7 +28,19 @@ export default function AppBar() {
     >
       <Title />
 
-      {isLoggedIn ? <LogoutButton /> : <LoginButton />}
+      {isLoggedIn && user !== null ? (
+        <ProfileMenu
+          leftEdge={
+            <IconButton>
+              <Add />
+            </IconButton>
+          }
+          user={user}
+          rightEdge={<LogoutButton />}
+        />
+      ) : (
+        <LoginButton />
+      )}
     </Box>
   );
 }
