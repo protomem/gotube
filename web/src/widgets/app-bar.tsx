@@ -1,5 +1,6 @@
 import LoginButton from "@/feature/login-button";
 import LogoutButton from "@/feature/logout-button";
+import { Searcher } from "@/feature/searcher";
 import {
   selectIsLoggedIn,
   selectUser,
@@ -27,6 +28,8 @@ export default function AppBar() {
       }}
     >
       <Title />
+
+      <Searcher />
 
       {isLoggedIn && user !== null ? (
         <ProfileMenu
