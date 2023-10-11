@@ -9,8 +9,11 @@ import { Subscription } from "@/entities/models";
 import { useQuery } from "@tanstack/react-query";
 import { subscriptionService } from "@/entities/subscription.service";
 import Avatar from "@/shared/avatar";
+import { useNavigate } from "react-router-dom";
 
 export default function SubscriptionsList() {
+  const nav = useNavigate();
+
   const user = useAppSelector(selectUser);
   const accessToken = useAppSelector(selectAccessToken);
 
@@ -34,7 +37,12 @@ export default function SubscriptionsList() {
       <ListSubheader>Subscriptions</ListSubheader>
 
       {subs.map((s) => (
-        <ListItemButton key={s.id}>
+        <ListItemButton
+          key={s.id}
+          onClick={() => {
+            nav(`/profile/${s.toUser.nickname}`, { replace: true });
+          }}
+        >
           <Avatar user={s.toUser} />
           <Typography style={{ marginLeft: 10 }}>
             {s.toUser.nickname}
