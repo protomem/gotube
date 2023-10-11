@@ -18,11 +18,6 @@ export default function LogoutButton() {
 
   const mutation = useMutation({
     mutationFn: authService.logout,
-    onSuccess: () => {
-      dispatch(authActions.clearCredentials());
-
-      nav("/", { replace: true });
-    },
   });
 
   const handleClick = (e: React.MouseEvent) => {
@@ -32,6 +27,9 @@ export default function LogoutButton() {
       accessToken: accessToken || "",
       refreshToken: refreshToken || "",
     });
+
+    dispatch(authActions.clearCredentials());
+    nav("/", { replace: true });
   };
 
   return (
