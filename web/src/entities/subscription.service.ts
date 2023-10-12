@@ -19,6 +19,16 @@ export interface GetStatisticsResponse {
   subscribers: number;
 }
 
+export interface SubscribeRequest {
+  toUserNickname: string;
+  accessToken: string;
+}
+
+export interface UnsubscribeRequest {
+  toUserNickname: string;
+  accessToken: string;
+}
+
 export const subscriptionService = {
   async getSubscriptions(request: GetSubscriptionsRequest) {
     const response = await apiClient.get<GetSubscriptionsResponse>(
@@ -37,5 +47,21 @@ export const subscriptionService = {
       `/users/${request.userNickname}/subs/stats`,
     );
     return response.data;
+  },
+
+  async subscribe(request: SubscribeRequest) {
+    await apiClient.post(`/users/${request.toUserNickname}/subs/`, null, {
+      headers: {
+        Authorization: "Bearer " + request.accessToken,
+      },
+    });
+  },
+
+  async unsubscribe(request: UnsubscribeRequest) {
+    await apiClient.delete(`/users/${request.toUserNickname}/subs/`, {
+      headers: {
+        Authorization: "Bearer " + request.accessToken,
+      },
+    });
   },
 };

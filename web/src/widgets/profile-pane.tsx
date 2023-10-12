@@ -2,17 +2,30 @@ import { useState } from "react";
 import { User } from "@/entities/models";
 import Avatar from "@/shared/avatar";
 import { Box, Button, Typography } from "@mui/joy";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { subscriptionService } from "@/entities/subscription.service";
 import { useAppSelector } from "@/feature/store/hooks";
-import { selectIsLoggedIn } from "@/feature/store/auth/auth.selectors";
+import {
+  selectAccessToken,
+  selectIsLoggedIn,
+  selectUser,
+} from "@/feature/store/auth/auth.selectors";
+import { selectSubscriptions } from "@/feature/store/subscriptions/subscriptions.selectors";
+import { queryClient } from "@/feature/query/query";
 
 export interface ProfilePaneProps {
   user: User;
 }
 
 export default function ProfilePane({ user }: ProfilePaneProps) {
+  const currentUser = useAppSelector(selectUser);
+  const accessToken = useAppSelector(selectAccessToken);
   const isLoggedIn = useAppSelector(selectIsLoggedIn);
+  const subscriptions = useAppSelector(selectSubscriptions);
+
+  const [isSubscribed, setIsSubscribed] = useState(
+    !!subscriptions.find((s) => s.toUser.id === user.id),
+  );
 
   const [subsStat, setSubsStat] = useState({
     countSubscriptions: 0,
@@ -33,6 +46,42 @@ export default function ProfilePane({ user }: ProfilePaneProps) {
     },
   });
 
+  const subscribe = useMutation({
+    mutationFn: subscriptionService.subscribe,
+    onSuccess: () => {
+      setIsSubscribed(true);
+
+      queryClient.invalidateQueries({
+        queryKey: ["subscriptions", currentUser?.nickname],
+      });
+    },
+  });
+
+  const unsubscribe = useMutation({
+    mutationFn: subscriptionService.unsubscribe,
+    onSuccess: () => {
+      setIsSubscribed(false);
+
+      queryClient.invalidateQueries({
+        queryKey: ["subscriptions", currentUser?.nickname],
+      });
+    },
+  });
+
+  const handleSubscribe = async () => {
+    subscribe.mutate({
+      toUserNickname: user.nickname,
+      accessToken: accessToken || "",
+    });
+  };
+
+  const handleUnsubscribe = async () => {
+    unsubscribe.mutate({
+      toUserNickname: user.nickname,
+      accessToken: accessToken || "",
+    });
+  };
+
   return (
     <Box
       style={{
@@ -51,7 +100,7 @@ export default function ProfilePane({ user }: ProfilePaneProps) {
       >
         <Box
           style={{
-            flex: 4,
+            flex: 3,
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
@@ -59,11 +108,27 @@ export default function ProfilePane({ user }: ProfilePaneProps) {
             gap: 10,
           }}
         >
-          {isLoggedIn && (
-            <Button size="sm" style={{ width: "20%" }}>
-              subscribe
-            </Button>
-          )}
+          {isLoggedIn &&
+            currentUser?.id != user.id &&
+            (isSubscribed ? (
+              <Button
+                onClick={handleUnsubscribe}
+                variant="outlined"
+                size="sm"
+                style={{ width: "25%" }}
+              >
+                unsubscribe
+              </Button>
+            ) : (
+              <Button
+                onClick={handleSubscribe}
+                variant="solid"
+                size="sm"
+                style={{ width: "25%" }}
+              >
+                subscribe
+              </Button>
+            ))}
         </Box>
 
         <Box
