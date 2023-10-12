@@ -149,3 +149,49 @@ func (h *SubscriptionHandler) HandleUnsubscribe() echo.HandlerFunc {
 		return c.NoContent(http.StatusNoContent)
 	}
 }
+
+func (h *SubscriptionHandler) HandleStatistics() echo.HandlerFunc {
+	type Request struct {
+		UserNickname string `param:"nickname"`
+	}
+
+	type Response struct {
+		CountSubscriptions uint64 `json:"subscriptions"`
+		CountSubscribers   uint64 `json:"subscribers"`
+	}
+
+	return func(c echo.Context) error {
+		const op = "SubscriptionHandler.HandleCountStatistics"
+		var err error
+
+		ctx := c.Request().Context()
+		logger := h.logger.With(
+			"operation", op,
+			requestid.LogKey, requestid.Extract(ctx),
+		)
+
+		var req Request
+		err = c.Bind(&req)
+		if err != nil {
+			logger.Error("failed to bind request", "error", err)
+
+			return echo.ErrBadRequest
+		}
+
+		statsDTO, err := h.subscriptionServ.Statistics(ctx, req.UserNickname)
+		if err != nil {
+			logger.Error("failed to count statistics", "error", err)
+
+			if errors.Is(err, usermodel.ErrUserNotFound) {
+				return echo.NewHTTPError(http.StatusNotFound, usermodel.ErrUserNotFound.Error())
+			}
+
+			return echo.ErrInternalServerError
+		}
+
+		return c.JSON(http.StatusOK, Response{
+			CountSubscriptions: statsDTO.CountSubscriptions,
+			CountSubscribers:   statsDTO.CountSubscribers,
+		})
+	}
+}

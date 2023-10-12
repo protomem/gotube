@@ -23,12 +23,19 @@ type UnsubscribeDTO struct {
 	ToUserNickname string
 }
 
+type StatisticsDTO struct {
+	CountSubscriptions uint64
+	CountSubscribers   uint64
+}
+
 type (
 	SubscriptionService interface {
 		FindAllSubscriptionsByFromUserNickname(ctx context.Context, fromUserNickname string) ([]model.Subscription, error)
 
 		Subscribe(ctx context.Context, dto SubscribeDTO) error
 		Unsubscribe(ctx context.Context, dto UnsubscribeDTO) error
+
+		Statistics(ctx context.Context, userNickname string) (StatisticsDTO, error)
 	}
 
 	SubscriptionServiceImpl struct {
@@ -106,4 +113,29 @@ func (s *SubscriptionServiceImpl) Unsubscribe(ctx context.Context, dto Unsubscri
 	}
 
 	return nil
+}
+
+func (s *SubscriptionServiceImpl) Statistics(ctx context.Context, userNickname string) (StatisticsDTO, error) {
+	const op = "SubscriptionService.Statistics"
+	var err error
+
+	user, err := s.userServ.FindOneUserByNickname(ctx, userNickname)
+	if err != nil {
+		return StatisticsDTO{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	countSubscriptions, err := s.subscriptionRepo.CountSubscriptionsByFromUserID(ctx, user.ID)
+	if err != nil {
+		return StatisticsDTO{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	countSubscribers, err := s.subscriptionRepo.CountSubscriptionsByToUserID(ctx, user.ID)
+	if err != nil {
+		return StatisticsDTO{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return StatisticsDTO{
+		CountSubscriptions: countSubscriptions,
+		CountSubscribers:   countSubscribers,
+	}, nil
 }

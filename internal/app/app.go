@@ -163,11 +163,11 @@ func (app *App) setupRoutes() {
 
 			subscriptions := users.Group("/:nickname/subs")
 			{
-				subscriptions.Use(app.modules.Auth.Authorizer())
+				subscriptions.GET("/", app.modules.Subscription.HandleGetAllSubscriptions(), app.modules.Auth.Authorizer())
+				subscriptions.POST("/", app.modules.Subscription.HandleSubscribe(), app.modules.Auth.Authorizer())
+				subscriptions.DELETE("/", app.modules.Subscription.HandleUnsubscribe(), app.modules.Auth.Authorizer())
 
-				subscriptions.GET("/", app.modules.Subscription.HandleGetAllSubscriptions())
-				subscriptions.POST("/", app.modules.Subscription.HandleSubscribe())
-				subscriptions.DELETE("/", app.modules.Subscription.HandleUnsubscribe())
+				subscriptions.GET("/stats", app.modules.Subscription.HandleStatistics())
 			}
 		}
 

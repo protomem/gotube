@@ -147,3 +147,57 @@ func (r *SubscriptionRepository) DeleteSubscription(
 
 	return nil
 }
+
+func (r *SubscriptionRepository) CountSubscriptionsByFromUserID(
+	ctx context.Context,
+	fromUserID uuid.UUID,
+) (uint64, error) {
+	const op = "SubscriptionRepository.CountSubscriptionsByFromUserID"
+	var err error
+
+	query, args, err := r.builder.
+		Select("count(*)").
+		From("subscriptions").
+		Where(squirrel.Eq{
+			"from_user_id": fromUserID,
+		}).
+		ToSql()
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	var count uint64
+	err = r.db.QueryRow(ctx, query, args...).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return count, nil
+}
+
+func (r *SubscriptionRepository) CountSubscriptionsByToUserID(
+	ctx context.Context,
+	toUserID uuid.UUID,
+) (uint64, error) {
+	const op = "SubscriptionRepository.CountSubscriptionsByToUserID"
+	var err error
+
+	query, args, err := r.builder.
+		Select("count(*)").
+		From("subscriptions").
+		Where(squirrel.Eq{
+			"to_user_id": toUserID,
+		}).
+		ToSql()
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	var count uint64
+	err = r.db.QueryRow(ctx, query, args...).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return count, nil
+}

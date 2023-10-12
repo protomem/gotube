@@ -22,5 +22,7 @@ type (
 		FindAllSubscriptionsByFromUserID(ctx context.Context, fromUserID uuid.UUID) ([]model.Subscription, error)
 		CreateSubscription(ctx context.Context, dto CreateSubscriptionDTO) (uuid.UUID, error)
 		DeleteSubscription(ctx context.Context, dto DeleteSubscriptionDTO) error
+		CountSubscriptionsByFromUserID(ctx context.Context, fromUserID uuid.UUID) (uint64, error)
+		CountSubscriptionsByToUserID(ctx context.Context, toUserID uuid.UUID) (uint64, error)
 	}
 )
