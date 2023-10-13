@@ -1,23 +1,33 @@
 import { selectIsLoggedIn } from "@/feature/store/auth/auth.selectors";
-import { useAppDispatch, useAppSelector } from "@/feature/store/hooks";
-import { selectSelectedItem } from "@/feature/store/nav/nav.selectors";
-import { NavItem, navActions } from "@/feature/store/nav/nav.slice";
 import { List, ListItemButton, Typography } from "@mui/joy";
+import { useAppSelector } from "@/feature/store/hooks";
+import { useNavigate } from "react-router-dom";
 
-export default function NavMenu() {
-  const dispatch = useAppDispatch();
+export enum NavItem {
+  New = "New",
+  Popular = "Popular",
+  Subscriptions = "Subscriptions",
+}
+
+export interface NavMenuProps {
+  selectedItem?: NavItem;
+}
+
+export default function NavMenu({ selectedItem }: NavMenuProps) {
+  const nav = useNavigate();
 
   const isLoggedIn = useAppSelector(selectIsLoggedIn);
-  const selectedItem = useAppSelector(selectSelectedItem);
 
   const items = [
     {
       label: NavItem.New,
-      onClick: () => dispatch(navActions.setSelectedItem(NavItem.New)),
+      onClick: () =>
+        nav(`/?videos=${NavItem.New.toLowerCase()}`, { replace: true }),
     },
     {
       label: NavItem.Popular,
-      onClick: () => dispatch(navActions.setSelectedItem(NavItem.Popular)),
+      onClick: () =>
+        nav(`/?videos=${NavItem.Popular.toLowerCase()}`, { replace: true }),
     },
   ];
 
@@ -25,7 +35,9 @@ export default function NavMenu() {
     items.push({
       label: NavItem.Subscriptions,
       onClick: () =>
-        dispatch(navActions.setSelectedItem(NavItem.Subscriptions)),
+        nav(`/?videos=${NavItem.Subscriptions.toLowerCase()}`, {
+          replace: true,
+        }),
     });
 
   return (
@@ -33,8 +45,8 @@ export default function NavMenu() {
       {items.map((item) => (
         <ListItemButton
           key={item.label}
+          selected={selectedItem !== undefined && item.label === selectedItem}
           onClick={item.onClick}
-          selected={item.label === selectedItem}
         >
           <Typography level="title-lg" fontSize="1em">
             {item.label}
