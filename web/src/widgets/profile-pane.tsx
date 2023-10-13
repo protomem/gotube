@@ -54,6 +54,9 @@ export default function ProfilePane({ user }: ProfilePaneProps) {
       queryClient.invalidateQueries({
         queryKey: ["subscriptions", currentUser?.nickname],
       });
+      queryClient.invalidateQueries({
+        queryKey: ["subscriptions", "stats", user.nickname],
+      });
     },
   });
 
@@ -64,6 +67,9 @@ export default function ProfilePane({ user }: ProfilePaneProps) {
 
       queryClient.invalidateQueries({
         queryKey: ["subscriptions", currentUser?.nickname],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["subscriptions", "stats", user.nickname],
       });
     },
   });
