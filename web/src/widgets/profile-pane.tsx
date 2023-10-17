@@ -123,7 +123,7 @@ export default function ProfilePane({ user }: ProfilePaneProps) {
                 size="sm"
                 style={{ width: "25%" }}
               >
-                unsubscribe
+                <Typography>unsubscribe</Typography>
               </Button>
             ) : (
               <Button
@@ -132,7 +132,7 @@ export default function ProfilePane({ user }: ProfilePaneProps) {
                 size="sm"
                 style={{ width: "25%" }}
               >
-                subscribe
+                <Typography>subscribe</Typography>
               </Button>
             ))}
         </Box>
