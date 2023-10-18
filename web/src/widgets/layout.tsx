@@ -71,6 +71,7 @@ export default function Layout({ children, withSideBar }: LayoutProps) {
                   display: "flex",
                   flexDirection: "column",
                   overflowY: "auto",
+                  overflowX: "hidden",
                 }}
               >
                 {children.length > 2 &&

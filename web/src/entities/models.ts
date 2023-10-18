@@ -16,3 +16,13 @@ export interface Subscription extends BaseModel {
   fromUser: User;
   toUser: User;
 }
+
+export interface Video extends BaseModel {
+  title: string;
+  description: string;
+  thumbnailPath: string;
+  videoPath: string;
+  isPublic: boolean;
+  views: number;
+  user: User;
+}
