@@ -5,12 +5,13 @@ import AppBar from "@/widgets/app-bar";
 import Layout from "@/widgets/layout";
 import SideBar from "@/widgets/side-bar";
 import { useQuery } from "@tanstack/react-query";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import ProfilePane from "@/widgets/profile-pane";
 import { Box, Divider } from "@mui/joy";
 import VideoGrid from "@/shared/video-grid";
 
 export function Profile() {
+  const nav = useNavigate();
   const { userNickname } = useParams();
 
   const [user, setUser] = useState<User | null>(null);
@@ -19,6 +20,10 @@ export function Profile() {
     queryFn: async () => userService.getUser({ nickname: userNickname || "" }),
     onSuccess: (data) => {
       setUser(data.user);
+    },
+    onError: (error) => {
+      console.error(error);
+      nav("/not-found", { replace: true });
     },
     enabled: userNickname !== undefined,
   });
@@ -105,7 +110,7 @@ export function Profile() {
         id: "4",
         createdAt: new Date(),
         updatedAt: new Date(),
-        nickname: "user4",
+        nickname: "user4_ddddd_daaaaaaaaaaaa",
         email: "0pEeH@example.com",
         isVerified: true,
         avatarPath: "https://example.com/user4.jpg",

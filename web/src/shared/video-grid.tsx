@@ -8,9 +8,9 @@ export interface VideoGridProps {
 
 export default function VideoGrid({ videos }: VideoGridProps) {
   return (
-    <Grid container spacing={5}>
+    <Grid container spacing={3} xs={12}>
       {videos.map((video) => (
-        <Grid>
+        <Grid sm={4} md={3} key={video.id}>
           <VideoCard key={video.id} video={video} />
         </Grid>
       ))}

@@ -9,7 +9,7 @@ import {
   Link,
   Typography,
 } from "@mui/joy";
-import { Link as RouterLink } from "react-router-dom";
+import { Link as RouterLink, useNavigate } from "react-router-dom";
 import Avatar from "@/shared/avatar";
 
 export interface VideoCardProps {
@@ -17,15 +17,19 @@ export interface VideoCardProps {
 }
 
 export default function VideoCard({ video }: VideoCardProps) {
+  const nav = useNavigate();
+
   return (
-    <Card variant={"outlined"} style={{ width: "260px" }}>
+    <Card variant={"outlined"} style={{ minWidth: "220px", maxWidth: "340px" }}>
       <CardOverflow>
         <AspectRatio ratio={2}>
-          <img
-            src={video.thumbnailPath}
-            alt={video.title}
-            style={{ objectFit: "cover" }}
-          />
+          <Button component={RouterLink} to={`/video/${video.id}`}>
+            <img
+              src={video.thumbnailPath}
+              alt={video.title}
+              style={{ objectFit: "cover" }}
+            />
+          </Button>
         </AspectRatio>
       </CardOverflow>
 
@@ -60,12 +64,17 @@ export default function VideoCard({ video }: VideoCardProps) {
               alignItems: "center",
               gap: 6,
             }}
+            onClick={() => {
+              nav(`/profile/${video.user.nickname}`);
+            }}
           >
             <Avatar user={video.user} size={"sm"} />
             <Typography
+              width={"30px"}
               level={"body-xs"}
               fontWeight={"md"}
               textColor={"text.secondary"}
+              noWrap
             >
               {video.user.nickname}
             </Typography>
