@@ -8,7 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 import ProfilePane from "@/widgets/profile-pane";
 import { Box, Divider } from "@mui/joy";
-import VideoGrid from "@/shared/video-grid";
+import VideoGrid from "@/feature/video-grid";
 
 export function Profile() {
   const nav = useNavigate();

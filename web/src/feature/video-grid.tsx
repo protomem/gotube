@@ -1,6 +1,6 @@
 import { Video } from "@/entities/models";
 import { Grid } from "@mui/joy";
-import VideoCard from "./video-card";
+import VideoCard from "@/feature/video-card";
 
 export interface VideoGridProps {
   videos: Video[];
