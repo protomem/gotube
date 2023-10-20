@@ -9,6 +9,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import ProfilePane from "@/widgets/profile-pane";
 import { Box, Divider } from "@mui/joy";
 import VideoGrid from "@/feature/video-grid";
+import Paginator from "@/shared/paginator";
 
 export function Profile() {
   const nav = useNavigate();
@@ -118,6 +119,11 @@ export function Profile() {
       },
     },
   ];
+  videos.push(...videos);
+  videos.push(...videos);
+  videos.push(...videos);
+
+  const [page, setPage] = useState(1);
 
   return (
     <Layout>
@@ -126,8 +132,15 @@ export function Profile() {
       <SideBar />
 
       {user !== null && (
-        <>
-          <Box style={{ padding: 20 }}>
+        <Box
+          style={{
+            height: "90vh",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "start",
+          }}
+        >
+          <Box style={{ flex: 5, padding: 20 }}>
             <ProfilePane user={user} />
           </Box>
 
@@ -141,18 +154,23 @@ export function Profile() {
 
           <Box
             style={{
+              flex: 24,
               display: "flex",
               flexDirection: "column",
-              justifyContent: "center",
               alignItems: "center",
               marginTop: 30,
               marginLeft: 20,
               marginRight: 20,
+              overflowY: "auto",
             }}
           >
             <VideoGrid videos={videos} />
           </Box>
-        </>
+
+          <Box style={{ flex: 1, alignSelf: "center", marginTop: 10 }}>
+            <Paginator page={page} onChangePage={setPage} maxPage={10} />
+          </Box>
+        </Box>
       )}
     </Layout>
   );
