@@ -1,6 +1,0 @@
-BEGIN;
-
-DROP TABLE IF EXISTS video_ratings;
-DROP TABLE IF EXISTS videos;
-
-COMMIT;
