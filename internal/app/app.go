@@ -34,7 +34,7 @@ func New(conf config.Config) (*App, error) {
 
 	err = app.setup(conf)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return app, nil
@@ -130,5 +130,4 @@ func wait() <-chan os.Signal {
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	return ch
-
 }
