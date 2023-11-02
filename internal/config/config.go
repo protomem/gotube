@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"os"
 )
 
@@ -13,9 +14,14 @@ type Config struct {
 	Log struct {
 		Level string
 	}
+
+	Auth struct {
+		Secret string
+	}
 }
 
 func New() (Config, error) {
+	const op = "config.New"
 	var (
 		conf Config
 		ok   bool
@@ -32,5 +38,14 @@ func New() (Config, error) {
 		errs = errors.Join(errs, errors.New("LOG__LEVEL is not set"))
 	}
 
-	return conf, errs
+	conf.Auth.Secret, ok = os.LookupEnv("AUTH__SECRET")
+	if !ok {
+		errs = errors.Join(errs, errors.New("AUTH__SECRET is not set"))
+	}
+
+	if errs != nil {
+		return Config{}, fmt.Errorf("%s: %w", op, errs)
+	}
+
+	return conf, nil
 }
