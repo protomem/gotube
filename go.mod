@@ -5,6 +5,7 @@ go 1.21.3
 require (
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/google/uuid v1.4.0
+	github.com/gorilla/mux v1.8.0
 	github.com/jackc/pgx/v5 v5.4.3
 	github.com/minio/minio-go/v7 v7.0.63
 	github.com/redis/go-redis/v9 v9.3.0

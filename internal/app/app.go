@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"net/http"
@@ -10,17 +11,59 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gorilla/mux"
+	"github.com/protomem/gotube/internal/bootstrap"
 	"github.com/protomem/gotube/internal/config"
+	httphandl "github.com/protomem/gotube/internal/handler/http"
+	"github.com/protomem/gotube/internal/repository"
+	postgresrepo "github.com/protomem/gotube/internal/repository/postgres"
+	"github.com/protomem/gotube/internal/service"
 	"github.com/protomem/gotube/pkg/closure"
 	"github.com/protomem/gotube/pkg/logging"
 	"github.com/protomem/gotube/pkg/logging/stdlog"
 )
 
+type repositories struct {
+	repository.User
+}
+
+func newRepositories(pgdb *sql.DB) *repositories {
+	return &repositories{
+		User: postgresrepo.NewUserRepository(pgdb),
+	}
+}
+
+type services struct {
+	service.User
+}
+
+func newServices(repos *repositories) *services {
+	return &services{
+		User: service.NewUser(repos.User),
+	}
+}
+
+type handlers struct {
+	*httphandl.UserHandler
+}
+
+func newHandlers(services *services) *handlers {
+	return &handlers{
+		UserHandler: httphandl.NewUserHandler(services.User),
+	}
+}
+
 type App struct {
 	conf   config.Config
 	logger logging.Logger
 
-	router *http.ServeMux
+	pgdb *sql.DB
+
+	repos  *repositories
+	servs  *services
+	handls *handlers
+
+	router *mux.Router
 	server *http.Server
 
 	closer *closure.Closer
@@ -68,6 +111,7 @@ func (app *App) Run() error {
 func (app *App) setup(conf config.Config) error {
 	const op = "setup"
 	var err error
+	ctx := context.Background()
 
 	app.conf = conf
 
@@ -76,7 +120,18 @@ func (app *App) setup(conf config.Config) error {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	app.router = http.NewServeMux()
+	app.pgdb, err = bootstrap.Postgres(ctx, bootstrap.PostgresOptions{
+		Connect: conf.Postgres.Connect,
+	})
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	app.repos = newRepositories(app.pgdb)
+	app.servs = newServices(app.repos)
+	app.handls = newHandlers(app.servs)
+
+	app.router = mux.NewRouter()
 
 	app.server = &http.Server{
 		Addr:    conf.HTTP.Addr,
@@ -90,14 +145,18 @@ func (app *App) setup(conf config.Config) error {
 
 func (app *App) registerOnShutdown() {
 	app.closer.Add(app.server.Shutdown)
+	app.closer.Add(func(_ context.Context) error {
+		return app.pgdb.Close()
+	})
 	app.closer.Add(app.logger.Sync)
 }
 
 func (app *App) setupRoutes() {
 
-	app.router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "GoTube v2.0")
-	})
+	app.router.HandleFunc("/api/v1/users/{nickname}", app.handls.UserHandler.Get()).Methods(http.MethodGet)
+	app.router.HandleFunc("/api/v1/users", app.handls.UserHandler.Create()).Methods(http.MethodPost)
+	app.router.HandleFunc("/api/v1/users/{nickname}", app.handls.UserHandler.Update()).Methods(http.MethodPatch)
+	app.router.HandleFunc("/api/v1/users/{nickname}", app.handls.UserHandler.Delete()).Methods(http.MethodDelete)
 
 }
 
