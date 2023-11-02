@@ -1,0 +1,72 @@
+version: "3.9"
+
+# TODO: Add lobby
+
+services:
+  web:
+    build:
+      context: ./../web/
+      dockerfile: ./Dockerfile
+    restart: unless-stopped
+    ports:
+      - 80:3000
+    env_file:
+      - ../configs/web.env
+
+  app:
+    build:
+      context: ./../
+      dockerfile: ./build/Dockerfile
+    restart: unless-stopped
+    ports:
+      - 8080:8080
+    env_file:
+      - ../configs/app.env
+    depends_on:
+      - postgres
+      - mongo
+      - s3
+      - redis
+
+  postgres:
+    image: postgres:alpine
+    restart: unless-stopped
+    ports:
+      - 5432:5432
+    env_file:
+      - ../configs/postgres.env
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+  mongo:
+    image: mongo:4.4
+    restart: unless-stopped
+    ports:
+      - 27017:27017
+    env_file:
+      - ../configs/mongo.env
+    volumes:
+      - mg_data:/data
+
+  s3:
+    image: quay.io/minio/minio:RELEASE.2023-08-31T15-31-16Z
+    command: server --console-address :9001 /data
+    restart: unless-stopped
+    ports:
+      - 9000:9000
+      - 9001:9001
+    env_file:
+      - ../configs/s3.env
+    volumes:
+      - obj_data:/data
+
+  redis:
+    image: redis:alpine
+    restart: unless-stopped
+    ports:
+      - 6379:6379
+
+volumes:
+  pg_data:
+  mg_data:
+  obj_data:
