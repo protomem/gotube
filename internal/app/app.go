@@ -27,9 +27,9 @@ type repositories struct {
 	repository.User
 }
 
-func newRepositories(pgdb *sql.DB) *repositories {
+func newRepositories(logger logging.Logger, pgdb *sql.DB) *repositories {
 	return &repositories{
-		User: postgresrepo.NewUserRepository(pgdb),
+		User: postgresrepo.NewUserRepository(logger, pgdb),
 	}
 }
 
@@ -127,7 +127,7 @@ func (app *App) setup(conf config.Config) error {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	app.repos = newRepositories(app.pgdb)
+	app.repos = newRepositories(app.logger, app.pgdb)
 	app.servs = newServices(app.repos)
 	app.handls = newHandlers(app.servs)
 

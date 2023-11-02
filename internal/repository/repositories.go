@@ -28,7 +28,7 @@ type (
 		GetByNickname(ctx context.Context, nickname string) (model.User, error)
 		GetByEmail(ctx context.Context, email string) (model.User, error)
 
-		Create(ctx context.Context, dto CreateUserDTO) error
+		Create(ctx context.Context, dto CreateUserDTO) (uuid.UUID, error)
 
 		UpdateByNickname(ctx context.Context, nickname string, dto UpdateUserDTO) error
 
