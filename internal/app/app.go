@@ -47,9 +47,9 @@ type handlers struct {
 	*httphandl.UserHandler
 }
 
-func newHandlers(services *services) *handlers {
+func newHandlers(logger logging.Logger, services *services) *handlers {
 	return &handlers{
-		UserHandler: httphandl.NewUserHandler(services.User),
+		UserHandler: httphandl.NewUserHandler(logger, services.User),
 	}
 }
 
@@ -129,7 +129,7 @@ func (app *App) setup(conf config.Config) error {
 
 	app.repos = newRepositories(app.logger, app.pgdb)
 	app.servs = newServices(app.repos)
-	app.handls = newHandlers(app.servs)
+	app.handls = newHandlers(app.logger, app.servs)
 
 	app.router = mux.NewRouter()
 

@@ -135,7 +135,7 @@ func (serv *UserImpl) UpdateByNickname(ctx context.Context, nickname string, dto
 
 	// TODO: Validate ...
 
-	oldUser, err := serv.repo.GetByNickname(ctx, *dto.Nickname)
+	oldUser, err := serv.repo.GetByNickname(ctx, nickname)
 	if err != nil {
 		return model.User{}, fmt.Errorf("%s: %w", op, err)
 	}
@@ -148,6 +148,7 @@ func (serv *UserImpl) UpdateByNickname(ctx context.Context, nickname string, dto
 
 	if dto.Email != nil {
 		updateData.Email = dto.Email
+		updateData.Verified = new(bool)
 	}
 
 	if dto.AvatarPath != nil {

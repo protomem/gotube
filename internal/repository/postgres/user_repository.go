@@ -133,46 +133,46 @@ func (repo *UserRepository) UpdateByNickname(ctx context.Context, nickname strin
 	const op = "postgres.UserRepository.UpdateByNickname"
 
 	var (
-		counter int   = 2
+		counter int   = 1
 		args    []any = []any{nickname}
 		query   strings.Builder
 	)
 	_, _ = query.WriteString("UPDATE users SET ")
 
 	if dto.Nickname != nil {
+		counter++
 		_, _ = query.WriteString(fmt.Sprintf("nickname = $%d, ", counter))
 		args = append(args, *dto.Nickname)
-		counter++
 	}
 
 	if dto.Password != nil {
+		counter++
 		_, _ = query.WriteString(fmt.Sprintf("password = $%d, ", counter))
 		args = append(args, *dto.Password)
-		counter++
 	}
 
 	if dto.Email != nil {
+		counter++
 		_, _ = query.WriteString(fmt.Sprintf("email = $%d, ", counter))
 		args = append(args, *dto.Email)
-		counter++
 	}
 
 	if dto.Verified != nil {
-		_, _ = query.WriteString(fmt.Sprintf("verified = $%d, ", counter))
-		args = append(args, *dto.Verified)
 		counter++
+		_, _ = query.WriteString(fmt.Sprintf("is_verified = $%d, ", counter))
+		args = append(args, *dto.Verified)
 	}
 
 	if dto.AvatarPath != nil {
+		counter++
 		_, _ = query.WriteString(fmt.Sprintf("avatar_path = $%d, ", counter))
 		args = append(args, *dto.AvatarPath)
-		counter++
 	}
 
 	if dto.Description != nil {
+		counter++
 		_, _ = query.WriteString(fmt.Sprintf("description = $%d, ", counter))
 		args = append(args, *dto.Description)
-		counter++
 	}
 
 	_, _ = query.WriteString("updated_at = now() WHERE nickname = $1")
