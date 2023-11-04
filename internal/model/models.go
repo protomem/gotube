@@ -28,6 +28,11 @@ type User struct {
 	Description string `json:"description"`
 }
 
+type PairTokens struct {
+	Access  string `json:"accessToken"`
+	Refresh string `json:"refreshToken"`
+}
+
 type Subscription struct {
 	ID uuid.UUID `json:"id"`
 
