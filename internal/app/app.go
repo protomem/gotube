@@ -51,11 +51,13 @@ func newServices(authSigngingKey string, repos *repositories, sessmng session.Ma
 
 type handlers struct {
 	*httphandl.UserHandler
+	*httphandl.AuthHandler
 }
 
 func newHandlers(logger logging.Logger, services *services) *handlers {
 	return &handlers{
 		UserHandler: httphandl.NewUserHandler(logger, services.User),
+		AuthHandler: httphandl.NewAuthHandler(logger, services.Auth),
 	}
 }
 
@@ -167,8 +169,12 @@ func (app *App) registerOnShutdown() {
 
 func (app *App) setupRoutes() {
 
+	app.router.HandleFunc("/api/v1/auth/register", app.handls.AuthHandler.Register()).Methods(http.MethodPost)
+	app.router.HandleFunc("/api/v1/auth/login", app.handls.AuthHandler.Login()).Methods(http.MethodPost)
+	app.router.HandleFunc("/api/v1/auth/refresh", app.handls.AuthHandler.Refresh()).Methods(http.MethodPost)
+	app.router.HandleFunc("/api/v1/auth/logout", app.handls.AuthHandler.Logout()).Methods(http.MethodPost)
+
 	app.router.HandleFunc("/api/v1/users/{nickname}", app.handls.UserHandler.Get()).Methods(http.MethodGet)
-	app.router.HandleFunc("/api/v1/users", app.handls.UserHandler.Create()).Methods(http.MethodPost)
 	app.router.HandleFunc("/api/v1/users/{nickname}", app.handls.UserHandler.Update()).Methods(http.MethodPatch)
 	app.router.HandleFunc("/api/v1/users/{nickname}", app.handls.UserHandler.Delete()).Methods(http.MethodDelete)
 
