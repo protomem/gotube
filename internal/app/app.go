@@ -18,6 +18,8 @@ import (
 	"github.com/protomem/gotube/internal/repository"
 	postgresrepo "github.com/protomem/gotube/internal/repository/postgres"
 	"github.com/protomem/gotube/internal/service"
+	"github.com/protomem/gotube/internal/session"
+	"github.com/protomem/gotube/internal/session/redis"
 	"github.com/protomem/gotube/pkg/closure"
 	"github.com/protomem/gotube/pkg/logging"
 	"github.com/protomem/gotube/pkg/logging/stdlog"
@@ -35,12 +37,16 @@ func newRepositories(logger logging.Logger, pgdb *sql.DB) *repositories {
 
 type services struct {
 	service.User
+	service.Auth
 }
 
-func newServices(repos *repositories) *services {
-	return &services{
-		User: service.NewUser(repos.User),
-	}
+func newServices(authSigngingKey string, repos *repositories, sessmng session.Manager) *services {
+	servs := &services{}
+
+	servs.User = service.NewUser(repos.User)
+	servs.Auth = service.NewAuth(authSigngingKey, sessmng, servs.User)
+
+	return servs
 }
 
 type handlers struct {
@@ -58,6 +64,8 @@ type App struct {
 	logger logging.Logger
 
 	pgdb *sql.DB
+
+	sessmng session.Manager
 
 	repos  *repositories
 	servs  *services
@@ -127,8 +135,13 @@ func (app *App) setup(conf config.Config) error {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
+	app.sessmng, err = redis.NewSessionManager(ctx, app.logger, conf.Redis.Addr)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
 	app.repos = newRepositories(app.logger, app.pgdb)
-	app.servs = newServices(app.repos)
+	app.servs = newServices(conf.Auth.Secret, app.repos, app.sessmng)
 	app.handls = newHandlers(app.logger, app.servs)
 
 	app.router = mux.NewRouter()
@@ -145,6 +158,7 @@ func (app *App) setup(conf config.Config) error {
 
 func (app *App) registerOnShutdown() {
 	app.closer.Add(app.server.Shutdown)
+	app.closer.Add(app.sessmng.Close)
 	app.closer.Add(func(_ context.Context) error {
 		return app.pgdb.Close()
 	})
