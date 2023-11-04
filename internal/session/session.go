@@ -7,7 +7,7 @@ import (
 )
 
 type Session struct {
-	Token     string    `redis:"-"`
-	UserID    uuid.UUID `redis:"userId"`
-	ExpiresAt time.Time `redis:"expiresAt"`
+	Token     string
+	UserID    uuid.UUID
+	ExpiresAt time.Time
 }

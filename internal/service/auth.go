@@ -123,6 +123,11 @@ func (serv *AuthImpl) RefreshTokens(ctx context.Context, refreshToken string) (m
 		return model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
 	}
 
+	err = serv.sessmng.Del(ctx, refreshToken)
+	if err != nil {
+		return model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
+	}
+
 	err = serv.sessmng.Set(ctx, session.Session{
 		Token:     tokens.Refresh,
 		UserID:    user.ID,

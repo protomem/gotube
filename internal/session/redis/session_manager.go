@@ -3,7 +3,9 @@ package redis
 import (
 	"context"
 	"fmt"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/protomem/gotube/internal/bootstrap"
 	"github.com/protomem/gotube/internal/session"
 	"github.com/protomem/gotube/pkg/logging"
@@ -11,6 +13,31 @@ import (
 )
 
 var _ session.Manager = (*SessionManager)(nil)
+
+type customSession struct {
+	UserId    string `redis:"userId"`
+	ExpiresAt string `redis:"expiresAt"`
+}
+
+func (sess customSession) ToSession(token string) (session.Session, error) {
+	var err error
+
+	userId, err := uuid.Parse(sess.UserId)
+	if err != nil {
+		return session.Session{}, err
+	}
+
+	expiresAt, err := time.Parse(time.RFC3339, sess.ExpiresAt)
+	if err != nil {
+		return session.Session{}, err
+	}
+
+	return session.Session{
+		Token:     token,
+		UserID:    userId,
+		ExpiresAt: expiresAt,
+	}, nil
+}
 
 type SessionManager struct {
 	logger logging.Logger
@@ -41,8 +68,13 @@ func (mng *SessionManager) Get(ctx context.Context, token string) (session.Sessi
 		return session.Session{}, fmt.Errorf("%s: %w", op, res.Err())
 	}
 
-	var sess session.Session
-	err := res.Scan(&sess)
+	var csess customSession
+	err := res.Scan(&csess)
+	if err != nil {
+		return session.Session{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	sess, err := csess.ToSession(token)
 	if err != nil {
 		return session.Session{}, fmt.Errorf("%s: %w", op, err)
 	}
@@ -50,10 +82,15 @@ func (mng *SessionManager) Get(ctx context.Context, token string) (session.Sessi
 	return sess, nil
 }
 
-func (mng *SessionManager) Set(ctx context.Context, session session.Session) error {
+func (mng *SessionManager) Set(ctx context.Context, sess session.Session) error {
 	const op = "redis.SessionManager.Set"
 
-	res := mng.rdb.HSet(ctx, session.Token, session)
+	csess := customSession{
+		UserId:    sess.UserID.String(),
+		ExpiresAt: sess.ExpiresAt.Format(time.RFC3339),
+	}
+
+	res := mng.rdb.HSet(ctx, sess.Token, csess)
 	if res.Err() != nil {
 		return fmt.Errorf("%s: %w", op, res.Err())
 	}
