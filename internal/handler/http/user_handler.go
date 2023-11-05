@@ -46,12 +46,12 @@ func (handl *UserHandler) Get() http.HandlerFunc {
 
 		userNickname, exists := vars["nickname"]
 		if !exists {
-			logger.Error("nickname not found")
+			logger.Error("nickname missing")
 
 			w.Header().Set(httpheader.ContentType, httpheader.ContentTypeJSON)
 			w.WriteHeader(http.StatusBadRequest)
 			err = json.NewEncoder(w).Encode(map[string]string{
-				"error": "nickname not found",
+				"error": "nickname missing",
 			})
 
 			return
@@ -187,12 +187,12 @@ func (handl *UserHandler) Update() http.HandlerFunc {
 
 		userNickname, exists := vars["nickname"]
 		if !exists {
-			logger.Error("nickname not found")
+			logger.Error("nickname missing")
 
 			w.Header().Set(httpheader.ContentType, httpheader.ContentTypeJSON)
 			w.WriteHeader(http.StatusBadRequest)
 			err = json.NewEncoder(w).Encode(map[string]string{
-				"error": "nickname not found",
+				"error": "nickname missing",
 			})
 
 			return
@@ -259,12 +259,12 @@ func (handl *UserHandler) Delete() http.HandlerFunc {
 
 		userNickname, exists := vars["nickname"]
 		if !exists {
-			logger.Error("nickname not found")
+			logger.Error("nickname missing")
 
 			w.Header().Set(httpheader.ContentType, httpheader.ContentTypeJSON)
 			w.WriteHeader(http.StatusBadRequest)
 			err = json.NewEncoder(w).Encode(map[string]string{
-				"error": "nickname not found",
+				"error": "nickname missing",
 			})
 
 			return

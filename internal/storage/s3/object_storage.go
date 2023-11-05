@@ -62,7 +62,7 @@ func (s *ObjectStorage) Save(ctx context.Context, bucketName, objectName string,
 	const op = "s3.ObjectStorage.Save"
 	var err error
 
-	err = s.initBucket(ctx)
+	err = s.initBucket(ctx, bucketName)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -92,6 +92,21 @@ func (s *ObjectStorage) Close(_ context.Context) error {
 	return nil
 }
 
-func (s *ObjectStorage) initBucket(ctx context.Context) error {
+func (s *ObjectStorage) initBucket(ctx context.Context, bucketName string) error {
+	const op = "initBucket"
+	var err error
+
+	exists, err := s.s3db.BucketExists(ctx, bucketName)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	if !exists {
+		err = s.s3db.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{})
+		if err != nil {
+			return fmt.Errorf("%s: %w", op, err)
+		}
+	}
+
 	return nil
 }

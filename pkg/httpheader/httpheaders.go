@@ -1,7 +1,8 @@
 package httpheader
 
 const (
-	ContentType = "Content-Type"
+	ContentType   = "Content-Type"
+	ContentLength = "Content-Length"
 )
 
 const (
