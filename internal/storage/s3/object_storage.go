@@ -35,18 +35,63 @@ func NewObjectStorage(ctx context.Context, logger logging.Logger, addr, access, 
 	}, nil
 }
 
-func (s *ObjectStorage) Get(ctx context.Context, parent, name string) (storage.Object, error) {
-	panic("unimplemented")
+func (s *ObjectStorage) Get(ctx context.Context, bucketName, objectName string) (storage.Object, error) {
+	const op = "s3.ObjectStorage.Get"
+	var err error
+
+	// TODO: Add handle for object not found
+
+	obj, err := s.s3db.GetObject(ctx, bucketName, objectName, minio.GetObjectOptions{})
+	if err != nil {
+		return storage.Object{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	objInfo, err := obj.Stat()
+	if err != nil {
+		return storage.Object{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return storage.Object{
+		Type: objInfo.ContentType,
+		Size: objInfo.Size,
+		Src:  obj,
+	}, nil
 }
 
-func (s *ObjectStorage) Save(ctx context.Context, parent, name string, obj storage.Object) error {
-	panic("unimplemented")
+func (s *ObjectStorage) Save(ctx context.Context, bucketName, objectName string, obj storage.Object) error {
+	const op = "s3.ObjectStorage.Save"
+	var err error
+
+	err = s.initBucket(ctx)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	_, err = s.s3db.PutObject(ctx, bucketName, objectName, obj.Src, obj.Size, minio.PutObjectOptions{
+		ContentType: obj.Type,
+	})
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
 }
 
-func (s *ObjectStorage) Delete(ctx context.Context, parent, nama string) error {
-	panic("unimplemented")
+func (s *ObjectStorage) Delete(ctx context.Context, bucketName, objectName string) error {
+	const op = "s3.ObjectStorage.Delete"
+
+	err := s.s3db.RemoveObject(ctx, bucketName, objectName, minio.RemoveObjectOptions{})
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
 }
 
 func (s *ObjectStorage) Close(_ context.Context) error {
+	return nil
+}
+
+func (s *ObjectStorage) initBucket(ctx context.Context) error {
 	return nil
 }

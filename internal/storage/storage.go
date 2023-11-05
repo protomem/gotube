@@ -8,7 +8,7 @@ import (
 type Object struct {
 	Type string
 	Size int64
-	Src  io.Reader
+	Src  io.ReadCloser
 }
 
 type Storage interface {
