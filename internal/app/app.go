@@ -20,6 +20,8 @@ import (
 	"github.com/protomem/gotube/internal/service"
 	"github.com/protomem/gotube/internal/session"
 	"github.com/protomem/gotube/internal/session/redis"
+	"github.com/protomem/gotube/internal/storage"
+	"github.com/protomem/gotube/internal/storage/s3"
 	"github.com/protomem/gotube/pkg/closure"
 	"github.com/protomem/gotube/pkg/logging"
 	"github.com/protomem/gotube/pkg/logging/stdlog"
@@ -52,12 +54,16 @@ func newServices(authSigngingKey string, repos *repositories, sessmng session.Ma
 type handlers struct {
 	*httphandl.UserHandler
 	*httphandl.AuthHandler
+
+	*httphandl.MediaHandler
 }
 
-func newHandlers(logger logging.Logger, services *services) *handlers {
+func newHandlers(logger logging.Logger, services *services, store storage.Storage) *handlers {
 	return &handlers{
 		UserHandler: httphandl.NewUserHandler(logger, services.User),
 		AuthHandler: httphandl.NewAuthHandler(logger, services.Auth),
+
+		MediaHandler: httphandl.NewMediaHandler(logger, store),
 	}
 }
 
@@ -68,6 +74,7 @@ type App struct {
 	pgdb *sql.DB
 
 	sessmng session.Manager
+	store   storage.Storage
 
 	repos  *repositories
 	servs  *services
@@ -142,9 +149,14 @@ func (app *App) setup(conf config.Config) error {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
+	app.store, err = s3.NewObjectStorage(ctx, app.logger, conf.S3.Addr, conf.S3.Keys.Access, conf.S3.Keys.Secret)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
 	app.repos = newRepositories(app.logger, app.pgdb)
 	app.servs = newServices(conf.Auth.Secret, app.repos, app.sessmng)
-	app.handls = newHandlers(app.logger, app.servs)
+	app.handls = newHandlers(app.logger, app.servs, app.store)
 
 	app.router = mux.NewRouter()
 
@@ -161,6 +173,7 @@ func (app *App) setup(conf config.Config) error {
 func (app *App) registerOnShutdown() {
 	app.closer.Add(app.server.Shutdown)
 	app.closer.Add(app.sessmng.Close)
+	app.closer.Add(app.store.Close)
 	app.closer.Add(func(_ context.Context) error {
 		return app.pgdb.Close()
 	})
@@ -177,6 +190,10 @@ func (app *App) setupRoutes() {
 	app.router.HandleFunc("/api/v1/users/{nickname}", app.handls.UserHandler.Get()).Methods(http.MethodGet)
 	app.router.HandleFunc("/api/v1/users/{nickname}", app.handls.UserHandler.Update()).Methods(http.MethodPatch)
 	app.router.HandleFunc("/api/v1/users/{nickname}", app.handls.UserHandler.Delete()).Methods(http.MethodDelete)
+
+	app.router.HandleFunc("/api/v1/media/{parent}/{name}", app.handls.MediaHandler.Get()).Methods(http.MethodGet)
+	app.router.HandleFunc("/api/v1/media/{parent}/{name}", app.handls.MediaHandler.Save()).Methods(http.MethodPost)
+	app.router.HandleFunc("/api/v1/media/{parent}/{name}", app.handls.MediaHandler.Delete()).Methods(http.MethodDelete)
 
 }
 
