@@ -145,7 +145,7 @@ func (handl *MediaHandler) Save() http.HandlerFunc {
 			w.Header().Set(httpheader.ContentType, httpheader.ContentTypeJSON)
 			w.WriteHeader(http.StatusBadRequest)
 			err = json.NewEncoder(w).Encode(map[string]string{
-				"error": "size too big",
+				"error": "failed to parse multipart form",
 			})
 
 			return
