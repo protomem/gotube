@@ -52,6 +52,7 @@ func newServices(authSigngingKey string, repos *repositories, sessmng session.Ma
 }
 
 type handlers struct {
+	*httphandl.CommonHandler
 	*httphandl.UserHandler
 	*httphandl.AuthHandler
 
@@ -60,8 +61,9 @@ type handlers struct {
 
 func newHandlers(logger logging.Logger, services *services, store storage.Storage) *handlers {
 	return &handlers{
-		UserHandler: httphandl.NewUserHandler(logger, services.User),
-		AuthHandler: httphandl.NewAuthHandler(logger, services.Auth),
+		CommonHandler: httphandl.NewCommonHandler(logger),
+		UserHandler:   httphandl.NewUserHandler(logger, services.User),
+		AuthHandler:   httphandl.NewAuthHandler(logger, services.Auth),
 
 		MediaHandler: httphandl.NewMediaHandler(logger, store),
 	}
@@ -181,6 +183,8 @@ func (app *App) registerOnShutdown() {
 }
 
 func (app *App) setupRoutes() {
+
+	app.router.HandleFunc("/ping", app.handls.Ping()).Methods(http.MethodGet)
 
 	app.router.HandleFunc("/api/v1/auth/register", app.handls.AuthHandler.Register()).Methods(http.MethodPost)
 	app.router.HandleFunc("/api/v1/auth/login", app.handls.AuthHandler.Login()).Methods(http.MethodPost)
