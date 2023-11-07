@@ -72,11 +72,13 @@ func newHandlers(logger logging.Logger, services *services, store storage.Storag
 
 type middlewares struct {
 	*httpmdw.CommonMiddleware
+	*httpmdw.AuthMiddleware
 }
 
-func newMiddlewares(logger logging.Logger) *middlewares {
+func newMiddlewares(logger logging.Logger, servs *services) *middlewares {
 	return &middlewares{
 		CommonMiddleware: httpmdw.NewCommonMiddleware(logger),
+		AuthMiddleware:   httpmdw.NewAuthMiddleware(logger, servs.Auth),
 	}
 }
 
@@ -171,7 +173,7 @@ func (app *App) setup(conf config.Config) error {
 	app.repos = newRepositories(app.logger, app.pgdb)
 	app.servs = newServices(conf.Auth.Secret, app.repos, app.sessmng)
 	app.handls = newHandlers(app.logger, app.servs, app.store)
-	app.mdws = newMiddlewares(app.logger)
+	app.mdws = newMiddlewares(app.logger, app.servs)
 
 	app.router = mux.NewRouter()
 
@@ -202,20 +204,61 @@ func (app *App) setupRoutes() {
 	app.router.Use(app.mdws.Recovery())
 	app.router.Use(app.mdws.CORS())
 
+	app.router.Use(app.mdws.Authenticate())
+
 	app.router.HandleFunc("/ping", app.handls.Ping()).Methods(http.MethodGet)
 
-	app.router.HandleFunc("/api/v1/auth/register", app.handls.AuthHandler.Register()).Methods(http.MethodPost)
-	app.router.HandleFunc("/api/v1/auth/login", app.handls.AuthHandler.Login()).Methods(http.MethodPost)
-	app.router.HandleFunc("/api/v1/auth/refresh", app.handls.AuthHandler.Refresh()).Methods(http.MethodPost)
-	app.router.HandleFunc("/api/v1/auth/logout", app.handls.AuthHandler.Logout()).Methods(http.MethodPost)
+	// Auth endpoints
+	{
+		app.router.HandleFunc("/api/v1/auth/register", app.handls.AuthHandler.Register()).Methods(http.MethodPost)
+		app.router.HandleFunc("/api/v1/auth/login", app.handls.AuthHandler.Login()).Methods(http.MethodPost)
 
-	app.router.HandleFunc("/api/v1/users/{nickname}", app.handls.UserHandler.Get()).Methods(http.MethodGet)
-	app.router.HandleFunc("/api/v1/users/{nickname}", app.handls.UserHandler.Update()).Methods(http.MethodPatch)
-	app.router.HandleFunc("/api/v1/users/{nickname}", app.handls.UserHandler.Delete()).Methods(http.MethodDelete)
+		// Protected
+		{
+			app.router.Handle(
+				"/api/v1/auth/refresh",
+				app.mdws.Protect()(app.handls.AuthHandler.Refresh()),
+			).Methods(http.MethodPost)
+			app.router.Handle(
+				"/api/v1/auth/logout",
+				app.mdws.Protect()(app.handls.AuthHandler.Logout()),
+			).Methods(http.MethodPost)
+		}
+	}
 
-	app.router.HandleFunc("/api/v1/media/{parent}/{name}", app.handls.MediaHandler.Get()).Methods(http.MethodGet)
-	app.router.HandleFunc("/api/v1/media/{parent}/{name}", app.handls.MediaHandler.Save()).Methods(http.MethodPost)
-	app.router.HandleFunc("/api/v1/media/{parent}/{name}", app.handls.MediaHandler.Delete()).Methods(http.MethodDelete)
+	// User endpoints
+	{
+		app.router.HandleFunc("/api/v1/users/{nickname}", app.handls.UserHandler.Get()).Methods(http.MethodGet)
+
+		// Protected
+		{
+			app.router.Handle(
+				"/api/v1/users/{nickname}",
+				app.mdws.Protect()(app.handls.UserHandler.Update()),
+			).Methods(http.MethodPatch)
+			app.router.Handle(
+				"/api/v1/users/{nickname}",
+				app.mdws.Protect()(app.handls.UserHandler.Delete()),
+			).Methods(http.MethodDelete)
+		}
+	}
+
+	// Media endpoints
+	{
+		app.router.HandleFunc("/api/v1/media/{parent}/{name}", app.handls.MediaHandler.Get()).Methods(http.MethodGet)
+
+		// Protected
+		{
+			app.router.Handle(
+				"/api/v1/media/{parent}/{name}",
+				app.mdws.Protect()(app.handls.MediaHandler.Save()),
+			).Methods(http.MethodPost)
+			app.router.Handle(
+				"/api/v1/media/{parent}/{name}",
+				app.mdws.Protect()(app.handls.MediaHandler.Delete()),
+			).Methods(http.MethodDelete)
+		}
+	}
 
 }
 
