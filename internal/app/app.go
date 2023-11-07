@@ -15,6 +15,7 @@ import (
 	"github.com/protomem/gotube/internal/bootstrap"
 	"github.com/protomem/gotube/internal/config"
 	httphandl "github.com/protomem/gotube/internal/handler/http"
+	httpmdw "github.com/protomem/gotube/internal/middleware/http"
 	"github.com/protomem/gotube/internal/repository"
 	postgresrepo "github.com/protomem/gotube/internal/repository/postgres"
 	"github.com/protomem/gotube/internal/service"
@@ -69,6 +70,16 @@ func newHandlers(logger logging.Logger, services *services, store storage.Storag
 	}
 }
 
+type middlewares struct {
+	*httpmdw.CommonMiddleware
+}
+
+func newMiddlewares(logger logging.Logger) *middlewares {
+	return &middlewares{
+		CommonMiddleware: httpmdw.NewCommonMiddleware(logger),
+	}
+}
+
 type App struct {
 	conf   config.Config
 	logger logging.Logger
@@ -81,6 +92,7 @@ type App struct {
 	repos  *repositories
 	servs  *services
 	handls *handlers
+	mdws   *middlewares
 
 	router *mux.Router
 	server *http.Server
@@ -159,6 +171,7 @@ func (app *App) setup(conf config.Config) error {
 	app.repos = newRepositories(app.logger, app.pgdb)
 	app.servs = newServices(conf.Auth.Secret, app.repos, app.sessmng)
 	app.handls = newHandlers(app.logger, app.servs, app.store)
+	app.mdws = newMiddlewares(app.logger)
 
 	app.router = mux.NewRouter()
 
@@ -183,6 +196,11 @@ func (app *App) registerOnShutdown() {
 }
 
 func (app *App) setupRoutes() {
+
+	app.router.Use(app.mdws.RequestID())
+	app.router.Use(app.mdws.Logging())
+	app.router.Use(app.mdws.Recovery())
+	app.router.Use(app.mdws.CORS())
 
 	app.router.HandleFunc("/ping", app.handls.Ping()).Methods(http.MethodGet)
 
