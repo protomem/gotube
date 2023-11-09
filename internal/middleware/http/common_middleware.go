@@ -118,4 +118,5 @@ func (rw *responseWrapper) Write(b []byte) (int, error) {
 
 func (rw *responseWrapper) WriteHeader(statusCode int) {
 	rw.StatusCode = statusCode
+	rw.w.WriteHeader(statusCode)
 }
