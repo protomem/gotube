@@ -37,6 +37,15 @@ type (
 )
 
 type (
+	CreateSubscriptionDTO struct {
+		FromUserID uuid.UUID
+		ToUserID   uuid.UUID
+	}
+
 	Subscription interface {
+		GetByFromUserAndToUser(ctx context.Context, fromUserID, toUserID uuid.UUID) (model.Subscription, error)
+
+		Create(ctx context.Context, dto CreateSubscriptionDTO) (uuid.UUID, error)
+		Delete(ctx context.Context, id uuid.UUID) error
 	}
 )

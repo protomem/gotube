@@ -266,6 +266,21 @@ func (app *App) setupRoutes() {
 		}
 	}
 
+	// Subscription endpoints
+	{
+		// Protected
+		{
+			app.router.Handle(
+				"/api/v1/subscription",
+				app.mdws.Protect()(app.handls.SubscriptionHandler.Subscribe()),
+			).Methods(http.MethodPost)
+			app.router.Handle(
+				"/api/v1/subscription",
+				app.mdws.Protect()(app.handls.SubscriptionHandler.Unsubscribe()),
+			).Methods(http.MethodDelete)
+		}
+	}
+
 }
 
 func (app *App) startServer(errs chan<- error) {

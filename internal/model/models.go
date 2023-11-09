@@ -10,6 +10,9 @@ import (
 var (
 	ErrUserNotFound = errors.New("user not found")
 	ErrUserExists   = errors.New("user already exists")
+
+	ErrSubscriptionNotFound = errors.New("subscription not found")
+	ErrSubscriptionExists   = errors.New("subscription already exists")
 )
 
 type User struct {
