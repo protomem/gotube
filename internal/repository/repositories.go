@@ -35,3 +35,8 @@ type (
 		DeleteByNickname(ctx context.Context, nickname string) error
 	}
 )
+
+type (
+	Subscription interface {
+	}
+)

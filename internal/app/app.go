@@ -30,17 +30,20 @@ import (
 
 type repositories struct {
 	repository.User
+	repository.Subscription
 }
 
 func newRepositories(logger logging.Logger, pgdb *sql.DB) *repositories {
 	return &repositories{
-		User: postgresrepo.NewUserRepository(logger, pgdb),
+		User:         postgresrepo.NewUserRepository(logger, pgdb),
+		Subscription: postgresrepo.NewSubscriptionRepository(logger, pgdb),
 	}
 }
 
 type services struct {
 	service.User
 	service.Auth
+	service.Subscription
 }
 
 func newServices(authSigngingKey string, repos *repositories, sessmng session.Manager) *services {
@@ -48,6 +51,7 @@ func newServices(authSigngingKey string, repos *repositories, sessmng session.Ma
 
 	servs.User = service.NewUser(repos.User)
 	servs.Auth = service.NewAuth(authSigngingKey, sessmng, servs.User)
+	servs.Subscription = service.NewSubscription(repos.Subscription)
 
 	return servs
 }
@@ -56,15 +60,17 @@ type handlers struct {
 	*httphandl.CommonHandler
 	*httphandl.UserHandler
 	*httphandl.AuthHandler
+	*httphandl.SubscriptionHandler
 
 	*httphandl.MediaHandler
 }
 
 func newHandlers(logger logging.Logger, services *services, store storage.Storage) *handlers {
 	return &handlers{
-		CommonHandler: httphandl.NewCommonHandler(logger),
-		UserHandler:   httphandl.NewUserHandler(logger, services.User),
-		AuthHandler:   httphandl.NewAuthHandler(logger, services.Auth),
+		CommonHandler:       httphandl.NewCommonHandler(logger),
+		UserHandler:         httphandl.NewUserHandler(logger, services.User),
+		AuthHandler:         httphandl.NewAuthHandler(logger, services.Auth),
+		SubscriptionHandler: httphandl.NewSubscriptionHandler(logger, services.Subscription),
 
 		MediaHandler: httphandl.NewMediaHandler(logger, store),
 	}
