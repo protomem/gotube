@@ -6,6 +6,7 @@ import (
 
 	"github.com/protomem/gotube/pkg/httpheader"
 	"github.com/protomem/gotube/pkg/logging"
+	"github.com/protomem/gotube/pkg/requestid"
 )
 
 type CommonHandler struct {
@@ -22,7 +23,11 @@ func (handl *CommonHandler) Ping() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "http.CommonHandler.Ping"
 
-		logger := handl.logger.With("operation", op)
+		ctx := r.Context()
+		logger := handl.logger.With(
+			"operation", op,
+			requestid.LogKey, requestid.Extract(ctx),
+		)
 
 		w.Header().Set(httpheader.ContentType, httpheader.ContentTypeJSON)
 		w.WriteHeader(http.StatusOK)

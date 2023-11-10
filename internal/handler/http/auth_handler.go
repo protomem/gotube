@@ -9,6 +9,7 @@ import (
 	"github.com/protomem/gotube/internal/service"
 	"github.com/protomem/gotube/pkg/httpheader"
 	"github.com/protomem/gotube/pkg/logging"
+	"github.com/protomem/gotube/pkg/requestid"
 )
 
 type AuthHandler struct {
@@ -40,7 +41,10 @@ func (handl *AuthHandler) Register() http.HandlerFunc {
 		var err error
 
 		ctx := r.Context()
-		logger := handl.logger.With("operation", op)
+		logger := handl.logger.With(
+			"operation", op,
+			requestid.LogKey, requestid.Extract(ctx),
+		)
 
 		defer func() {
 			if err != nil {
@@ -110,7 +114,10 @@ func (handl *AuthHandler) Login() http.HandlerFunc {
 		var err error
 
 		ctx := r.Context()
-		logger := handl.logger.With("operation", op)
+		logger := handl.logger.With(
+			"operation", op,
+			requestid.LogKey, requestid.Extract(ctx),
+		)
 
 		defer func() {
 			if err != nil {
@@ -178,7 +185,10 @@ func (handl *AuthHandler) Refresh() http.HandlerFunc {
 		var err error
 
 		ctx := r.Context()
-		logger := handl.logger.With("operation", op)
+		logger := handl.logger.With(
+			"operation", op,
+			requestid.LogKey, requestid.Extract(ctx),
+		)
 
 		defer func() {
 			if err != nil {
@@ -234,7 +244,10 @@ func (handl *AuthHandler) Logout() http.HandlerFunc {
 		var err error
 
 		ctx := r.Context()
-		logger := handl.logger.With("operation", op)
+		logger := handl.logger.With(
+			"operation", op,
+			requestid.LogKey, requestid.Extract(ctx),
+		)
 
 		defer func() {
 			if err != nil {

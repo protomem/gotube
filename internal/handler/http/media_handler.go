@@ -11,6 +11,7 @@ import (
 	"github.com/protomem/gotube/internal/storage"
 	"github.com/protomem/gotube/pkg/httpheader"
 	"github.com/protomem/gotube/pkg/logging"
+	"github.com/protomem/gotube/pkg/requestid"
 )
 
 const _maxObjectSize = 100 * 1024 * 1024 // 100MB
@@ -33,7 +34,10 @@ func (handl *MediaHandler) Get() http.HandlerFunc {
 		var err error
 
 		ctx := r.Context()
-		logger := handl.logger.With("operation", op)
+		logger := handl.logger.With(
+			"operation", op,
+			requestid.LogKey, requestid.Extract(ctx),
+		)
 
 		defer func() {
 			if err != nil {
@@ -98,7 +102,10 @@ func (handl *MediaHandler) Save() http.HandlerFunc {
 		var err error
 
 		ctx := r.Context()
-		logger := handl.logger.With("operation", op)
+		logger := handl.logger.With(
+			"operation", op,
+			requestid.LogKey, requestid.Extract(ctx),
+		)
 
 		defer func() {
 			if err != nil {
@@ -192,7 +199,10 @@ func (handl *MediaHandler) Delete() http.HandlerFunc {
 		var err error
 
 		ctx := r.Context()
-		logger := handl.logger.With("operation", op)
+		logger := handl.logger.With(
+			"operation", op,
+			requestid.LogKey, requestid.Extract(ctx),
+		)
 
 		defer func() {
 			if err != nil {
