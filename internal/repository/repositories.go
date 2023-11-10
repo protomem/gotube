@@ -43,6 +43,8 @@ type (
 	}
 
 	Subscription interface {
+		FindByFromUserID(ctx context.Context, fromUserID uuid.UUID) ([]model.Subscription, error)
+
 		GetByFromUserAndToUser(ctx context.Context, fromUserID, toUserID uuid.UUID) (model.Subscription, error)
 
 		Create(ctx context.Context, dto CreateSubscriptionDTO) (uuid.UUID, error)

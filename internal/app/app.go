@@ -51,7 +51,7 @@ func newServices(authSigngingKey string, repos *repositories, sessmng session.Ma
 
 	servs.User = service.NewUser(repos.User)
 	servs.Auth = service.NewAuth(authSigngingKey, sessmng, servs.User)
-	servs.Subscription = service.NewSubscription(repos.Subscription)
+	servs.Subscription = service.NewSubscription(repos.Subscription, servs.User)
 
 	return servs
 }
@@ -271,11 +271,15 @@ func (app *App) setupRoutes() {
 		// Protected
 		{
 			app.router.Handle(
-				"/api/v1/subscription",
+				"/api/v1/users/{nickname}/subs",
+				app.mdws.Protect()(app.handls.SubscriptionHandler.FindByFromUserNickname()),
+			).Methods(http.MethodGet)
+			app.router.Handle(
+				"/api/v1/subs",
 				app.mdws.Protect()(app.handls.SubscriptionHandler.Subscribe()),
 			).Methods(http.MethodPost)
 			app.router.Handle(
-				"/api/v1/subscription",
+				"/api/v1/subs",
 				app.mdws.Protect()(app.handls.SubscriptionHandler.Unsubscribe()),
 			).Methods(http.MethodDelete)
 		}

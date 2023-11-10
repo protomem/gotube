@@ -5,6 +5,8 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
+	"github.com/protomem/gotube/internal/model"
 	"github.com/protomem/gotube/internal/service"
 	"github.com/protomem/gotube/pkg/httpheader"
 	"github.com/protomem/gotube/pkg/logging"
@@ -20,6 +22,64 @@ func NewSubscriptionHandler(logger logging.Logger, serv service.Subscription) *S
 	return &SubscriptionHandler{
 		logger: logger.With("handler", "subscription", "handlerType", "http"),
 		serv:   serv,
+	}
+}
+
+func (handl *SubscriptionHandler) FindByFromUserNickname() http.HandlerFunc {
+	type Response struct {
+		Subscriptions []model.Subscription `json:"subscriptions"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		const op = "http.SubscriptionHandler.FindByFromUserNickname"
+		var err error
+
+		ctx := r.Context()
+		logger := handl.logger.With(
+			"operation", op,
+			requestid.LogKey, requestid.Extract(ctx),
+		)
+
+		defer func() {
+			if err != nil {
+				logger.Error("failed to send response", "error", err)
+			}
+		}()
+
+		vars := mux.Vars(r)
+
+		userNickname, exists := vars["nickname"]
+		if !exists {
+			logger.Error("nickname missing")
+
+			w.Header().Set(httpheader.ContentType, httpheader.ContentTypeJSON)
+			w.WriteHeader(http.StatusBadRequest)
+			err = json.NewEncoder(w).Encode(map[string]string{
+				"error": "nickname missing",
+			})
+
+			return
+		}
+
+		subs, err := handl.serv.FindByFromUserNickname(ctx, userNickname)
+		if err != nil {
+			logger.Error("failed to find subscriptions", "error", err)
+
+			code := http.StatusInternalServerError
+			res := map[string]string{
+				"error": "failed to find subscriptions",
+			}
+
+			w.Header().Set(httpheader.ContentType, httpheader.ContentTypeJSON)
+			w.WriteHeader(code)
+			err = json.NewEncoder(w).Encode(res)
+
+			return
+		}
+
+		w.Header().Set(httpheader.ContentType, httpheader.ContentTypeJSON)
+		w.WriteHeader(http.StatusOK)
+		err = json.NewEncoder(w).Encode(Response{Subscriptions: subs})
 	}
 }
 

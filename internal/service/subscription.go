@@ -24,19 +24,43 @@ type (
 	}
 
 	Subscription interface {
+		FindByFromUserNickname(ctx context.Context, fromUserNickname string) ([]model.Subscription, error)
+
 		Subscribe(ctx context.Context, dto SubscribeDTO) error
 		Unsubscribe(ctx context.Context, dto UnsubscribeDTO) error
 	}
 
 	SubscriptionImpl struct {
-		repo repository.Subscription
+		repo     repository.Subscription
+		userServ User
 	}
 )
 
-func NewSubscription(repo repository.Subscription) *SubscriptionImpl {
+func NewSubscription(repo repository.Subscription, userServ User) *SubscriptionImpl {
 	return &SubscriptionImpl{
-		repo: repo,
+		repo:     repo,
+		userServ: userServ,
 	}
+}
+
+func (serv *SubscriptionImpl) FindByFromUserNickname(
+	ctx context.Context,
+	fromUserNickname string,
+) ([]model.Subscription, error) {
+	const op = "service.Subscription.FindByFromUserNickname"
+	var err error
+
+	fromUser, err := serv.userServ.GetByNickname(ctx, fromUserNickname)
+	if err != nil {
+		return []model.Subscription{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	subs, err := serv.repo.FindByFromUserID(ctx, fromUser.ID)
+	if err != nil {
+		return []model.Subscription{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return subs, nil
 }
 
 func (serv *SubscriptionImpl) Subscribe(ctx context.Context, dto SubscribeDTO) error {
