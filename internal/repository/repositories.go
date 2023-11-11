@@ -68,6 +68,14 @@ type (
 		Public        bool
 	}
 
+	UpdateVideoDTO struct {
+		Title         *string
+		Description   *string
+		ThumbnailPath *string
+		VideoPath     *string
+		Public        *bool
+	}
+
 	Video interface {
 		FindAllPublic(ctx context.Context, opts FindVideosOptions) ([]model.Video, error)
 
@@ -75,5 +83,7 @@ type (
 		GetPublic(ctx context.Context, id uuid.UUID) (model.Video, error)
 
 		Create(ctx context.Context, dto CreateVideoDTO) (uuid.UUID, error)
+
+		Update(ctx context.Context, id uuid.UUID, dto UpdateVideoDTO) error
 	}
 )

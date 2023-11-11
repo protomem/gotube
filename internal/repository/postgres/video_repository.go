@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/protomem/gotube/internal/model"
@@ -11,6 +12,8 @@ import (
 	"github.com/protomem/gotube/pkg/logging"
 	"github.com/protomem/gotube/pkg/pgerr"
 )
+
+var _ repository.Video = (*VideoRepository)(nil)
 
 type VideoRepository struct {
 	logger logging.Logger
@@ -188,4 +191,54 @@ func (repo *VideoRepository) Create(ctx context.Context, dto repository.CreateVi
 	}
 
 	return id, nil
+}
+
+func (repo *VideoRepository) Update(ctx context.Context, id uuid.UUID, dto repository.UpdateVideoDTO) error {
+	const op = "postgres.VideoRepository.Update"
+
+	var (
+		counter int   = 1
+		args    []any = []any{id}
+		query   strings.Builder
+	)
+	_, _ = query.WriteString("UPDATE videos SET ")
+
+	if dto.Title != nil {
+		counter++
+		_, _ = query.WriteString(fmt.Sprintf("title = $%d, ", counter))
+		args = append(args, *dto.Title)
+	}
+
+	if dto.Description != nil {
+		counter++
+		_, _ = query.WriteString(fmt.Sprintf("description = $%d, ", counter))
+		args = append(args, *dto.Description)
+	}
+
+	if dto.ThumbnailPath != nil {
+		counter++
+		_, _ = query.WriteString(fmt.Sprintf("thumbnail_path = $%d, ", counter))
+		args = append(args, *dto.ThumbnailPath)
+	}
+
+	if dto.VideoPath != nil {
+		counter++
+		_, _ = query.WriteString(fmt.Sprintf("video_path = $%d, ", counter))
+		args = append(args, *dto.VideoPath)
+	}
+
+	if dto.Public != nil {
+		counter++
+		_, _ = query.WriteString(fmt.Sprintf("is_public = $%d, ", counter))
+		args = append(args, *dto.Public)
+	}
+
+	_, _ = query.WriteString("updated_at = now() WHERE id = $1")
+
+	_, err := repo.db.ExecContext(ctx, query.String(), args...)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
 }

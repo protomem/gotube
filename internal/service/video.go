@@ -9,6 +9,8 @@ import (
 	"github.com/protomem/gotube/internal/repository"
 )
 
+var _ Video = (*VideoImpl)(nil)
+
 type (
 	FindVideosOptions struct {
 		Limit  uint64
@@ -24,6 +26,14 @@ type (
 		Public        *bool
 	}
 
+	UpdateVideoDTO struct {
+		Title         *string
+		Description   *string
+		ThumbnailPath *string
+		VideoPath     *string
+		Public        *bool
+	}
+
 	Video interface {
 		FindAllPublic(ctx context.Context, opts FindVideosOptions) ([]model.Video, error)
 
@@ -31,6 +41,8 @@ type (
 		GetPublic(ctx context.Context, id uuid.UUID) (model.Video, error)
 
 		Create(ctx context.Context, dto CreateVideoDTO) (model.Video, error)
+
+		Update(ctx context.Context, id uuid.UUID, dto UpdateVideoDTO) (model.Video, error)
 	}
 
 	VideoImpl struct {
@@ -111,4 +123,50 @@ func (serv *VideoImpl) Create(ctx context.Context, dto CreateVideoDTO) (model.Vi
 	}
 
 	return video, nil
+}
+
+func (serv *VideoImpl) Update(ctx context.Context, id uuid.UUID, dto UpdateVideoDTO) (model.Video, error) {
+	const op = "service.Video.Update"
+	var err error
+
+	// TODO: Valiate ...
+
+	_, err = serv.repo.Get(ctx, id)
+	if err != nil {
+		return model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	updateData := repository.UpdateVideoDTO{}
+
+	if dto.Title != nil {
+		updateData.Title = dto.Title
+	}
+
+	if dto.Description != nil {
+		updateData.Description = dto.Description
+	}
+
+	if dto.ThumbnailPath != nil {
+		updateData.ThumbnailPath = dto.ThumbnailPath
+	}
+
+	if dto.VideoPath != nil {
+		updateData.VideoPath = dto.VideoPath
+	}
+
+	if dto.Public != nil {
+		updateData.Public = dto.Public
+	}
+
+	err = serv.repo.Update(ctx, id, updateData)
+	if err != nil {
+		return model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	newVideo, err := serv.repo.Get(ctx, id)
+	if err != nil {
+		return model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return newVideo, nil
 }

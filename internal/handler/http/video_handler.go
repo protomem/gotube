@@ -277,3 +277,101 @@ func (handl *VideoHandler) Create() http.HandlerFunc {
 		err = json.NewEncoder(w).Encode(Response{Video: video})
 	}
 }
+
+func (handl *VideoHandler) Update() http.HandlerFunc {
+	type Request struct {
+		Title         *string `json:"title"`
+		Description   *string `json:"description"`
+		ThumbnailPath *string `json:"thumbnailPath"`
+		VideoPath     *string `json:"videoPath"`
+		Public        *bool   `json:"isPublic"`
+	}
+
+	type Response struct {
+		Video model.Video `json:"video"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		const op = "http.VideoHandler.Update"
+		var err error
+
+		ctx := r.Context()
+		logger := handl.logger.With(
+			"operation", op,
+			requestid.LogKey, requestid.Extract(ctx),
+		)
+
+		defer func() {
+			if err != nil {
+				logger.Error("failed to send response", "error", err)
+			}
+		}()
+
+		vars := mux.Vars(r)
+
+		videoIDRaw, exists := vars["id"]
+		if !exists {
+			logger.Error("missing video id")
+
+			w.Header().Set(httpheader.ContentType, httpheader.ContentTypeJSON)
+			w.WriteHeader(http.StatusBadRequest)
+			err = json.NewEncoder(w).Encode(map[string]string{
+				"error": "missing video id",
+			})
+
+			return
+		}
+
+		videoID, err := uuid.Parse(videoIDRaw)
+		if err != nil {
+			logger.Error("failed to parse video id", "error", err)
+
+			w.Header().Set(httpheader.ContentType, httpheader.ContentTypeJSON)
+			w.WriteHeader(http.StatusBadRequest)
+			err = json.NewEncoder(w).Encode(map[string]string{
+				"error": "invalid video id",
+			})
+
+			return
+		}
+
+		var req Request
+		err = json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			logger.Error("failed to decode request", "error", err)
+
+			w.Header().Set(httpheader.ContentType, httpheader.ContentTypeJSON)
+			w.WriteHeader(http.StatusBadRequest)
+			err = json.NewEncoder(w).Encode(map[string]string{
+				"error": "failed to decode request",
+			})
+
+			return
+		}
+
+		video, err := handl.serv.Update(ctx, videoID, service.UpdateVideoDTO(req))
+		if err != nil {
+			logger.Error("failed to update video", "error", err)
+
+			code := http.StatusInternalServerError
+			res := map[string]string{
+				"error": "failed to update video",
+			}
+
+			if errors.Is(err, model.ErrVideoNotFound) {
+				code = http.StatusNotFound
+				res["error"] = model.ErrVideoNotFound.Error()
+			}
+
+			w.Header().Set(httpheader.ContentType, httpheader.ContentTypeJSON)
+			w.WriteHeader(code)
+			err = json.NewEncoder(w).Encode(res)
+
+			return
+		}
+
+		w.Header().Set(httpheader.ContentType, httpheader.ContentTypeJSON)
+		w.WriteHeader(http.StatusOK)
+		err = json.NewEncoder(w).Encode(Response{Video: video})
+	}
+}
