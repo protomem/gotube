@@ -296,6 +296,11 @@ func (app *App) setupRoutes() {
 		app.router.HandleFunc("/api/v1/videos", app.handls.VideoHandler.FindAll()).Methods(http.MethodGet)
 		app.router.HandleFunc("/api/v1/videos/{id}", app.handls.VideoHandler.Get()).Methods(http.MethodGet)
 
+		// TODO: Add usecase: get list popular videos
+		// TODO: Add usecase: get list videos by user
+		// TODO: Add usecase: get list videos by subscriptions
+		// TODO: Add usecase: search video
+
 		// Protected
 		{
 			app.router.Handle(
@@ -306,6 +311,10 @@ func (app *App) setupRoutes() {
 				"/api/v1/videos/{id}",
 				app.mdws.Protect()(app.handls.VideoHandler.Update()),
 			).Methods(http.MethodPatch)
+			app.router.Handle(
+				"/api/v1/videos/{id}",
+				app.mdws.Protect()(app.handls.VideoHandler.Delete()),
+			).Methods(http.MethodDelete)
 		}
 	}
 

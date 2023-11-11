@@ -43,6 +43,8 @@ type (
 		Create(ctx context.Context, dto CreateVideoDTO) (model.Video, error)
 
 		Update(ctx context.Context, id uuid.UUID, dto UpdateVideoDTO) (model.Video, error)
+
+		Delete(ctx context.Context, id uuid.UUID) error
 	}
 
 	VideoImpl struct {
@@ -169,4 +171,15 @@ func (serv *VideoImpl) Update(ctx context.Context, id uuid.UUID, dto UpdateVideo
 	}
 
 	return newVideo, nil
+}
+
+func (serv *VideoImpl) Delete(ctx context.Context, id uuid.UUID) error {
+	const op = "service.Video.Delete"
+
+	err := serv.repo.Delete(ctx, id)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
 }

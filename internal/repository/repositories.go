@@ -85,5 +85,7 @@ type (
 		Create(ctx context.Context, dto CreateVideoDTO) (uuid.UUID, error)
 
 		Update(ctx context.Context, id uuid.UUID, dto UpdateVideoDTO) error
+
+		Delete(ctx context.Context, id uuid.UUID) error
 	}
 )

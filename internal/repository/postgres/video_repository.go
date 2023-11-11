@@ -242,3 +242,16 @@ func (repo *VideoRepository) Update(ctx context.Context, id uuid.UUID, dto repos
 
 	return nil
 }
+
+func (repo *VideoRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	const op = "postgres.VideoRepository.Delete"
+
+	query := `DELETE FROM videos WHERE id = $1`
+
+	_, err := repo.db.ExecContext(ctx, query, id)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}
