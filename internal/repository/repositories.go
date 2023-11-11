@@ -48,11 +48,24 @@ type (
 		GetByFromUserAndToUser(ctx context.Context, fromUserID, toUserID uuid.UUID) (model.Subscription, error)
 
 		Create(ctx context.Context, dto CreateSubscriptionDTO) (uuid.UUID, error)
+
 		Delete(ctx context.Context, id uuid.UUID) error
 	}
 )
 
 type (
+	CreateVideoDTO struct {
+		Title         string
+		Description   string
+		ThumbnailPath string
+		VideoPath     string
+		AuthorID      uuid.UUID
+		Public        bool
+	}
+
 	Video interface {
+		Get(ctx context.Context, id uuid.UUID) (model.Video, error)
+
+		Create(ctx context.Context, dto CreateVideoDTO) (uuid.UUID, error)
 	}
 )

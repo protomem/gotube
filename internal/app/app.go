@@ -295,7 +295,10 @@ func (app *App) setupRoutes() {
 	{
 		// Protected
 		{
-
+			app.router.Handle(
+				"/api/v1/videos",
+				app.mdws.Protect()(app.handls.VideoHandler.Create()),
+			).Methods(http.MethodPost)
 		}
 	}
 

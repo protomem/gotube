@@ -13,6 +13,9 @@ var (
 
 	ErrSubscriptionNotFound = errors.New("subscription not found")
 	ErrSubscriptionExists   = errors.New("subscription already exists")
+
+	ErrVideoNotFound = errors.New("video not found")
+	ErrVideoExists   = errors.New("video already exists")
 )
 
 type User struct {
