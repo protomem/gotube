@@ -65,6 +65,7 @@ type (
 
 	Video interface {
 		Get(ctx context.Context, id uuid.UUID) (model.Video, error)
+		GetPublic(ctx context.Context, id uuid.UUID) (model.Video, error)
 
 		Create(ctx context.Context, dto CreateVideoDTO) (uuid.UUID, error)
 	}

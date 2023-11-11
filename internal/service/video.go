@@ -20,6 +20,9 @@ type (
 	}
 
 	Video interface {
+		Get(ctx context.Context, id uuid.UUID) (model.Video, error)
+		GetPublic(ctx context.Context, id uuid.UUID) (model.Video, error)
+
 		Create(ctx context.Context, dto CreateVideoDTO) (model.Video, error)
 	}
 
@@ -32,6 +35,28 @@ func NewVideo(repo repository.Video) *VideoImpl {
 	return &VideoImpl{
 		repo: repo,
 	}
+}
+
+func (serv *VideoImpl) Get(ctx context.Context, id uuid.UUID) (model.Video, error) {
+	const op = "service.Video.Get"
+
+	video, err := serv.repo.Get(ctx, id)
+	if err != nil {
+		return model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return video, nil
+}
+
+func (serv *VideoImpl) GetPublic(ctx context.Context, id uuid.UUID) (model.Video, error) {
+	const op = "service.Video.GetPublic"
+
+	video, err := serv.repo.GetPublic(ctx, id)
+	if err != nil {
+		return model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return video, nil
 }
 
 func (serv *VideoImpl) Create(ctx context.Context, dto CreateVideoDTO) (model.Video, error) {
