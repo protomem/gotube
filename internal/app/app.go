@@ -31,12 +31,14 @@ import (
 type repositories struct {
 	repository.User
 	repository.Subscription
+	repository.Video
 }
 
 func newRepositories(logger logging.Logger, pgdb *sql.DB) *repositories {
 	return &repositories{
 		User:         postgresrepo.NewUserRepository(logger, pgdb),
 		Subscription: postgresrepo.NewSubscriptionRepository(logger, pgdb),
+		Video:        postgresrepo.NewVideoRepository(logger, pgdb),
 	}
 }
 
@@ -44,6 +46,7 @@ type services struct {
 	service.User
 	service.Auth
 	service.Subscription
+	service.Video
 }
 
 func newServices(authSigngingKey string, repos *repositories, sessmng session.Manager) *services {
@@ -52,6 +55,7 @@ func newServices(authSigngingKey string, repos *repositories, sessmng session.Ma
 	servs.User = service.NewUser(repos.User)
 	servs.Auth = service.NewAuth(authSigngingKey, sessmng, servs.User)
 	servs.Subscription = service.NewSubscription(repos.Subscription, servs.User)
+	servs.Video = service.NewVideo(repos.Video)
 
 	return servs
 }
@@ -61,16 +65,18 @@ type handlers struct {
 	*httphandl.UserHandler
 	*httphandl.AuthHandler
 	*httphandl.SubscriptionHandler
+	*httphandl.VideoHandler
 
 	*httphandl.MediaHandler
 }
 
-func newHandlers(logger logging.Logger, services *services, store storage.Storage) *handlers {
+func newHandlers(logger logging.Logger, servs *services, store storage.Storage) *handlers {
 	return &handlers{
 		CommonHandler:       httphandl.NewCommonHandler(logger),
-		UserHandler:         httphandl.NewUserHandler(logger, services.User),
-		AuthHandler:         httphandl.NewAuthHandler(logger, services.Auth),
-		SubscriptionHandler: httphandl.NewSubscriptionHandler(logger, services.Subscription),
+		UserHandler:         httphandl.NewUserHandler(logger, servs.User),
+		AuthHandler:         httphandl.NewAuthHandler(logger, servs.Auth),
+		SubscriptionHandler: httphandl.NewSubscriptionHandler(logger, servs.Subscription),
+		VideoHandler:        httphandl.NewVideoHandler(logger, servs.Video),
 
 		MediaHandler: httphandl.NewMediaHandler(logger, store),
 	}
@@ -282,6 +288,14 @@ func (app *App) setupRoutes() {
 				"/api/v1/subs",
 				app.mdws.Protect()(app.handls.SubscriptionHandler.Unsubscribe()),
 			).Methods(http.MethodDelete)
+		}
+	}
+
+	// Video endpoints
+	{
+		// Protected
+		{
+
 		}
 	}
 
