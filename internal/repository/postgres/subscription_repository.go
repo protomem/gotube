@@ -48,6 +48,7 @@ func (repo *SubscriptionRepository) FindByFromUserID(
 
 		return []model.Subscription{}, fmt.Errorf("%s: %w", op, err)
 	}
+	defer func() { _ = rows.Close() }()
 
 	var subs []model.Subscription
 	for rows.Next() {

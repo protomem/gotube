@@ -293,6 +293,7 @@ func (app *App) setupRoutes() {
 
 	// Video endpoints
 	{
+		app.router.HandleFunc("/api/v1/videos", app.handls.VideoHandler.FindAll()).Methods(http.MethodGet)
 		app.router.HandleFunc("/api/v1/videos/{id}", app.handls.VideoHandler.Get()).Methods(http.MethodGet)
 
 		// Protected

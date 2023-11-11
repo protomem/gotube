@@ -54,6 +54,11 @@ type (
 )
 
 type (
+	FindVideosOptions struct {
+		Limit  uint64
+		Offset uint64
+	}
+
 	CreateVideoDTO struct {
 		Title         string
 		Description   string
@@ -64,6 +69,8 @@ type (
 	}
 
 	Video interface {
+		FindAllPublic(ctx context.Context, opts FindVideosOptions) ([]model.Video, error)
+
 		Get(ctx context.Context, id uuid.UUID) (model.Video, error)
 		GetPublic(ctx context.Context, id uuid.UUID) (model.Video, error)
 
