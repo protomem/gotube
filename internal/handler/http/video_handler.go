@@ -106,6 +106,84 @@ func (handl *VideoHandler) FindNew() http.HandlerFunc {
 	}
 }
 
+func (handl *VideoHandler) FindPopular() http.HandlerFunc {
+	type Response struct {
+		Videos []model.Video `json:"videos"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		const op = "http.VideoHandler.FindPopular"
+		var err error
+
+		ctx := r.Context()
+		logger := handl.logger.With(
+			"operation", op,
+			requestid.LogKey, requestid.Extract(ctx),
+		)
+
+		defer func() {
+			if err != nil {
+				logger.Error("failed to send response", "error", err)
+			}
+		}()
+
+		opts := service.FindVideosOptions{
+			Limit:  10,
+			Offset: 0,
+		}
+
+		if r.URL.Query().Has("limit") {
+			opts.Limit, err = strconv.ParseUint(r.URL.Query().Get("limit"), 10, 64)
+			if err != nil {
+				logger.Error("failed to parse limit", "error", err)
+
+				w.Header().Set(httpheader.ContentType, httpheader.ContentTypeJSON)
+				w.WriteHeader(http.StatusBadRequest)
+				err = json.NewEncoder(w).Encode(map[string]string{
+					"error": "invalid limit",
+				})
+
+				return
+			}
+		}
+
+		if r.URL.Query().Has("offset") {
+			opts.Offset, err = strconv.ParseUint(r.URL.Query().Get("offset"), 10, 64)
+			if err != nil {
+				logger.Error("failed to parse offset", "error", err)
+
+				w.Header().Set(httpheader.ContentType, httpheader.ContentTypeJSON)
+				w.WriteHeader(http.StatusBadRequest)
+				err = json.NewEncoder(w).Encode(map[string]string{
+					"error": "invalid offset",
+				})
+
+				return
+			}
+		}
+
+		videos, err := handl.serv.FindPopular(ctx, opts)
+		if err != nil {
+			logger.Error("failed to find popular videos", "error", err)
+
+			code := http.StatusInternalServerError
+			res := map[string]string{
+				"error": "failed to find popular videos",
+			}
+
+			w.Header().Set(httpheader.ContentType, httpheader.ContentTypeJSON)
+			w.WriteHeader(code)
+			err = json.NewEncoder(w).Encode(res)
+
+			return
+		}
+
+		w.Header().Set(httpheader.ContentType, httpheader.ContentTypeJSON)
+		w.WriteHeader(http.StatusOK)
+		err = json.NewEncoder(w).Encode(Response{Videos: videos})
+	}
+}
+
 func (handl *VideoHandler) Get() http.HandlerFunc {
 	type Response struct {
 		Video model.Video `json:"video"`

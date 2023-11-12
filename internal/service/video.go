@@ -36,6 +36,7 @@ type (
 
 	Video interface {
 		FindNew(ctx context.Context, opts FindVideosOptions) ([]model.Video, error)
+		FindPopular(ctx context.Context, opts FindVideosOptions) ([]model.Video, error)
 
 		Get(ctx context.Context, id uuid.UUID) (model.Video, error)
 		GetPublic(ctx context.Context, id uuid.UUID) (model.Video, error)
@@ -62,6 +63,17 @@ func (serv *VideoImpl) FindNew(ctx context.Context, opts FindVideosOptions) ([]m
 	const op = "service.Video.FindNew"
 
 	videos, err := serv.repo.FindAllPublicSortByCreatedAt(ctx, repository.FindVideosOptions(opts))
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return videos, nil
+}
+
+func (serv *VideoImpl) FindPopular(ctx context.Context, opts FindVideosOptions) ([]model.Video, error) {
+	const op = "service.Video.FindPopular"
+
+	videos, err := serv.repo.FindAllPublicSortByViews(ctx, repository.FindVideosOptions(opts))
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
