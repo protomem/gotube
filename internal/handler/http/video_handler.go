@@ -184,6 +184,77 @@ func (handl *VideoHandler) FindPopular() http.HandlerFunc {
 	}
 }
 
+func (handl *VideoHandler) FindByAuthor() http.HandlerFunc {
+	type Response struct {
+		Videos []model.Video `json:"videos"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		const op = "http.VideoHandler.FindByAuthor"
+		var err error
+
+		ctx := r.Context()
+		logger := handl.logger.With(
+			"operation", op,
+			requestid.LogKey, requestid.Extract(ctx),
+		)
+
+		defer func() {
+			if err != nil {
+				logger.Error("failed to send response", "error", err)
+			}
+		}()
+
+		vars := mux.Vars(r)
+
+		authorNickname, exists := vars["nickname"]
+		if !exists {
+			logger.Error("nickname missing")
+
+			w.Header().Set(httpheader.ContentType, httpheader.ContentTypeJSON)
+			w.WriteHeader(http.StatusBadRequest)
+			err = json.NewEncoder(w).Encode(map[string]string{
+				"error": "nickname missing",
+			})
+
+			return
+		}
+
+		authPayload, isAuth := jwt.Extract(ctx)
+
+		videos, err := handl.serv.FindByAuthorNickname(ctx, authorNickname)
+		if err != nil {
+			logger.Error("failed to find videos by author", "error", err)
+
+			code := http.StatusInternalServerError
+			res := map[string]string{
+				"error": "failed to find videos by author",
+			}
+
+			w.Header().Set(httpheader.ContentType, httpheader.ContentTypeJSON)
+			w.WriteHeader(code)
+			err = json.NewEncoder(w).Encode(res)
+
+			return
+		}
+
+		var filteredVideos []model.Video
+		for _, video := range videos {
+			if video.Public {
+				filteredVideos = append(filteredVideos, video)
+			} else {
+				if isAuth && authPayload.UserID == video.Author.ID {
+					filteredVideos = append(filteredVideos, video)
+				}
+			}
+		}
+
+		w.Header().Set(httpheader.ContentType, httpheader.ContentTypeJSON)
+		w.WriteHeader(http.StatusOK)
+		err = json.NewEncoder(w).Encode(Response{Videos: filteredVideos})
+	}
+}
+
 func (handl *VideoHandler) Get() http.HandlerFunc {
 	type Response struct {
 		Video model.Video `json:"video"`

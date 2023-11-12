@@ -147,6 +147,64 @@ func (repo *VideoRepository) FindAllPublicSortByViews(
 	return videos, nil
 }
 
+func (repo *VideoRepository) FindByAuthorNicknameSortByCreatedAt(
+	ctx context.Context,
+	nickname string,
+) ([]model.Video, error) {
+	const op = "postgres.VideoRepository.FindByAuthorNicknameSortByCreatedAt"
+
+	query := `
+		SELECT videos.*, authors.*
+		FROM videos
+		JOIN users AS authors ON videos.author_id = authors.id
+		WHERE authors.nickname = $1
+		ORDER BY videos.created_at DESC
+	`
+
+	rows, err := repo.db.QueryContext(ctx, query, nickname)
+	if err != nil {
+		if pgerr.IsNotFound(err) {
+			return []model.Video{}, nil
+		}
+
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var videos []model.Video
+	for rows.Next() {
+		var video model.Video
+		err := rows.Scan(
+			&video.ID,
+			&video.CreatedAt, &video.UpdatedAt,
+			&video.Title, &video.Description,
+			&video.ThumbnailPath, &video.VideoPath,
+			&video.Author.ID, &video.Public, &video.Views,
+
+			&video.Author.ID,
+			&video.Author.CreatedAt, &video.Author.UpdatedAt,
+			&video.Author.Nickname, &video.Author.Password,
+			&video.Author.Email, &video.Author.Verified,
+			&video.Author.AvatarPath, &video.Author.Description,
+		)
+		if err != nil {
+			return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		videos = append(videos, video)
+	}
+
+	if rows.Err() != nil {
+		return []model.Video{}, fmt.Errorf("%s: %w", op, rows.Err())
+	}
+
+	if len(videos) == 0 {
+		return []model.Video{}, nil
+	}
+
+	return videos, nil
+}
+
 func (repo *VideoRepository) Get(ctx context.Context, id uuid.UUID) (model.Video, error) {
 	const op = "postgres.VideoRepository.Get"
 

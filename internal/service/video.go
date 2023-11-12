@@ -37,6 +37,7 @@ type (
 	Video interface {
 		FindNew(ctx context.Context, opts FindVideosOptions) ([]model.Video, error)
 		FindPopular(ctx context.Context, opts FindVideosOptions) ([]model.Video, error)
+		FindByAuthorNickname(ctx context.Context, nickname string) ([]model.Video, error)
 
 		Get(ctx context.Context, id uuid.UUID) (model.Video, error)
 		GetPublic(ctx context.Context, id uuid.UUID) (model.Video, error)
@@ -74,6 +75,19 @@ func (serv *VideoImpl) FindPopular(ctx context.Context, opts FindVideosOptions) 
 	const op = "service.Video.FindPopular"
 
 	videos, err := serv.repo.FindAllPublicSortByViews(ctx, repository.FindVideosOptions(opts))
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return videos, nil
+}
+
+func (serv *VideoImpl) FindByAuthorNickname(ctx context.Context, nickname string) ([]model.Video, error) {
+	const op = "service.Video.FindByAuthorNickname"
+
+	// TODO: Valiate ...
+
+	videos, err := serv.repo.FindByAuthorNicknameSortByCreatedAt(ctx, nickname)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}

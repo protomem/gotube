@@ -293,11 +293,12 @@ func (app *App) setupRoutes() {
 
 	// Video endpoints
 	{
+		app.router.HandleFunc("/api/v1/users/{nickname}/videos",
+			app.handls.VideoHandler.FindByAuthor()).Methods(http.MethodGet)
 		app.router.HandleFunc("/api/v1/videos/new", app.handls.VideoHandler.FindNew()).Methods(http.MethodGet)
 		app.router.HandleFunc("/api/v1/videos/popular", app.handls.VideoHandler.FindPopular()).Methods(http.MethodGet)
 		app.router.HandleFunc("/api/v1/videos/{id}", app.handls.VideoHandler.Get()).Methods(http.MethodGet)
 
-		// TODO: Add usecase: get list videos by user
 		// TODO: Add usecase: get list videos by subscriptions
 		// TODO: Add usecase: search video
 
