@@ -28,13 +28,13 @@ func NewVideoHandler(logger logging.Logger, serv service.Video) *VideoHandler {
 	}
 }
 
-func (handl *VideoHandler) FindAll() http.HandlerFunc {
+func (handl *VideoHandler) FindNew() http.HandlerFunc {
 	type Response struct {
 		Videos []model.Video `json:"videos"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "http.VideoHandler.FindAll"
+		const op = "http.VideoHandler.FindNew"
 		var err error
 
 		ctx := r.Context()
@@ -84,13 +84,13 @@ func (handl *VideoHandler) FindAll() http.HandlerFunc {
 			}
 		}
 
-		videos, err := handl.serv.FindAllPublic(ctx, opts)
+		videos, err := handl.serv.FindNew(ctx, opts)
 		if err != nil {
-			logger.Error("failed to find videos", "error", err)
+			logger.Error("failed to find new videos", "error", err)
 
 			code := http.StatusInternalServerError
 			res := map[string]string{
-				"error": "failed to find videos",
+				"error": "failed to find new videos",
 			}
 
 			w.Header().Set(httpheader.ContentType, httpheader.ContentTypeJSON)

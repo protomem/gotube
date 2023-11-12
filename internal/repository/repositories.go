@@ -77,7 +77,7 @@ type (
 	}
 
 	Video interface {
-		FindAllPublic(ctx context.Context, opts FindVideosOptions) ([]model.Video, error)
+		FindAllPublicSortByCreatedAt(ctx context.Context, opts FindVideosOptions) ([]model.Video, error)
 
 		Get(ctx context.Context, id uuid.UUID) (model.Video, error)
 		GetPublic(ctx context.Context, id uuid.UUID) (model.Video, error)

@@ -27,11 +27,11 @@ func NewVideoRepository(logger logging.Logger, db *sql.DB) *VideoRepository {
 	}
 }
 
-func (repo *VideoRepository) FindAllPublic(
+func (repo *VideoRepository) FindAllPublicSortByCreatedAt(
 	ctx context.Context,
 	opts repository.FindVideosOptions,
 ) ([]model.Video, error) {
-	const op = "postgres.VideoRepository.FindAllPublic"
+	const op = "postgres.VideoRepository.FindAllPublicSortByCreatedAt"
 
 	query := `
 		SELECT videos.*, authors.*
