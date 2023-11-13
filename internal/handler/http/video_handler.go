@@ -231,6 +231,11 @@ func (handl *VideoHandler) FindByAuthor() http.HandlerFunc {
 				"error": "failed to find videos by author",
 			}
 
+			if errors.Is(err, model.ErrUserNotFound) {
+				code = http.StatusNotFound
+				res["error"] = model.ErrUserNotFound.Error()
+			}
+
 			w.Header().Set(httpheader.ContentType, httpheader.ContentTypeJSON)
 			w.WriteHeader(code)
 			err = json.NewEncoder(w).Encode(res)
@@ -331,6 +336,11 @@ func (handl *VideoHandler) FindByAuthorSubscriptions() http.HandlerFunc {
 			code := http.StatusInternalServerError
 			res := map[string]string{
 				"error": "failed to find videos by author",
+			}
+
+			if errors.Is(err, model.ErrUserNotFound) {
+				code = http.StatusNotFound
+				res["error"] = model.ErrUserNotFound.Error()
 			}
 
 			w.Header().Set(httpheader.ContentType, httpheader.ContentTypeJSON)
