@@ -37,7 +37,8 @@ type (
 	Video interface {
 		FindNew(ctx context.Context, opts FindVideosOptions) ([]model.Video, error)
 		FindPopular(ctx context.Context, opts FindVideosOptions) ([]model.Video, error)
-		FindByAuthorNickname(ctx context.Context, nickname string) ([]model.Video, error)
+		FindByAuthorNickname(ctx context.Context, authorNickname string) ([]model.Video, error)
+		FindByAuthorSubscriptions(ctx context.Context, authorNickname string, opts FindVideosOptions) ([]model.Video, error)
 
 		Get(ctx context.Context, id uuid.UUID) (model.Video, error)
 		GetPublic(ctx context.Context, id uuid.UUID) (model.Video, error)
@@ -50,13 +51,15 @@ type (
 	}
 
 	VideoImpl struct {
-		repo repository.Video
+		repo    repository.Video
+		subServ Subscription
 	}
 )
 
-func NewVideo(repo repository.Video) *VideoImpl {
+func NewVideo(repo repository.Video, subServ Subscription) *VideoImpl {
 	return &VideoImpl{
-		repo: repo,
+		repo:    repo,
+		subServ: subServ,
 	}
 }
 
@@ -82,14 +85,44 @@ func (serv *VideoImpl) FindPopular(ctx context.Context, opts FindVideosOptions) 
 	return videos, nil
 }
 
-func (serv *VideoImpl) FindByAuthorNickname(ctx context.Context, nickname string) ([]model.Video, error) {
+func (serv *VideoImpl) FindByAuthorNickname(ctx context.Context, authorNickname string) ([]model.Video, error) {
 	const op = "service.Video.FindByAuthorNickname"
 
 	// TODO: Valiate ...
 
-	videos, err := serv.repo.FindByAuthorNicknameSortByCreatedAt(ctx, nickname)
+	videos, err := serv.repo.FindByAuthorNicknameSortByCreatedAt(ctx, authorNickname)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return videos, nil
+}
+
+func (serv *VideoImpl) FindByAuthorSubscriptions(
+	ctx context.Context,
+	authorNickname string,
+	opts FindVideosOptions,
+) ([]model.Video, error) {
+	const op = "service.Video.FindByAuthorSubscriptions"
+	var err error
+
+	subs, err := serv.subServ.FindByFromUserNickname(ctx, authorNickname)
+	if err != nil {
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	if len(subs) == 0 {
+		return []model.Video{}, nil
+	}
+
+	authorIDs := make([]uuid.UUID, 0, len(subs))
+	for _, sub := range subs {
+		authorIDs = append(authorIDs, sub.ToUser.ID)
+	}
+
+	videos, err := serv.repo.FindByAuthorIDsSortByCreatedAt(ctx, authorIDs, repository.FindVideosOptions(opts))
+	if err != nil {
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return videos, nil

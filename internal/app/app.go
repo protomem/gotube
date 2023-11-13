@@ -55,7 +55,7 @@ func newServices(authSigngingKey string, repos *repositories, sessmng session.Ma
 	servs.User = service.NewUser(repos.User)
 	servs.Auth = service.NewAuth(authSigngingKey, sessmng, servs.User)
 	servs.Subscription = service.NewSubscription(repos.Subscription, servs.User)
-	servs.Video = service.NewVideo(repos.Video)
+	servs.Video = service.NewVideo(repos.Video, servs.Subscription)
 
 	return servs
 }
@@ -299,11 +299,14 @@ func (app *App) setupRoutes() {
 		app.router.HandleFunc("/api/v1/videos/popular", app.handls.VideoHandler.FindPopular()).Methods(http.MethodGet)
 		app.router.HandleFunc("/api/v1/videos/{id}", app.handls.VideoHandler.Get()).Methods(http.MethodGet)
 
-		// TODO: Add usecase: get list videos by subscriptions
 		// TODO: Add usecase: search video
 
 		// Protected
 		{
+			app.router.Handle(
+				"/api/v1/users/{nickname}/videos/subs",
+				app.mdws.Protect()(app.handls.VideoHandler.FindByAuthorSubscriptions()),
+			).Methods(http.MethodGet)
 			app.router.Handle(
 				"/api/v1/videos",
 				app.mdws.Protect()(app.handls.VideoHandler.Create()),

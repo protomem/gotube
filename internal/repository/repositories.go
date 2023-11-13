@@ -79,6 +79,7 @@ type (
 	Video interface {
 		FindAllPublicSortByCreatedAt(ctx context.Context, opts FindVideosOptions) ([]model.Video, error)
 		FindAllPublicSortByViews(ctx context.Context, opts FindVideosOptions) ([]model.Video, error)
+		FindByAuthorIDsSortByCreatedAt(ctx context.Context, authorIDs []uuid.UUID, opts FindVideosOptions) ([]model.Video, error)
 		FindByAuthorNicknameSortByCreatedAt(ctx context.Context, nickname string) ([]model.Video, error)
 
 		Get(ctx context.Context, id uuid.UUID) (model.Video, error)
