@@ -238,7 +238,7 @@ func (handl *VideoHandler) FindByAuthor() http.HandlerFunc {
 			return
 		}
 
-		var filteredVideos []model.Video
+		filteredVideos := []model.Video{}
 		for _, video := range videos {
 			if video.Public {
 				filteredVideos = append(filteredVideos, video)
