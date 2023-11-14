@@ -42,3 +42,51 @@ func (handl *CommonHandler) Ping() http.HandlerFunc {
 		}
 	}
 }
+
+func (handl *CommonHandler) NotFound() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		const op = "http.CommonHandler.NotFound"
+
+		ctx := r.Context()
+		logger := handl.logger.With(
+			"operation", op,
+			requestid.LogKey, requestid.Extract(ctx),
+		)
+
+		w.Header().Set(httpheader.ContentType, httpheader.ContentTypeJSON)
+		w.WriteHeader(http.StatusNotFound)
+
+		err := json.NewEncoder(w).Encode(map[string]string{
+			"error": "not found",
+		})
+		if err != nil {
+			logger.Error("failed to send response", "error", err)
+
+			return
+		}
+	}
+}
+
+func (handl *CommonHandler) MethodNotAllowed() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		const op = "http.CommonHandler.MethodNotAllowed"
+
+		ctx := r.Context()
+		logger := handl.logger.With(
+			"operation", op,
+			requestid.LogKey, requestid.Extract(ctx),
+		)
+
+		w.Header().Set(httpheader.ContentType, httpheader.ContentTypeJSON)
+		w.WriteHeader(http.StatusMethodNotAllowed)
+
+		err := json.NewEncoder(w).Encode(map[string]string{
+			"error": "method not allowed",
+		})
+		if err != nil {
+			logger.Error("failed to send response", "error", err)
+
+			return
+		}
+	}
+}

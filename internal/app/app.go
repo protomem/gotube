@@ -218,6 +218,9 @@ func (app *App) setupRoutes() {
 
 	app.router.Use(app.mdws.Authenticate())
 
+	app.router.NotFoundHandler = app.handls.NotFound()
+	app.router.MethodNotAllowedHandler = app.handls.MethodNotAllowed()
+
 	app.router.HandleFunc("/ping", app.handls.Ping()).Methods(http.MethodGet)
 
 	// Auth endpoints
