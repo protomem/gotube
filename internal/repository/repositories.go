@@ -81,6 +81,7 @@ type (
 		FindAllPublicSortByViews(ctx context.Context, opts FindVideosOptions) ([]model.Video, error)
 		FindByAuthorIDsSortByCreatedAt(ctx context.Context, authorIDs []uuid.UUID, opts FindVideosOptions) ([]model.Video, error)
 		FindByAuthorNicknameSortByCreatedAt(ctx context.Context, nickname string) ([]model.Video, error)
+		FindPublicByLikeTitleSortByCreatedAt(ctx context.Context, query string, opts FindVideosOptions) ([]model.Video, error)
 
 		Get(ctx context.Context, id uuid.UUID) (model.Video, error)
 		GetPublic(ctx context.Context, id uuid.UUID) (model.Video, error)

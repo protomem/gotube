@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/protomem/gotube/internal/model"
@@ -39,6 +40,8 @@ type (
 		FindPopular(ctx context.Context, opts FindVideosOptions) ([]model.Video, error)
 		FindByAuthorNickname(ctx context.Context, authorNickname string) ([]model.Video, error)
 		FindByAuthorSubscriptions(ctx context.Context, authorNickname string, opts FindVideosOptions) ([]model.Video, error)
+
+		Search(ctx context.Context, query string, opts FindVideosOptions) ([]model.Video, error)
 
 		Get(ctx context.Context, id uuid.UUID) (model.Video, error)
 		GetPublic(ctx context.Context, id uuid.UUID) (model.Video, error)
@@ -121,6 +124,20 @@ func (serv *VideoImpl) FindByAuthorSubscriptions(
 	}
 
 	videos, err := serv.repo.FindByAuthorIDsSortByCreatedAt(ctx, authorIDs, repository.FindVideosOptions(opts))
+	if err != nil {
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return videos, nil
+}
+
+func (serv *VideoImpl) Search(ctx context.Context, query string, opts FindVideosOptions) ([]model.Video, error) {
+	const op = "service.Video.Search"
+
+	// TODO: Valiate ...
+
+	videos, err := serv.repo.
+		FindPublicByLikeTitleSortByCreatedAt(ctx, strings.ToLower(query), repository.FindVideosOptions(opts))
 	if err != nil {
 		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
 	}

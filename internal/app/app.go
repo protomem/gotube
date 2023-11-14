@@ -297,9 +297,8 @@ func (app *App) setupRoutes() {
 			app.handls.VideoHandler.FindByAuthor()).Methods(http.MethodGet)
 		app.router.HandleFunc("/api/v1/videos/new", app.handls.VideoHandler.FindNew()).Methods(http.MethodGet)
 		app.router.HandleFunc("/api/v1/videos/popular", app.handls.VideoHandler.FindPopular()).Methods(http.MethodGet)
+		app.router.HandleFunc("/api/v1/videos/search", app.handls.VideoHandler.Search()).Methods(http.MethodGet)
 		app.router.HandleFunc("/api/v1/videos/{id}", app.handls.VideoHandler.Get()).Methods(http.MethodGet)
-
-		// TODO: Add usecase: search video
 
 		// Protected
 		{
