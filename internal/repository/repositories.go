@@ -93,3 +93,8 @@ type (
 		Delete(ctx context.Context, id uuid.UUID) error
 	}
 )
+
+type (
+	Rating interface {
+	}
+)

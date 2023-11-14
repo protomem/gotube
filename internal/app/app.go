@@ -32,6 +32,7 @@ type repositories struct {
 	repository.User
 	repository.Subscription
 	repository.Video
+	repository.Rating
 }
 
 func newRepositories(logger logging.Logger, pgdb *sql.DB) *repositories {
@@ -39,6 +40,7 @@ func newRepositories(logger logging.Logger, pgdb *sql.DB) *repositories {
 		User:         postgresrepo.NewUserRepository(logger, pgdb),
 		Subscription: postgresrepo.NewSubscriptionRepository(logger, pgdb),
 		Video:        postgresrepo.NewVideoRepository(logger, pgdb),
+		Rating:       postgresrepo.NewRatingRepository(logger, pgdb),
 	}
 }
 
@@ -47,6 +49,7 @@ type services struct {
 	service.Auth
 	service.Subscription
 	service.Video
+	service.Rating
 }
 
 func newServices(authSigngingKey string, repos *repositories, sessmng session.Manager) *services {
@@ -56,6 +59,7 @@ func newServices(authSigngingKey string, repos *repositories, sessmng session.Ma
 	servs.Auth = service.NewAuth(authSigngingKey, sessmng, servs.User)
 	servs.Subscription = service.NewSubscription(repos.Subscription, servs.User)
 	servs.Video = service.NewVideo(repos.Video, servs.Subscription)
+	servs.Rating = service.NewRating(repos.Rating)
 
 	return servs
 }
@@ -66,6 +70,7 @@ type handlers struct {
 	*httphandl.AuthHandler
 	*httphandl.SubscriptionHandler
 	*httphandl.VideoHandler
+	*httphandl.RatingHandler
 
 	*httphandl.MediaHandler
 }
@@ -77,6 +82,7 @@ func newHandlers(logger logging.Logger, servs *services, store storage.Storage) 
 		AuthHandler:         httphandl.NewAuthHandler(logger, servs.Auth),
 		SubscriptionHandler: httphandl.NewSubscriptionHandler(logger, servs.Subscription),
 		VideoHandler:        httphandl.NewVideoHandler(logger, servs.Video),
+		RatingHandler:       httphandl.NewRatingHandler(logger, servs.Rating),
 
 		MediaHandler: httphandl.NewMediaHandler(logger, store),
 	}
