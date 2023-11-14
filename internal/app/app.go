@@ -332,6 +332,9 @@ func (app *App) setupRoutes() {
 
 	// Rating endpoints
 	{
+		app.router.HandleFunc("/api/v1/videos/{id}/ratings",
+			app.handls.RatingHandler.FindByVideoID()).Methods(http.MethodGet)
+
 		// Protected
 		{
 			app.router.Handle(

@@ -102,6 +102,8 @@ type (
 	}
 
 	Rating interface {
+		FindByVideoID(ctx context.Context, videoID uuid.UUID) ([]model.Rating, error)
+
 		GetByVideoIDAndUserID(ctx context.Context, videoID, userID uuid.UUID) (model.Rating, error)
 
 		Create(ctx context.Context, dto CreateRatingDTO) (uuid.UUID, error)

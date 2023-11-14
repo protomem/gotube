@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/protomem/gotube/internal/jwt"
+	"github.com/protomem/gotube/internal/model"
 	"github.com/protomem/gotube/internal/service"
 	"github.com/protomem/gotube/pkg/httpheader"
 	"github.com/protomem/gotube/pkg/logging"
@@ -22,6 +23,74 @@ func NewRatingHandler(logger logging.Logger, serv service.Rating) *RatingHandler
 	return &RatingHandler{
 		logger: logger.With("handler", "rating", "handlerType", "http"),
 		serv:   serv,
+	}
+}
+
+func (handl *RatingHandler) FindByVideoID() http.HandlerFunc {
+	type Response struct {
+		Ratings []model.Rating `json:"ratings"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		const op = "http.RatingHandler.FindByVideoID"
+		var err error
+
+		ctx := r.Context()
+		logger := handl.logger.With(
+			"operation", op,
+			requestid.LogKey, requestid.Extract(ctx),
+		)
+
+		defer func() {
+			if err != nil {
+				logger.Error("failed to send response", "error", err)
+			}
+		}()
+
+		vars := mux.Vars(r)
+
+		videoIDRaw, exists := vars["id"]
+		if !exists {
+			logger.Error("video id missing")
+
+			w.Header().Set(httpheader.ContentType, httpheader.ContentTypeJSON)
+			w.WriteHeader(http.StatusBadRequest)
+			err = json.NewEncoder(w).Encode(map[string]string{
+				"error": "video id missing",
+			})
+
+			return
+		}
+
+		videoID, err := uuid.Parse(videoIDRaw)
+		if err != nil {
+			logger.Error("failed to parse video id", "error", err)
+
+			w.Header().Set(httpheader.ContentType, httpheader.ContentTypeJSON)
+			w.WriteHeader(http.StatusBadRequest)
+			err = json.NewEncoder(w).Encode(map[string]string{
+				"error": "invalid video id",
+			})
+
+			return
+		}
+
+		ratings, err := handl.serv.FindByVideoID(ctx, videoID)
+		if err != nil {
+			logger.Error("failed to find ratings", "error", err)
+
+			w.Header().Set(httpheader.ContentType, httpheader.ContentTypeJSON)
+			w.WriteHeader(http.StatusInternalServerError)
+			err = json.NewEncoder(w).Encode(map[string]string{
+				"error": "failed to find ratings",
+			})
+
+			return
+		}
+
+		w.Header().Set(httpheader.ContentType, httpheader.ContentTypeJSON)
+		w.WriteHeader(http.StatusOK)
+		err = json.NewEncoder(w).Encode(Response{Ratings: ratings})
 	}
 }
 

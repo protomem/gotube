@@ -24,6 +24,48 @@ func NewRatingRepository(logger logging.Logger, db *sql.DB) *RatingRepository {
 	}
 }
 
+func (repo *RatingRepository) FindByVideoID(ctx context.Context, videoID uuid.UUID) ([]model.Rating, error) {
+	const op = "repository.Rating.FindByVideoID"
+
+	query := `SELECT * FROM ratings WHERE video_id = $1`
+
+	rows, err := repo.db.QueryContext(ctx, query, videoID)
+	if err != nil {
+		if pgerr.IsNotFound(err) {
+			return []model.Rating{}, nil
+		}
+
+		return []model.Rating{}, fmt.Errorf("%s: %w", op, err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var ratings []model.Rating
+	for rows.Next() {
+		var rating model.Rating
+		err := rows.Scan(
+			&rating.ID,
+			&rating.CreatedAt, &rating.UpdatedAt,
+			&rating.Like,
+			&rating.VideoID, &rating.UserID,
+		)
+		if err != nil {
+			return ratings, fmt.Errorf("%s: %w", op, err)
+		}
+
+		ratings = append(ratings, rating)
+	}
+
+	if rows.Err() != nil {
+		return ratings, fmt.Errorf("%s: %w", op, rows.Err())
+	}
+
+	if len(ratings) == 0 {
+		return []model.Rating{}, nil
+	}
+
+	return ratings, nil
+}
+
 func (repo *RatingRepository) GetByVideoIDAndUserID(
 	ctx context.Context,
 	videoID, userID uuid.UUID,

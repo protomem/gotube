@@ -24,6 +24,8 @@ type (
 	}
 
 	Rating interface {
+		FindByVideoID(ctx context.Context, videoID uuid.UUID) ([]model.Rating, error)
+
 		Like(ctx context.Context, dto LikeDTO) error
 		Dislike(ctx context.Context, dto DislikeDTO) error
 
@@ -39,6 +41,17 @@ func NewRating(repo repository.Rating) *RatingImpl {
 	return &RatingImpl{
 		repo: repo,
 	}
+}
+
+func (serv *RatingImpl) FindByVideoID(ctx context.Context, videoID uuid.UUID) ([]model.Rating, error) {
+	const op = "service.Rating.FindByVideoID"
+
+	ratings, err := serv.repo.FindByVideoID(ctx, videoID)
+	if err != nil {
+		return []model.Rating{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return ratings, nil
 }
 
 func (serv *RatingImpl) Like(ctx context.Context, dto LikeDTO) error {

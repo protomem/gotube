@@ -71,7 +71,7 @@ func (serv *VideoImpl) FindNew(ctx context.Context, opts FindVideosOptions) ([]m
 
 	videos, err := serv.repo.FindAllPublicSortByCreatedAt(ctx, repository.FindVideosOptions(opts))
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return videos, nil
@@ -82,7 +82,7 @@ func (serv *VideoImpl) FindPopular(ctx context.Context, opts FindVideosOptions) 
 
 	videos, err := serv.repo.FindAllPublicSortByViews(ctx, repository.FindVideosOptions(opts))
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return videos, nil
@@ -95,7 +95,7 @@ func (serv *VideoImpl) FindByAuthorNickname(ctx context.Context, authorNickname 
 
 	videos, err := serv.repo.FindByAuthorNicknameSortByCreatedAt(ctx, authorNickname)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return videos, nil
