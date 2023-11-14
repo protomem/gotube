@@ -16,6 +16,9 @@ var (
 
 	ErrVideoNotFound = errors.New("video not found")
 	ErrVideoExists   = errors.New("video already exists")
+
+	ErrRatingNotFound = errors.New("rating not found")
+	ErrRatingExists   = errors.New("rating already exists")
 )
 
 type User struct {

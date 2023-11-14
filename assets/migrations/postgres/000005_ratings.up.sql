@@ -9,7 +9,9 @@ CREATE TABLE IF NOT EXISTS ratings (
     is_like BOOLEAN NOT NULL,
 
     video_id UUID NOT NULL REFERENCES videos (id) ON DELETE CASCADE,
-    user_id  UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE
+    user_id  UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+
+    UNIQUE (video_id, user_id)
 );
 
 COMMIT;

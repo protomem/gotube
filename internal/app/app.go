@@ -330,6 +330,25 @@ func (app *App) setupRoutes() {
 		}
 	}
 
+	// Rating endpoints
+	{
+		// Protected
+		{
+			app.router.Handle(
+				"/api/v1/videos/{id}/ratings/like",
+				app.mdws.Protect()(app.handls.RatingHandler.Like()),
+			).Methods(http.MethodPost)
+			app.router.Handle(
+				"/api/v1/videos/{id}/ratings/dislike",
+				app.mdws.Protect()(app.handls.RatingHandler.Dislike()),
+			).Methods(http.MethodPost)
+			app.router.Handle(
+				"/api/v1/videos/{id}/ratings",
+				app.mdws.Protect()(app.handls.RatingHandler.Delete()),
+			).Methods(http.MethodDelete)
+		}
+	}
+
 }
 
 func (app *App) startServer(errs chan<- error) {

@@ -95,6 +95,17 @@ type (
 )
 
 type (
+	CreateRatingDTO struct {
+		Like    bool
+		VideoID uuid.UUID
+		UserID  uuid.UUID
+	}
+
 	Rating interface {
+		GetByVideoIDAndUserID(ctx context.Context, videoID, userID uuid.UUID) (model.Rating, error)
+
+		Create(ctx context.Context, dto CreateRatingDTO) (uuid.UUID, error)
+
+		Delete(ctx context.Context, id uuid.UUID) error
 	}
 )
