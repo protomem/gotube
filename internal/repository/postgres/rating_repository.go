@@ -12,6 +12,8 @@ import (
 	"github.com/protomem/gotube/pkg/pgerr"
 )
 
+var _ repository.Rating = (*RatingRepository)(nil)
+
 type RatingRepository struct {
 	logger logging.Logger
 	db     *sql.DB

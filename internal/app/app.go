@@ -17,6 +17,7 @@ import (
 	httphandl "github.com/protomem/gotube/internal/handler/http"
 	httpmdw "github.com/protomem/gotube/internal/middleware/http"
 	"github.com/protomem/gotube/internal/repository"
+	mongorepo "github.com/protomem/gotube/internal/repository/mongo"
 	postgresrepo "github.com/protomem/gotube/internal/repository/postgres"
 	"github.com/protomem/gotube/internal/service"
 	"github.com/protomem/gotube/internal/session"
@@ -26,6 +27,7 @@ import (
 	"github.com/protomem/gotube/pkg/closure"
 	"github.com/protomem/gotube/pkg/logging"
 	"github.com/protomem/gotube/pkg/logging/stdlog"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type repositories struct {
@@ -33,14 +35,16 @@ type repositories struct {
 	repository.Subscription
 	repository.Video
 	repository.Rating
+	repository.Comment
 }
 
-func newRepositories(logger logging.Logger, pgdb *sql.DB) *repositories {
+func newRepositories(logger logging.Logger, pgdb *sql.DB, mgdb *mongo.Client) *repositories {
 	return &repositories{
 		User:         postgresrepo.NewUserRepository(logger, pgdb),
 		Subscription: postgresrepo.NewSubscriptionRepository(logger, pgdb),
 		Video:        postgresrepo.NewVideoRepository(logger, pgdb),
 		Rating:       postgresrepo.NewRatingRepository(logger, pgdb),
+		Comment:      mongorepo.NewCommentRepository(logger, mgdb),
 	}
 }
 
@@ -50,6 +54,7 @@ type services struct {
 	service.Subscription
 	service.Video
 	service.Rating
+	service.Comment
 }
 
 func newServices(authSigngingKey string, repos *repositories, sessmng session.Manager) *services {
@@ -60,6 +65,7 @@ func newServices(authSigngingKey string, repos *repositories, sessmng session.Ma
 	servs.Subscription = service.NewSubscription(repos.Subscription, servs.User)
 	servs.Video = service.NewVideo(repos.Video, servs.Subscription)
 	servs.Rating = service.NewRating(repos.Rating)
+	servs.Comment = service.NewComment(repos.Comment)
 
 	return servs
 }
@@ -71,6 +77,7 @@ type handlers struct {
 	*httphandl.SubscriptionHandler
 	*httphandl.VideoHandler
 	*httphandl.RatingHandler
+	*httphandl.CommentHandler
 
 	*httphandl.MediaHandler
 }
@@ -83,6 +90,7 @@ func newHandlers(logger logging.Logger, servs *services, store storage.Storage) 
 		SubscriptionHandler: httphandl.NewSubscriptionHandler(logger, servs.Subscription),
 		VideoHandler:        httphandl.NewVideoHandler(logger, servs.Video),
 		RatingHandler:       httphandl.NewRatingHandler(logger, servs.Rating),
+		CommentHandler:      httphandl.NewCommentHandler(logger, servs.Comment),
 
 		MediaHandler: httphandl.NewMediaHandler(logger, store),
 	}
@@ -105,6 +113,7 @@ type App struct {
 	logger logging.Logger
 
 	pgdb *sql.DB
+	mgdb *mongo.Client
 
 	sessmng session.Manager
 	store   storage.Storage
@@ -178,6 +187,13 @@ func (app *App) setup(conf config.Config) error {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
+	app.mgdb, err = bootstrap.Mongo(ctx, bootstrap.MongoOptions{
+		URI: conf.Mongo.URI,
+	})
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
 	app.sessmng, err = redis.NewSessionManager(ctx, app.logger, conf.Redis.Addr)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
@@ -188,7 +204,7 @@ func (app *App) setup(conf config.Config) error {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	app.repos = newRepositories(app.logger, app.pgdb)
+	app.repos = newRepositories(app.logger, app.pgdb, app.mgdb)
 	app.servs = newServices(conf.Auth.Secret, app.repos, app.sessmng)
 	app.handls = newHandlers(app.logger, app.servs, app.store)
 	app.mdws = newMiddlewares(app.logger, app.servs)
@@ -209,6 +225,7 @@ func (app *App) registerOnShutdown() {
 	app.closer.Add(app.server.Shutdown)
 	app.closer.Add(app.sessmng.Close)
 	app.closer.Add(app.store.Close)
+	app.closer.Add(app.mgdb.Disconnect)
 	app.closer.Add(func(_ context.Context) error {
 		return app.pgdb.Close()
 	})
