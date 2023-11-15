@@ -46,7 +46,7 @@ services:
     env_file:
       - ../configs/mongo.env
     volumes:
-      - mg_data:/data
+      - mg_data:/data/db
 
   s3:
     image: quay.io/minio/minio:RELEASE.2023-08-31T15-31-16Z
