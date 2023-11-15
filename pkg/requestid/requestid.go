@@ -8,37 +8,40 @@ import (
 )
 
 const (
-	Header = "X-Request-ID"
+	Header = "X-Request-Id"
 	LogKey = "requestId"
 )
-
-func Empty() string {
-	return uuid.Nil.String()
-}
-
-func Generator() string {
-	rid, err := uuid.NewRandom()
-	if err != nil {
-		return Empty()
-	}
-
-	return rid.String()
-}
 
 func Middleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			rid := r.Header.Get(Header)
 			if rid == "" {
-				rid = Generator()
+				rid = Generate()
+				r.Header.Set(Header, rid)
 			}
+
+			ctx := Inject(r.Context(), rid)
+			r = r.WithContext(ctx)
 
 			w.Header().Set(Header, rid)
 
-			ctx := Inject(r.Context(), rid)
-			next.ServeHTTP(w, r.WithContext(ctx))
+			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+func Empty() string {
+	return uuid.Nil.String()
+}
+
+func Generate() string {
+	rid, err := uuid.NewRandom()
+	if err != nil {
+		return Empty()
+	}
+
+	return rid.String()
 }
 
 type ctxKey struct{}

@@ -2,8 +2,11 @@ package logging
 
 import (
 	"context"
+	"fmt"
 	"io"
 )
+
+var ErrInvalidLogLevel = fmt.Errorf("invalid log level")
 
 type Logger interface {
 	With(args ...any) Logger

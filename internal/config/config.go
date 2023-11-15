@@ -1,49 +1,101 @@
 package config
 
 import (
+	"errors"
 	"fmt"
-
-	"github.com/ilyakaznacheev/cleanenv"
+	"os"
 )
 
 type Config struct {
 	HTTP struct {
-		Addr string `yaml:"addr" env-required:"true"`
-	} `yaml:"http"`
-
-	Auth struct {
-		Secret string `yaml:"secret" env-required:"true"`
-	} `yaml:"auth"`
+		Addr string
+	}
 
 	Log struct {
-		Level string `yaml:"level" env-required:"true"`
-	} `yaml:"log"`
+		Level string
+	}
+
+	Auth struct {
+		Secret string
+	}
 
 	Postgres struct {
-		Connect string `yaml:"connect" env-required:"true"`
-	} `yaml:"postgres"`
+		Connect string
+	}
 
 	Mongo struct {
-		Connect string `yaml:"connect" env-required:"true"`
-	} `yaml:"mongo"`
-
-	S3 struct {
-		Addr      string `yaml:"addr" env-required:"true"`
-		AccessKey string `yaml:"access_key" env-required:"true"`
-		SecretKey string `yaml:"secret_key" env-required:"true"`
-	} `yaml:"s3"`
+		URI string
+	}
 
 	Redis struct {
-		Connect string `yaml:"connect" env-required:"true"`
-	} `yaml:"redis"`
+		Addr string
+	}
+
+	S3 struct {
+		Addr string
+
+		Keys struct {
+			Access string
+			Secret string
+		}
+	}
 }
 
-func New(filename string) (Config, error) {
-	var conf Config
+func New() (Config, error) {
+	const op = "config.New"
+	var (
+		conf Config
+		ok   bool
+		errs error
+	)
 
-	err := cleanenv.ReadConfig(filename, &conf)
-	if err != nil {
-		return Config{}, fmt.Errorf("config.New(%s): %w", filename, err)
+	conf.HTTP.Addr, ok = os.LookupEnv("HTTP__ADDR")
+	if !ok {
+		errs = errors.Join(errs, errors.New("HTTP__ADDR is not set"))
+	}
+
+	conf.Log.Level, ok = os.LookupEnv("LOG__LEVEL")
+	if !ok {
+		errs = errors.Join(errs, errors.New("LOG__LEVEL is not set"))
+	}
+
+	conf.Auth.Secret, ok = os.LookupEnv("AUTH__SECRET")
+	if !ok {
+		errs = errors.Join(errs, errors.New("AUTH__SECRET is not set"))
+	}
+
+	conf.Postgres.Connect, ok = os.LookupEnv("POSTGRES__CONNECT")
+	if !ok {
+		errs = errors.Join(errs, errors.New("POSTGRES__CONNECT is not set"))
+	}
+
+	conf.Mongo.URI, ok = os.LookupEnv("MONGO__URI")
+	if !ok {
+		errs = errors.Join(errs, errors.New("MONGO__URI is not set"))
+	}
+
+	conf.Redis.Addr, ok = os.LookupEnv("REDIS__ADDR")
+	if !ok {
+		errs = errors.Join(errs, errors.New("REDIS__ADDR is not set"))
+	}
+
+	conf.S3.Addr, ok = os.LookupEnv("S3__ADDR")
+	if !ok {
+		errs = errors.Join(errs, errors.New("S3__ADDR is not set"))
+	}
+
+	conf.S3.Keys.Access, ok = os.LookupEnv("S3__KEYS__ACCESS")
+	if !ok {
+		errs = errors.Join(errs, errors.New("S3__KEYS__ACCESS is not set"))
+	}
+
+	conf.S3.Keys.Secret, ok = os.LookupEnv("S3__KEYS__SECRET")
+	if !ok {
+		errs = errors.Join(errs, errors.New("S3__KEYS__SECRET is not set"))
+	}
+
+	if errs != nil {
+		return Config{}, fmt.Errorf("%s: %w", op, errs)
 	}
 
 	return conf, nil
