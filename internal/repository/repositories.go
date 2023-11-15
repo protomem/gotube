@@ -113,5 +113,15 @@ type (
 )
 
 type (
-	Comment interface{}
+	CreateCommentDTO struct {
+		Content  string
+		AuthorID uuid.UUID
+		VideoID  uuid.UUID
+	}
+
+	Comment interface {
+		Get(ctx context.Context, id uuid.UUID) (model.Comment, error)
+
+		Create(ctx context.Context, dto CreateCommentDTO) (uuid.UUID, error)
+	}
 )

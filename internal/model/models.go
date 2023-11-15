@@ -19,6 +19,8 @@ var (
 
 	ErrRatingNotFound = errors.New("rating not found")
 	ErrRatingExists   = errors.New("rating already exists")
+
+	ErrCommentNotFound = errors.New("comment not found")
 )
 
 type User struct {

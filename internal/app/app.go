@@ -39,13 +39,15 @@ type repositories struct {
 }
 
 func newRepositories(logger logging.Logger, pgdb *sql.DB, mgdb *mongo.Client) *repositories {
-	return &repositories{
-		User:         postgresrepo.NewUserRepository(logger, pgdb),
-		Subscription: postgresrepo.NewSubscriptionRepository(logger, pgdb),
-		Video:        postgresrepo.NewVideoRepository(logger, pgdb),
-		Rating:       postgresrepo.NewRatingRepository(logger, pgdb),
-		Comment:      mongorepo.NewCommentRepository(logger, mgdb),
-	}
+	repos := &repositories{}
+
+	repos.User = postgresrepo.NewUserRepository(logger, pgdb)
+	repos.Subscription = postgresrepo.NewSubscriptionRepository(logger, pgdb)
+	repos.Video = postgresrepo.NewVideoRepository(logger, pgdb)
+	repos.Rating = postgresrepo.NewRatingRepository(logger, pgdb)
+	repos.Comment = mongorepo.NewCommentRepository(logger, mgdb, repos.User)
+
+	return repos
 }
 
 type services struct {
@@ -366,6 +368,17 @@ func (app *App) setupRoutes() {
 				"/api/v1/videos/{id}/ratings",
 				app.mdws.Protect()(app.handls.RatingHandler.Delete()),
 			).Methods(http.MethodDelete)
+		}
+	}
+
+	// Comment endpoints
+	{
+		// Protected
+		{
+			app.router.Handle(
+				"/api/v1/videos/{id}/comments",
+				app.mdws.Protect()(app.handls.CommentHandler.Create()),
+			).Methods(http.MethodPost)
 		}
 	}
 
