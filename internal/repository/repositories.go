@@ -24,6 +24,8 @@ type (
 	}
 
 	User interface {
+		Find(ctx context.Context, ids []uuid.UUID) ([]model.User, error)
+
 		Get(ctx context.Context, id uuid.UUID) (model.User, error)
 		GetByNickname(ctx context.Context, nickname string) (model.User, error)
 		GetByEmail(ctx context.Context, email string) (model.User, error)
@@ -120,6 +122,8 @@ type (
 	}
 
 	Comment interface {
+		FindByVideoID(ctx context.Context, videoID uuid.UUID) ([]model.Comment, error)
+
 		Get(ctx context.Context, id uuid.UUID) (model.Comment, error)
 
 		Create(ctx context.Context, dto CreateCommentDTO) (uuid.UUID, error)

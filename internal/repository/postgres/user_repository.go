@@ -27,6 +27,49 @@ func NewUserRepository(logger logging.Logger, db *sql.DB) *UserRepository {
 	}
 }
 
+func (repo *UserRepository) Find(ctx context.Context, ids []uuid.UUID) ([]model.User, error) {
+	const op = "postgres.UserRepository.Find"
+
+	query := `SELECT * FROM users WHERE id = ANY($1::UUID[])`
+
+	rows, err := repo.db.QueryContext(ctx, query, ids)
+	if err != nil {
+		if pgerr.IsNotFound(err) {
+			return []model.User{}, nil
+		}
+
+		return []model.User{}, fmt.Errorf("%s: %w", op, err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var users []model.User
+	for rows.Next() {
+		var user model.User
+		err := rows.Scan(
+			&user.ID,
+			&user.CreatedAt, &user.UpdatedAt,
+			&user.Nickname, &user.Password,
+			&user.Email, &user.Verified,
+			&user.AvatarPath, &user.Description,
+		)
+		if err != nil {
+			return []model.User{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		users = append(users, user)
+	}
+
+	if rows.Err() != nil {
+		return []model.User{}, fmt.Errorf("%s: %w", op, rows.Err())
+	}
+
+	if len(users) == 0 {
+		return []model.User{}, nil
+	}
+
+	return users, nil
+}
+
 func (repo *UserRepository) Get(ctx context.Context, id uuid.UUID) (model.User, error) {
 	const op = "postgres.UserRepository.Get"
 

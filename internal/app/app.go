@@ -373,6 +373,9 @@ func (app *App) setupRoutes() {
 
 	// Comment endpoints
 	{
+		app.router.HandleFunc("/api/v1/videos/{id}/comments",
+			app.handls.CommentHandler.FindByVideoID()).Methods(http.MethodGet)
+
 		// Protected
 		{
 			app.router.Handle(

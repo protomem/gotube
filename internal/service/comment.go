@@ -17,6 +17,8 @@ type (
 	}
 
 	Comment interface {
+		FindByVideoID(ctx context.Context, videoID uuid.UUID) ([]model.Comment, error)
+
 		Create(ctx context.Context, dto CreateCommentDTO) (model.Comment, error)
 	}
 
@@ -29,6 +31,17 @@ func NewComment(repo repository.Comment) *CommentImpl {
 	return &CommentImpl{
 		repo: repo,
 	}
+}
+
+func (serv *CommentImpl) FindByVideoID(ctx context.Context, videoID uuid.UUID) ([]model.Comment, error) {
+	const op = "service.Comment.FindByVideoID"
+
+	comments, err := serv.repo.FindByVideoID(ctx, videoID)
+	if err != nil {
+		return []model.Comment{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return comments, nil
 }
 
 func (serv *CommentImpl) Create(ctx context.Context, dto CreateCommentDTO) (model.Comment, error) {

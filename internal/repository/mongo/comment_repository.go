@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	_database           = "gotube"
+	_database           = "gotubedb"
 	_commentCollections = "comments"
 )
 
@@ -35,6 +35,73 @@ func NewCommentRepository(logger logging.Logger, client *mongo.Client, userRepo 
 		client:   client,
 		userRepo: userRepo,
 	}
+}
+
+func (repo *CommentRepository) FindByVideoID(ctx context.Context, videoID uuid.UUID) ([]model.Comment, error) {
+	const op = "mongo.CommentRepository.FindByVideoID"
+	var err error
+
+	filter := bson.D{{Key: "videoId", Value: videoID.String()}}
+
+	cursor, err := repo.client.
+		Database(_database).
+		Collection(_commentCollections).
+		Find(ctx, filter)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return []model.Comment{}, nil
+		}
+
+		return []model.Comment{}, fmt.Errorf("%s: %w", op, err)
+	}
+	defer func() { _ = cursor.Close(ctx) }()
+
+	var comments []model.Comment
+	for cursor.Next(ctx) {
+		var doc commentDocument
+		err := cursor.Decode(&doc)
+		if err != nil {
+			return []model.Comment{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		comment, err := doc.model()
+		if err != nil {
+			return []model.Comment{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		comments = append(comments, comment)
+	}
+
+	if cursor.Err() != nil {
+		return []model.Comment{}, fmt.Errorf("%s: %w", op, cursor.Err())
+	}
+
+	if len(comments) == 0 {
+		return []model.Comment{}, nil
+	}
+
+	// TODO: ? ...
+	{
+		usersIDs := make([]uuid.UUID, 0, len(comments))
+		for _, comment := range comments {
+			usersIDs = append(usersIDs, comment.Author.ID)
+		}
+
+		users, err := repo.userRepo.Find(ctx, usersIDs)
+		if err != nil {
+			return []model.Comment{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		for _, user := range users {
+			for i, comment := range comments {
+				if comment.Author.ID == user.ID {
+					comments[i].Author = user
+				}
+			}
+		}
+	}
+
+	return comments, nil
 }
 
 func (repo *CommentRepository) Get(ctx context.Context, id uuid.UUID) (model.Comment, error) {
