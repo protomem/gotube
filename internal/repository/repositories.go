@@ -127,5 +127,7 @@ type (
 		Get(ctx context.Context, id uuid.UUID) (model.Comment, error)
 
 		Create(ctx context.Context, dto CreateCommentDTO) (uuid.UUID, error)
+
+		Delete(ctx context.Context, id uuid.UUID) error
 	}
 )

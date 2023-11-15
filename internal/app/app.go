@@ -382,6 +382,10 @@ func (app *App) setupRoutes() {
 				"/api/v1/videos/{id}/comments",
 				app.mdws.Protect()(app.handls.CommentHandler.Create()),
 			).Methods(http.MethodPost)
+			app.router.Handle(
+				"/api/v1/videos/{videoId}/comments/{commentId}",
+				app.mdws.Protect()(app.handls.CommentHandler.Delete()),
+			).Methods(http.MethodDelete)
 		}
 	}
 

@@ -187,3 +187,66 @@ func (handl *CommentHandler) Create() http.HandlerFunc {
 		err = json.NewEncoder(w).Encode(Response{Comment: comment})
 	}
 }
+
+func (handl *CommentHandler) Delete() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		const op = "http.CommentHandler.Delete"
+		var err error
+
+		ctx := r.Context()
+		logger := handl.logger.With(
+			"operation", op,
+			requestid.LogKey, requestid.Extract(ctx),
+		)
+
+		defer func() {
+			if err != nil {
+				logger.Error("failed to send response", "err", err)
+			}
+		}()
+
+		commentIDRaw, exists := mux.Vars(r)["commentId"]
+		if !exists {
+			logger.Error("missing comment id")
+
+			w.Header().Set(httpheader.ContentType, httpheader.ContentTypeJSON)
+			w.WriteHeader(http.StatusBadRequest)
+			err = json.NewEncoder(w).Encode(map[string]string{
+				"error": "missing comment id",
+			})
+
+			return
+		}
+
+		commentID, err := uuid.Parse(commentIDRaw)
+		if err != nil {
+			logger.Error("failed to parse comment id", "error", err)
+
+			w.Header().Set(httpheader.ContentType, httpheader.ContentTypeJSON)
+			w.WriteHeader(http.StatusBadRequest)
+			err = json.NewEncoder(w).Encode(map[string]string{
+				"error": "invalid comment id",
+			})
+
+			return
+		}
+
+		err = handl.serv.Delete(ctx, commentID)
+		if err != nil {
+			logger.Error("failed to delete comment", "error", err)
+
+			code := http.StatusInternalServerError
+			res := map[string]string{
+				"err": "failed to delete comment",
+			}
+
+			w.Header().Set(httpheader.ContentType, httpheader.ContentTypeJSON)
+			w.WriteHeader(code)
+			err = json.NewEncoder(w).Encode(res)
+
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
+	}
+}

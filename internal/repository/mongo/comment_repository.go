@@ -106,6 +106,7 @@ func (repo *CommentRepository) FindByVideoID(ctx context.Context, videoID uuid.U
 
 func (repo *CommentRepository) Get(ctx context.Context, id uuid.UUID) (model.Comment, error) {
 	const op = "mongo.CommentRepository.Get"
+	var err error
 
 	filter := bson.D{{Key: "commentId", Value: id.String()}}
 
@@ -122,7 +123,7 @@ func (repo *CommentRepository) Get(ctx context.Context, id uuid.UUID) (model.Com
 	}
 
 	var doc commentDocument
-	err := res.Decode(&doc)
+	err = res.Decode(&doc)
 	if err != nil {
 		return model.Comment{}, fmt.Errorf("%s: %w", op, err)
 	}
@@ -163,6 +164,22 @@ func (repo *CommentRepository) Create(ctx context.Context, dto repository.Create
 	commentID, _ := uuid.Parse(doc.CommentID)
 
 	return commentID, nil
+}
+
+func (repo *CommentRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	const op = "mongo.CommentRepository.Delete"
+
+	filter := bson.D{{Key: "commentId", Value: id.String()}}
+
+	_, err := repo.client.
+		Database(_database).
+		Collection(_commentCollections).
+		DeleteOne(ctx, filter)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
 }
 
 type commentDocument struct {

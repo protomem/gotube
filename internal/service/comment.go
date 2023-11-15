@@ -20,6 +20,8 @@ type (
 		FindByVideoID(ctx context.Context, videoID uuid.UUID) ([]model.Comment, error)
 
 		Create(ctx context.Context, dto CreateCommentDTO) (model.Comment, error)
+
+		Delete(ctx context.Context, id uuid.UUID) error
 	}
 
 	CommentImpl struct {
@@ -61,4 +63,15 @@ func (serv *CommentImpl) Create(ctx context.Context, dto CreateCommentDTO) (mode
 	}
 
 	return comment, nil
+}
+
+func (serv *CommentImpl) Delete(ctx context.Context, id uuid.UUID) error {
+	const op = "service.Comment.Delete"
+
+	err := serv.repo.Delete(ctx, id)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
 }
