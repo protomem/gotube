@@ -235,7 +235,6 @@ func (app *App) registerOnShutdown() {
 }
 
 func (app *App) setupRoutes() {
-
 	app.router.Use(app.mdws.RequestID())
 	app.router.Use(app.mdws.Logging())
 	app.router.Use(app.mdws.Recovery())
@@ -388,7 +387,6 @@ func (app *App) setupRoutes() {
 			).Methods(http.MethodDelete)
 		}
 	}
-
 }
 
 func (app *App) startServer(errs chan<- error) {

@@ -26,7 +26,6 @@ func (mdw *CommonMiddleware) RequestID() mux.MiddlewareFunc {
 
 func (mdw *CommonMiddleware) Logging() mux.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
-
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			const op = "http.CommonMiddleware.Logging"
 
@@ -82,8 +81,10 @@ func (mdw *CommonMiddleware) Recovery() mux.MiddlewareFunc {
 func (mdw *CommonMiddleware) CORS() mux.MiddlewareFunc {
 	return cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
-		AllowedMethods: []string{http.MethodOptions, http.MethodGet, http.MethodPost,
-			http.MethodPatch, http.MethodDelete},
+		AllowedMethods: []string{
+			http.MethodOptions, http.MethodGet, http.MethodPost,
+			http.MethodPatch, http.MethodDelete,
+		},
 		AllowedHeaders:   []string{"*"},
 		AllowCredentials: true,
 	}).Handler
