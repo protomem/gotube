@@ -1,5 +1,5 @@
 import React from "react";
-import { capitalize } from "@/lib";
+import { appendQuery, capitalize } from "@/lib";
 import { ROUTES } from "@/shared/constants/routes";
 
 import { Button } from "@/shared/ui/button";
@@ -38,19 +38,18 @@ export interface NavMenuProps {
 }
 
 export function NavMenu({ selectedNav, withSubscriptions }: NavMenuProps) {
-  if (selectedNav === undefined) selectedNav = Navigates.New;
   if (withSubscriptions === undefined) withSubscriptions = false;
 
   const navMenuItems = [
     {
       title: Navigates.New,
       selected: selectedNav === Navigates.New,
-      href: ROUTES.HOME,
+      href: appendQuery(ROUTES.HOME, { key: "nav", value: Navigates.New }),
     },
     {
       title: Navigates.Popular,
       selected: selectedNav === Navigates.Popular,
-      href: ROUTES.HOME,
+      href: appendQuery(ROUTES.HOME, { key: "nav", value: Navigates.Popular }),
     },
   ];
 
@@ -58,7 +57,10 @@ export function NavMenu({ selectedNav, withSubscriptions }: NavMenuProps) {
     navMenuItems.push({
       title: Navigates.Subscriptions,
       selected: selectedNav === Navigates.Subscriptions,
-      href: ROUTES.HOME,
+      href: appendQuery(ROUTES.HOME, {
+        key: "nav",
+        value: Navigates.Subscriptions,
+      }),
     });
 
   return (
