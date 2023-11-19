@@ -1,5 +1,6 @@
 import { AppBar } from "@/widgets/app-bar";
 import { MainLayout } from "@/widgets/layouts/main-layout";
+import { SideBar } from "@/widgets/side-bar";
 import Error from "next/error";
 import { useRouter } from "next/router";
 
@@ -11,7 +12,7 @@ export function ProfilePage() {
   }
 
   return (
-    <MainLayout appbar=<AppBar />>
+    <MainLayout appbar=<AppBar /> sidebar=<SideBar />>
       <h1>Profile: {userNickname}</h1>
     </MainLayout>
   );
