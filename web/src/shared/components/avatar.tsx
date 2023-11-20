@@ -38,15 +38,20 @@ interface AvatarProps {
   title?: string;
   loader?: ImageLoader;
   alt?: string;
+  width?: number;
+  height?: number;
 }
 
-export function Avatar({ title, alt }: AvatarProps) {
+export function Avatar({ title, alt, width, height }: AvatarProps) {
+  if (width == null) width = 50;
+  if (height == null) height = 50;
+
   return (
     <Image
       src={generateAvatar(title ?? "", "white", colorFromText(title ?? ""))}
       alt={alt ?? "avatar"}
-      width={50}
-      height={50}
+      width={width}
+      height={height}
       className="rounded-full"
     />
   );

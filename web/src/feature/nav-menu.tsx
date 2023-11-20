@@ -24,7 +24,7 @@ const NavMenuItem: React.FC<NavMenuItemProps> = ({ title, selected, href }) => {
     <Button
       asChild
       disabled={!selected}
-      variant={selected ? "default" : "ghost"}
+      variant={selected ? "default" : "outline"}
       className="justify-start"
     >
       <Link href={href}>{capitalize(title)}</Link>
