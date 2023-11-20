@@ -12,6 +12,12 @@ import {
 import { formatViews } from "@/lib";
 import Link from "next/link";
 import { ROUTES } from "@/shared/constants/routes";
+import { Avatar } from "@/shared/components/avatar";
+import dynamic from "next/dynamic";
+
+const DynamicAvatar = dynamic(() => import("@/shared/components/avatar"), {
+  ssr: false,
+});
 
 interface VideoCardProps {
   video: VideoEntity;
@@ -36,19 +42,25 @@ export function VideoCard({ video }: VideoCardProps) {
         </AspectRatio>
       </CardContent>
 
-      <CardHeader>
-        <CardTitle className="text-xl">
-          <Link href={`${ROUTES.WATCH}/${video.id}`}>{video.title}</Link>
-        </CardTitle>
-        <CardDescription className="text-md">
-          <Link href={`${ROUTES.PROFILE}/${video.author.nickname}`}>
-            {video.author.nickname}
-          </Link>
-        </CardDescription>
-        <CardDescription>
-          {formatViews(video.views + 1000)} views •
-          {" " + video.updatedAt.toDateString()}
-        </CardDescription>
+      <CardHeader className="flex flex-row gap-3 p-3">
+        <div className="pt-2">
+          <DynamicAvatar title={video.author.nickname.slice(0, 2)} />
+        </div>
+
+        <div>
+          <CardTitle className="text-xl">
+            <Link href={`${ROUTES.WATCH}/${video.id}`}>{video.title}</Link>
+          </CardTitle>
+          <CardDescription className="text-md">
+            <Link href={`${ROUTES.PROFILE}/${video.author.nickname}`}>
+              {video.author.nickname}
+            </Link>
+          </CardDescription>
+          <CardDescription>
+            {formatViews(video.views + 1000)} views •
+            {" " + video.updatedAt.toDateString()}
+          </CardDescription>
+        </div>
       </CardHeader>
     </Card>
   );

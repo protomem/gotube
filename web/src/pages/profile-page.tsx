@@ -1,3 +1,4 @@
+import { Avatar } from "@/shared/components/avatar";
 import { AppBar } from "@/widgets/app-bar";
 import { MainLayout } from "@/widgets/layouts/main-layout";
 import { SideBar } from "@/widgets/side-bar";
@@ -14,6 +15,7 @@ export function ProfilePage() {
   return (
     <MainLayout appbar=<AppBar /> sidebar=<SideBar />>
       <h1>Profile: {userNickname}</h1>
+      <Avatar title={"DC"} />
     </MainLayout>
   );
 }
