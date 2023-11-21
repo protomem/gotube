@@ -27,6 +27,21 @@ run:
 	docker compose -p ${PROJECT} -f ./build/docker-compose.yaml up -d --build
 
 
+.PHONY: run-web
+run-web:
+	docker compose -p ${PROJECT} -f ./build/docker-compose.yaml up web -d --build
+
+
+.PHONY: run-app
+run-app:
+	docker compose -p ${PROJECT} -f ./build/docker-compose.yaml up app -d --build
+
+
+.PHONY: run-infra
+run-infra:
+	docker compose -p ${PROJECT} -f ./build/docker-compose.yaml up postgres mongo s3 redis -d --build
+
+
 .PHONY: stop
 stop:
 	docker compose -p ${PROJECT} -f ./build/docker-compose.yaml down

@@ -7,6 +7,9 @@ import { SideBar, Navigates } from "@/widgets/side-bar";
 import { VideoCard } from "@/entities/ui/video-card";
 
 export function HomePage() {
+  console.log(process.env.NODE_ENV);
+  fetch("/api/v1/ping");
+
   const searchParams = useSearchParams();
 
   let selectedNav = Navigates.New;

@@ -3,6 +3,7 @@ FROM node:lts as deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 
+
 RUN npm install --frozen-lockfile
 
 
@@ -21,7 +22,6 @@ RUN npm run build
 FROM node:lts as runner
 
 WORKDIR /app
-ENV NODE_ENV development
 
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next ./.next
