@@ -1,15 +1,13 @@
 import { useSearchParams } from "next/navigation";
 import { videoService } from "@/entities/domain/video.service";
+import { repeat } from "@/lib";
 
 import { MainLayout } from "@/widgets/layouts/main-layout";
 import { AppBar } from "@/widgets/app-bar";
 import { SideBar, Navigates } from "@/widgets/side-bar";
-import { VideoCard } from "@/entities/ui/video-card";
+import { VideoPane } from "@/widgets/video-pane";
 
 export function HomePage() {
-  console.log(process.env.NODE_ENV);
-  fetch("/api/v1/ping");
-
   const searchParams = useSearchParams();
 
   let selectedNav = Navigates.New;
@@ -27,27 +25,12 @@ export function HomePage() {
   }
 
   const { video } = videoService.getById({ id: "0" });
+  const videos = repeat([video], 15);
 
   return (
     <MainLayout appbar=<AppBar /> sidebar=<SideBar selectedNav={selectedNav} />>
       <div className="w-auto h-full overflow-y-auto">
-        <div className="m-5 mt-10 flex justify-around gap-7">
-          <VideoCard video={video} />
-          <VideoCard video={video} />
-          <VideoCard video={video} />
-        </div>
-
-        <div className="m-5 mt-7 flex justify-around gap-7">
-          <VideoCard video={video} />
-          <VideoCard video={video} />
-          <VideoCard video={video} />
-        </div>
-
-        <div className="m-5 mt-7 flex justify-around gap-7">
-          <VideoCard video={video} />
-          <VideoCard video={video} />
-          <VideoCard video={video} />
-        </div>
+        <VideoPane videos={videos} composit="grid" />
       </div>
     </MainLayout>
   );
