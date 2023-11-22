@@ -1,8 +1,8 @@
 import React from "react";
-
-import { VideoEntity } from "@/entities/domain/models";
 import { chunk } from "@/lib";
-import { VideoCard } from "./video-card";
+import { VideoEntity } from "@/entities/domain/models";
+
+import { VideoCard } from "@/entities/ui/video-card";
 
 interface VideoGridRowProps {
   videos: VideoEntity[];
@@ -10,7 +10,7 @@ interface VideoGridRowProps {
 
 const VideoGridRow: React.FC<VideoGridRowProps> = ({ videos }) => {
   return (
-    <div className="flex flex-row gap-7 justify-start">
+    <div className="flex flex-row gap-7 justify-start flex-3">
       {videos.map((video) => (
         <VideoCard key={video.id} video={video} composit="vertical" />
       ))}
@@ -28,7 +28,7 @@ export function VideoGrid({ videos, column }: VideoGridProps) {
   const videosGrid = chunk(videos, column);
 
   return (
-    <div className="flex flex-col gap-7 justify-center items-start">
+    <div className="w-full flex flex-col gap-7 justify-center">
       {videosGrid.map((videosRow, index) => (
         <VideoGridRow key={index} videos={videosRow} />
       ))}

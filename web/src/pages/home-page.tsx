@@ -25,12 +25,14 @@ export function HomePage() {
   }
 
   const { video } = videoService.getById({ id: "0" });
-  const videos = repeat([video], 15);
+  const videos = repeat([video], 19);
 
   return (
     <MainLayout appbar=<AppBar /> sidebar=<SideBar selectedNav={selectedNav} />>
       <div className="w-auto h-full overflow-y-auto">
-        <VideoPane videos={videos} composit="grid" />
+        <div className="m-8 ml-3 mr-5">
+          <VideoPane videos={videos} composit="grid" />
+        </div>
       </div>
     </MainLayout>
   );

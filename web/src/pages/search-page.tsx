@@ -6,6 +6,7 @@ import { AppBar } from "@/widgets/app-bar";
 import { MainLayout } from "@/widgets/layouts/main-layout";
 import { SideBar } from "@/widgets/side-bar";
 import { VideoPane } from "@/widgets/video-pane";
+import { Separator } from "@/shared/ui/separator";
 
 export function SearchPage() {
   let query = "";
@@ -18,10 +19,15 @@ export function SearchPage() {
   return (
     <MainLayout appbar=<AppBar /> sidebar=<SideBar />>
       <div className="w-auto h-full overflow-y-auto">
-        <h1>Search: {query}</h1>
+        <div className="m-8 ml-3 mr-5">
+          <div className="ml-2 flex flex-row gap-3 justify-start items-baseline">
+            <h1 className="text-xl font-bold">Search: </h1>
+            <h3 className="text-lg italic">{query}</h3>
+          </div>
 
-        <div className="ml-3 mr-5">
-          <VideoPane videos={repeat(videos, 2)} composit="list" />
+          <Separator className="mt-3 mb-5" />
+
+          <VideoPane videos={repeat(videos, 20)} composit="list" />
         </div>
       </div>
     </MainLayout>

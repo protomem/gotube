@@ -1,4 +1,7 @@
 import { VideoEntity } from "@/entities/domain/models";
+import { cn, formatViews } from "@/lib";
+import dynamic from "next/dynamic";
+import { ROUTES } from "@/shared/constants/routes";
 
 import Image, { ImageLoader } from "next/image";
 import { AspectRatio } from "@/shared/ui/aspect-ratio";
@@ -9,10 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/shared/ui/card";
-import { cn, formatViews } from "@/lib";
 import Link from "next/link";
-import { ROUTES } from "@/shared/constants/routes";
-import dynamic from "next/dynamic";
 
 const DynamicAvatar = dynamic(() => import("@/shared/components/avatar"), {
   ssr: false,
