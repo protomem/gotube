@@ -1,19 +1,36 @@
-import React from "react";
+import React, { useState } from "react";
 
 import {
   Box,
+  FormControl,
   IconButton,
   Input,
   InputGroup,
   InputRightAddon,
 } from "@chakra-ui/react";
 import { SearchIcon } from "@chakra-ui/icons";
+import { useRouter } from "next/navigation";
+import { ROUTES, withQuery } from "@/lib/routes";
 
-const Searcher = () => {
+type SearcherProps = {
+  defaultQuery?: string;
+};
+
+const Searcher = ({ defaultQuery }: SearcherProps) => {
+  const router = useRouter();
+
+  const [inputValue, setInputValue] = useState(defaultQuery ?? "");
+
   return (
     <Box w="350px">
       <InputGroup>
         <Input
+          value={inputValue === "" ? undefined : inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter")
+              router.push(withQuery(ROUTES.SEARCH, { q: inputValue }));
+          }}
           variant="filled"
           placeholder="Search..."
           rounded="full"
@@ -26,6 +43,9 @@ const Searcher = () => {
             rounded="full"
             icon={<SearchIcon />}
             variant="ghost"
+            onClick={() => {
+              router.push(withQuery(ROUTES.SEARCH, { q: inputValue }));
+            }}
           />
         </InputRightAddon>
       </InputGroup>
