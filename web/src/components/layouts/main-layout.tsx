@@ -15,7 +15,7 @@ const MainLayout = ({ appbar, sidebar, children }: MainLayoutProps) => {
 
   return (
     <Grid
-      h="100dvh"
+      h="100vh"
       templateRows="repeat(12, 1fr)"
       templateColumns="repeat(12, 1fr)"
       gap={2}
