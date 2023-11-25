@@ -40,7 +40,7 @@ const VideoGridItem = ({ video }: VideoGridItemProps) => {
             <Text fontSize="sm">
               {`${formatDate(new Date("2023-11-24"))} • ${formatViews(
                 video.views,
-              )}`}
+              )} views`}
             </Text>
           </Box>
         </HStack>
