@@ -1,12 +1,18 @@
 import React from "react";
 import { Video } from "@/domain/entities";
+import { formatDate, formatViews } from "@/lib/utils";
 
 import {
+  AspectRatio,
   Card,
-  CardBody,
   CardFooter,
-  CardHeader,
   SimpleGrid,
+  Img,
+  Heading,
+  HStack,
+  Avatar,
+  Box,
+  Text,
 } from "@chakra-ui/react";
 
 type VideoGridItemProps = {
@@ -15,12 +21,30 @@ type VideoGridItemProps = {
 
 const VideoGridItem = ({ video }: VideoGridItemProps) => {
   return (
-    <Card minW="300px" w="auto" maxW="500px" h="300px">
-      <CardHeader>{video.title}</CardHeader>
+    <Card minW="300px" w="auto" maxW="500px">
+      <AspectRatio ratio={16 / 9}>
+        <Img
+          src="https://bit.ly/dan-abramov"
+          alt="Dan Abramov"
+          roundedTop="md"
+        />
+      </AspectRatio>
 
-      <CardBody>{video.description}</CardBody>
+      <CardFooter p={4} pl={6}>
+        <HStack>
+          <Avatar name="Dan Abramov" w="42px" h="42px" alignSelf="start" />
 
-      <CardFooter>{video.views}</CardFooter>
+          <Box>
+            <Heading fontSize="lg">{video.title}</Heading>
+            <Text fontSize="md">{video.author.nickname}</Text>
+            <Text fontSize="sm">
+              {`${formatDate(new Date("2023-11-24"))} • ${formatViews(
+                video.views,
+              )}`}
+            </Text>
+          </Box>
+        </HStack>
+      </CardFooter>
     </Card>
   );
 };

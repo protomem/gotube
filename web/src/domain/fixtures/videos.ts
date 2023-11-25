@@ -10,7 +10,7 @@ export const videos: Video[] = [
     description: "Description 1",
     thumbnailPath: "https://example.com/thumbnail1.jpg",
     videoPath: "https://example.com/video1.mp4",
-    user: users[0],
+    author: users[0],
     isPublic: true,
     views: 23433,
   },

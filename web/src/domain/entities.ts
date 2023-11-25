@@ -17,7 +17,7 @@ export interface Video extends BaseEnity {
   description: string;
   thumbnailPath: string;
   videoPath: string;
-  user: UserEntity;
+  author: User;
   isPublic: boolean;
   views: number;
 }
