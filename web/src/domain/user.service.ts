@@ -1,7 +1,12 @@
-import { users } from "./fixtures/users";
+import { apiClient } from "@/domain/api.client";
+import { User as UserEntity } from "@/domain/entities";
+
+type User = {
+  user: UserEntity;
+};
 
 export const userService = {
-  getUser(nickname: string) {
-    return users[0];
+  async getUser(nickname: string) {
+    return await apiClient.get<User>(`/users/${nickname}`);
   },
 };

@@ -1,6 +1,7 @@
+import { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { videoService } from "@/domain/video.service";
-import { repeat } from "@/lib/utils";
+import { GetVideosParams, videoService } from "@/domain/video.service";
+import { useQuery } from "@tanstack/react-query";
 
 import AppBar from "@/components/app-bar";
 import HomeNavMenu from "@/components/home-nav-menu";
@@ -17,15 +18,24 @@ export default function Search() {
     searchQuery = searchParams.get("q") || "";
   }
 
-  const videos = videoService.getVideos();
+  const [videoParams, setVideoParams] = useState<GetVideosParams>({
+    limit: 9,
+    offset: 0,
+  });
+
+  const { data } = useQuery({
+    queryKey: ["videos", { type: "search", query: searchQuery }],
+    queryFn: () => videoService.searchVideos(searchQuery, { ...videoParams }),
+    select: (data) => data.data.videos,
+  });
 
   return (
     <MainLayout
       appbar={<AppBar searchQuery={searchQuery} />}
-      sidebar={<SideBar navmenu={<HomeNavMenu withSubscriptions />} />}
+      sidebar={<SideBar navmenu={<HomeNavMenu />} />}
     >
       <Box w="auto" height="full" px={5} py={3} sx={{ overflowY: "auto" }}>
-        <VideoList videos={repeat(videos, 18)} />
+        <VideoList videos={data ?? []} />
       </Box>
     </MainLayout>
   );
