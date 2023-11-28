@@ -13,6 +13,7 @@ import {
   Avatar,
   Box,
   Text,
+  Divider,
 } from "@chakra-ui/react";
 
 type VideoGridItemProps = {
@@ -22,23 +23,27 @@ type VideoGridItemProps = {
 const VideoGridItem = ({ video }: VideoGridItemProps) => {
   return (
     <Card minW="300px" w="auto" maxW="500px">
-      <AspectRatio ratio={16 / 9}>
-        <Img
-          src="https://bit.ly/dan-abramov"
-          alt="Dan Abramov"
-          roundedTop="md"
-        />
+      <AspectRatio ratio={16 / 9} borderBottom="papayawhip">
+        <Img src={video.thumbnailPath} alt={video.title} roundedTop="md" />
       </AspectRatio>
+
+      <Divider />
 
       <CardFooter p={4} pl={6}>
         <HStack>
-          <Avatar name="Dan Abramov" w="42px" h="42px" alignSelf="start" />
+          <Avatar
+            src={video.author.avatarPath}
+            name={video.author.nickname}
+            w="42px"
+            h="42px"
+            alignSelf="start"
+          />
 
           <Box>
             <Heading fontSize="lg">{video.title}</Heading>
             <Text fontSize="md">{video.author.nickname}</Text>
             <Text fontSize="sm">
-              {`${formatDate(new Date("2023-11-24"))} • ${formatViews(
+              {`${formatDate(video.createdAt)} • ${formatViews(
                 video.views,
               )} views`}
             </Text>

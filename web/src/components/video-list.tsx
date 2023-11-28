@@ -1,5 +1,6 @@
 import React from "react";
 import { Video } from "@/domain/entities";
+import { formatDate, formatViews } from "@/lib/utils";
 
 import {
   AspectRatio,
@@ -7,12 +8,12 @@ import {
   Box,
   Card,
   CardFooter,
+  Divider,
   Heading,
   Img,
   List,
   Text,
 } from "@chakra-ui/react";
-import { formatViews } from "@/lib/utils";
 
 type VideoListItemProps = {
   video: Video;
@@ -22,19 +23,22 @@ const VideoListItem = ({ video }: VideoListItemProps) => {
   return (
     <Card flexDir="row">
       <AspectRatio width="340px" ratio={16 / 9}>
-        <Img
-          src="https://bit.ly/dan-abramov"
-          alt="Dan Abramov"
-          roundedLeft="md"
-        />
+        <Img src={video.thumbnailPath} alt={video.title} roundedLeft="md" />
       </AspectRatio>
+
+      <Box>
+        <Divider orientation="vertical" />
+      </Box>
 
       <CardFooter display="flex" flexDir="column">
         <Heading fontSize="lg">{video.title}</Heading>
-        <Text>{formatViews(video.views) + " views"}</Text>
+        <Text>{`${formatDate(video.createdAt)} • ${formatViews(
+          video.views,
+        )} views`}</Text>
         <Box mt={2} display="flex" flexDir="row" alignItems="center" gap={2}>
           <Avatar
-            name="Dan Abrahmov"
+            src={video.author.avatarPath}
+            name={video.author.nickname}
             size="md"
             w="40px"
             h="40px"

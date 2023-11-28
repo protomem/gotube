@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { GetVideosParams, videoService } from "@/domain/video.service";
+import { useQuery } from "@tanstack/react-query";
 
 import AppBar from "@/components/app-bar";
 import HomeNavMenu, { HomeNavMenuItemLabel } from "@/components/home-nav-menu";
@@ -8,7 +9,6 @@ import MainLayout from "@/components/layouts/main-layout";
 import SideBar from "@/components/side-bar";
 import VideoGrid from "@/components/video-grid";
 import { Box } from "@chakra-ui/react";
-import { useQuery } from "@tanstack/react-query";
 
 export default function Home() {
   const searchParams = useSearchParams();

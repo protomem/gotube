@@ -12,6 +12,7 @@ export function repeat<T>(array: T[], size: number) {
 
 export function formatDate(date: Date) {
   const now = new Date();
+  date = new Date(date);
   const diff = now.getTime() - date.getTime();
 
   if (diff < 1000 * 60) return "now";
