@@ -1,7 +1,9 @@
 import React from "react";
 import { Video } from "@/domain/entities";
 import { formatDate, formatViews } from "@/lib/utils";
+import { ROUTES } from "@/lib/routes";
 
+import NextLink from "next/link";
 import {
   AspectRatio,
   Card,
@@ -14,6 +16,9 @@ import {
   Box,
   Text,
   Divider,
+  LinkOverlay,
+  Link,
+  LinkBox,
 } from "@chakra-ui/react";
 
 type VideoGridItemProps = {
@@ -22,7 +27,7 @@ type VideoGridItemProps = {
 
 const VideoGridItem = ({ video }: VideoGridItemProps) => {
   return (
-    <Card minW="300px" w="auto" maxW="500px">
+    <LinkBox as={Card} minW="300px" w="auto" maxW="500px">
       <AspectRatio ratio={16 / 9} borderBottom="papayawhip">
         <Img src={video.thumbnailPath} alt={video.title} roundedTop="md" />
       </AspectRatio>
@@ -40,8 +45,12 @@ const VideoGridItem = ({ video }: VideoGridItemProps) => {
           />
 
           <Box>
-            <Heading fontSize="lg">{video.title}</Heading>
-            <Text fontSize="md">{video.author.nickname}</Text>
+            <LinkOverlay as={NextLink} href={`${ROUTES.WATCH}/${video.id}`}>
+              <Heading fontSize="lg">{video.title}</Heading>
+            </LinkOverlay>
+            <Link as={NextLink} href={`${ROUTES.PROFILE}/${video.author.nickname}`}>
+              <Text fontSize="md">{video.author.nickname}</Text>
+            </Link>
             <Text fontSize="sm">
               {`${formatDate(video.createdAt)} • ${formatViews(
                 video.views,
@@ -50,7 +59,7 @@ const VideoGridItem = ({ video }: VideoGridItemProps) => {
           </Box>
         </HStack>
       </CardFooter>
-    </Card>
+    </LinkBox>
   );
 };
 

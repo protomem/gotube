@@ -37,14 +37,7 @@ export default function Profile() {
   return (
     <MainLayout appbar=<AppBar /> sidebar=<Sidebar navmenu=<HomeNavMenu /> />>
       <Box w="auto" height="full" px={5} py={3} sx={{ overflowY: "auto" }}>
-        <ProfileCard
-          user={user ?? ({} as User)}
-          buttonSubscribe=<SubscribeButton
-            isSubscribed={isSubscribed}
-            onSubscribe={() => setIsSubscribed(true)}
-            onUnsubscribe={() => setIsSubscribed(false)}
-          />
-        />
+        <ProfileCard user={user ?? ({} as User)} />
 
         <Divider my={5} />
 

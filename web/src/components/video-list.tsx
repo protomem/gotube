@@ -1,7 +1,9 @@
 import React from "react";
 import { Video } from "@/domain/entities";
 import { formatDate, formatViews } from "@/lib/utils";
+import { ROUTES } from "@/lib/routes";
 
+import NextLink from "next/link";
 import {
   AspectRatio,
   Avatar,
@@ -11,6 +13,9 @@ import {
   Divider,
   Heading,
   Img,
+  Link,
+  LinkBox,
+  LinkOverlay,
   List,
   Text,
 } from "@chakra-ui/react";
@@ -21,7 +26,7 @@ type VideoListItemProps = {
 
 const VideoListItem = ({ video }: VideoListItemProps) => {
   return (
-    <Card flexDir="row">
+    <LinkBox as={Card} flexDir="row">
       <AspectRatio width="340px" ratio={16 / 9}>
         <Img src={video.thumbnailPath} alt={video.title} roundedLeft="md" />
       </AspectRatio>
@@ -31,7 +36,9 @@ const VideoListItem = ({ video }: VideoListItemProps) => {
       </Box>
 
       <CardFooter display="flex" flexDir="column">
-        <Heading fontSize="lg">{video.title}</Heading>
+        <LinkOverlay as={NextLink} href={`${ROUTES.WATCH}/${video.id}`}>
+          <Heading fontSize="lg">{video.title}</Heading>
+        </LinkOverlay>
         <Text>{`${formatDate(video.createdAt)} • ${formatViews(
           video.views,
         )} views`}</Text>
@@ -44,11 +51,16 @@ const VideoListItem = ({ video }: VideoListItemProps) => {
             h="40px"
             rounded="full"
           />
-          <Text fontSize="lg">{video.author.nickname}</Text>
+          <Link
+            as={NextLink}
+            href={`${ROUTES.PROFILE}/${video.author.nickname}`}
+          >
+            <Text fontSize="lg">{video.author.nickname}</Text>
+          </Link>
         </Box>
         <Text mt={4}>{video.description}</Text>
       </CardFooter>
-    </Card>
+    </LinkBox>
   );
 };
 

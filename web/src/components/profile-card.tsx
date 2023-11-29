@@ -27,8 +27,13 @@ const ProfileCard = ({ user, buttonSubscribe }: ProfileCardProps) => {
             {buttonSubscribe}
           </Box>
 
-          <Box display="flex" flexDirection="column" alignItems="center">
-            <Avatar name="Dan Abrahmov" />
+          <Box
+            display="flex"
+            flexDirection="column"
+            alignItems="center"
+            gap={2}
+          >
+            <Avatar src={user.avatarPath} name={user.nickname} />
             <Heading fontSize="xl">{user.nickname}</Heading>
           </Box>
 
