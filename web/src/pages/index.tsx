@@ -1,7 +1,6 @@
-import { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { GetVideosParams, videoService } from "@/domain/video.service";
-import { useQuery } from "@tanstack/react-query";
+import { videoService } from "@/domain/video.service";
+import { useInfiniteQuery } from "@tanstack/react-query";
 
 import AppBar from "@/components/app-bar";
 import HomeNavMenu, { HomeNavMenuItemLabel } from "@/components/home-nav-menu";
@@ -29,24 +28,38 @@ export default function Home() {
     }
   }
 
-  const [videoParams, setVideoParams] = useState<GetVideosParams>({
-    limit: 9,
-    offset: 0,
-  });
-
-  const { data } = useQuery({
-    queryKey: ["videos", { type: selectedNavItem }],
-    queryFn: async () => {
+  const { data, fetchNextPage, hasNextPage } = useInfiniteQuery({
+    queryKey: ["videos"],
+    queryFn: async ({ pageParam }) => {
+      const limit = 9;
       switch (selectedNavItem) {
         case HomeNavMenuItemLabel.New:
-          return await videoService.getNewVideos({ ...videoParams });
+          return await videoService.getNewVideos({
+            limit,
+            offset: pageParam * limit,
+          });
         case HomeNavMenuItemLabel.Popular:
-          return await videoService.getPopularVideos({ ...videoParams });
+          return await videoService.getPopularVideos({
+            limit,
+            offset: pageParam * limit,
+          });
         default:
-          return await videoService.getNewVideos({ ...videoParams });
+          return await videoService.getNewVideos({
+            limit,
+            offset: pageParam * limit,
+          });
       }
     },
-    select: (data) => data.data.videos,
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, _, lastPageParam) => {
+      if (lastPage.data.videos.length !== 9) {
+        return undefined;
+      }
+      return lastPageParam + 1;
+    },
+    select: (data) => {
+      return data.pages.flatMap((page) => page.data.videos);
+    },
   });
 
   return (
@@ -57,7 +70,12 @@ export default function Home() {
       }
     >
       <Box w="auto" height="full" px={5} py={3} sx={{ overflowY: "auto" }}>
-        <VideoGrid videos={data ?? []} />
+        <VideoGrid
+          videos={data !== undefined ? data : []}
+          onLast={() => {
+            if (hasNextPage) fetchNextPage();
+          }}
+        />
       </Box>
     </MainLayout>
   );
