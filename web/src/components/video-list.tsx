@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import { Video } from "@/domain/entities";
 import { formatDate, formatViews } from "@/lib/utils";
 import { ROUTES } from "@/lib/routes";
@@ -18,15 +18,16 @@ import {
   LinkOverlay,
   List,
   Text,
+  forwardRef,
 } from "@chakra-ui/react";
 
 type VideoListItemProps = {
   video: Video;
 };
 
-const VideoListItem = ({ video }: VideoListItemProps) => {
+const VideoListItem = forwardRef(({ video }: VideoListItemProps, ref) => {
   return (
-    <LinkBox as={Card} flexDir="row">
+    <LinkBox as={Card} flexDir="row" ref={ref}>
       <AspectRatio width="340px" ratio={16 / 9}>
         <Img src={video.thumbnailPath} alt={video.title} roundedLeft="md" />
       </AspectRatio>
@@ -62,17 +63,40 @@ const VideoListItem = ({ video }: VideoListItemProps) => {
       </CardFooter>
     </LinkBox>
   );
-};
+});
 
 type VideoListProps = {
   videos: Video[];
+  onLast?: () => void;
 };
 
-const VideoList = ({ videos }: VideoListProps) => {
+const VideoList = ({ videos, onLast }: VideoListProps) => {
+  const observerTarget = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting) onLast?.();
+      },
+      { root: null, rootMargin: "0px", threshold: 1 },
+    );
+
+    if (observerTarget.current) observer.observe(observerTarget.current);
+
+    return () => {
+      if (observerTarget.current) observer.unobserve(observerTarget.current);
+    };
+  }, [observerTarget, onLast]);
+
   return (
     <List spacing={3}>
-      {videos.map((video) => (
-        <VideoListItem key={video.id} video={video} />
+      {videos.map((video, index) => (
+        <VideoListItem
+          key={video.id}
+          video={video}
+          ref={index === videos.length - 1 ? observerTarget : undefined}
+        />
       ))}
     </List>
   );
