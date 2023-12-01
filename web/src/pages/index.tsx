@@ -29,7 +29,7 @@ export default function Home() {
   }
 
   const { data, fetchNextPage, hasNextPage } = useInfiniteQuery({
-    queryKey: ["videos"],
+    queryKey: ["videos", { type: selectedNavItem }],
     queryFn: async ({ pageParam }) => {
       const limit = 9;
       switch (selectedNavItem) {
