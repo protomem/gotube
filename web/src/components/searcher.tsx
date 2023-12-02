@@ -21,7 +21,7 @@ const Searcher = ({ defaultQuery }: SearcherProps) => {
   const [inputValue, setInputValue] = useState(defaultQuery ?? "");
 
   return (
-    <Box w="350px">
+    <Box w="420px">
       <InputGroup>
         <Input
           value={inputValue === "" ? undefined : inputValue}
