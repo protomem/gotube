@@ -1,4 +1,4 @@
-import { AspectRatio, Box, Center } from "@chakra-ui/react";
+import { Center } from "@chakra-ui/react";
 import ReactVideoPlayer from "react-player";
 
 type VideoPlayerProps = {

@@ -18,7 +18,6 @@ const MainLayout = ({ appbar, sidebar, children }: MainLayoutProps) => {
       h="100vh"
       templateRows="repeat(12, 1fr)"
       templateColumns="repeat(12, 1fr)"
-      gap={2}
     >
       {appbar && (
         <GridItem rowSpan={1} colSpan={12}>
