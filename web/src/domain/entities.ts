@@ -21,3 +21,9 @@ export interface Video extends BaseEnity {
   isPublic: boolean;
   views: number;
 }
+
+export interface Comment extends BaseEnity {
+  content: string;
+  author: User;
+  videoId: string;
+}

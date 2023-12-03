@@ -22,6 +22,9 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { ROUTES } from "@/lib/routes";
+import CommentList from "@/components/comment-list";
+import { repeat } from "@/lib/utils";
+import { comments } from "@/domain/fixtures/comments";
 
 const DynamicVideoPlayer = dynamic(() => import("@/components/video-player"), {
   ssr: false,
@@ -91,8 +94,12 @@ export default function Watch() {
             {/* TODO: switch variant   */}
             <Box>
               <ButtonGroup isAttached colorScheme="teal">
-                <Button variant="solid">{"2323 likes"}</Button>
-                <Button variant="outline">{"323 dislikes"}</Button>
+                <Button variant="solid" borderRadius="full">
+                  {"2323 likes"}
+                </Button>
+                <Button variant="outline" borderRadius="full">
+                  {"323 dislikes"}
+                </Button>
               </ButtonGroup>
             </Box>
           </Box>
@@ -109,7 +116,13 @@ export default function Watch() {
 
         <Divider my={5} />
 
-        <Box>{"Comments ..."}</Box>
+        <Box mx={20} display="flex" flexDirection="column" gap={5}>
+          <Heading fontSize="lg" fontWeight="bold">
+            {"2132 Comments"}
+          </Heading>
+
+          <CommentList comments={repeat(comments, 30)} />
+        </Box>
       </Box>
     </MainLayout>
   );
