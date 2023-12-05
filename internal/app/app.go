@@ -14,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/protomem/gotube/internal/bootstrap"
 	"github.com/protomem/gotube/internal/config"
+	"github.com/protomem/gotube/internal/handler"
 	"github.com/protomem/gotube/pkg/closing"
 	"github.com/protomem/gotube/pkg/logging"
 	"github.com/protomem/gotube/pkg/logging/zap"
@@ -26,6 +27,8 @@ type App struct {
 
 	pdb *pgxpool.Pool
 	mdb *mongo.Client
+
+	handls *handler.Handlers
 
 	router *chi.Mux
 	server *http.Server
@@ -43,6 +46,8 @@ func (app *App) Run(ctx context.Context) error {
 	if err := app.setup(ctx); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
+
+	app.handls = handler.New(app.logger)
 
 	app.registerOnShutdown()
 	app.setupRoutes()
@@ -113,9 +118,7 @@ func (app *App) registerOnShutdown() {
 }
 
 func (app *App) setupRoutes() {
-	app.router.Get("/", func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = fmt.Fprintln(w, "GoTube API v3.0")
-	})
+	app.router.Get("/ping", app.handls.Ping())
 }
 
 func (app *App) startServer(errs chan<- error) {
