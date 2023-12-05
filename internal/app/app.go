@@ -301,12 +301,11 @@ func (app *App) setupRoutes() {
 
 	// Subscription endpoints
 	{
+		app.router.Handle("/api/v1/users/{nickname}/subs",
+			app.handls.SubscriptionHandler.FindByFromUserNickname()).Methods(http.MethodGet)
+
 		// Protected
 		{
-			app.router.Handle(
-				"/api/v1/users/{nickname}/subs",
-				app.mdws.Protect()(app.handls.SubscriptionHandler.FindByFromUserNickname()),
-			).Methods(http.MethodGet)
 			app.router.Handle(
 				"/api/v1/subs",
 				app.mdws.Protect()(app.handls.SubscriptionHandler.Subscribe()),
