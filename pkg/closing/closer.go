@@ -1,4 +1,4 @@
-package closure
+package closing
 
 import (
 	"context"
