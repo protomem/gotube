@@ -1,6 +1,7 @@
 import React from "react";
 import { Video } from "@/domain/entities";
 import { ROUTES } from "@/lib/routes";
+import { formatDate, formatViews } from "@/lib/utils";
 
 import NextLink from "next/link";
 import {
@@ -10,8 +11,6 @@ import {
   Text,
   LinkBox,
   LinkOverlay,
-  Button,
-  ButtonGroup,
   Card,
   CardHeader,
   CardBody,
@@ -19,18 +18,20 @@ import {
 
 type VideoHeaderProps = {
   video: Video;
+  subscribers: number;
   buttonSubscribe?: React.ReactNode;
   buttonRatings: React.ReactNode;
 };
 
 const VideoHeader = ({
   video,
+  subscribers,
   buttonSubscribe,
   buttonRatings,
 }: VideoHeaderProps) => {
   return (
     <Box mx={10} display="flex" flexDirection="column" gap={5}>
-      <Heading fontSize="2xl">{"Some Title"}</Heading>
+      <Heading fontSize="2xl">{video.title}</Heading>
 
       <Box
         display="flex"
@@ -45,7 +46,7 @@ const VideoHeader = ({
           alignItems="center"
           gap={3}
         >
-          <Avatar name="Dan Abrahmov" src="https://bit.ly/dan-abramov" />
+          <Avatar name={video.author.nickname} src={video.author.avatarPath} />
 
           <Box
             display="flex"
@@ -53,10 +54,13 @@ const VideoHeader = ({
             justifyContent="space-between"
             alignItems="start"
           >
-            <LinkOverlay as={NextLink} href={`${ROUTES.PROFILE}/${"roman"}`}>
-              <Heading fontSize="lg">{"Some Author"}</Heading>
+            <LinkOverlay
+              as={NextLink}
+              href={`${ROUTES.PROFILE}/${video.author.nickname}`}
+            >
+              <Heading fontSize="lg">{video.author.nickname}</Heading>
             </LinkOverlay>
-            <Text>{"324 subscribers"}</Text>
+            <Text>{`${formatViews(subscribers)} subscribers`}</Text>
           </Box>
 
           {buttonSubscribe}
@@ -67,10 +71,12 @@ const VideoHeader = ({
 
       <Card>
         <CardHeader pb={0}>
-          <Text fontWeight="bold">{"3232 views • 2 years"}</Text>
+          <Text fontWeight="bold">{`${formatViews(
+            video.views,
+          )} views • ${formatDate(video.createdAt)}`}</Text>
         </CardHeader>
         <CardBody pt={0}>
-          <Text>{"Some description ..."}</Text>
+          <Text>{video.description}</Text>
         </CardBody>
       </Card>
     </Box>
