@@ -15,9 +15,11 @@ import (
 	"github.com/protomem/gotube/internal/bootstrap"
 	"github.com/protomem/gotube/internal/config"
 	"github.com/protomem/gotube/internal/handler"
+	"github.com/protomem/gotube/internal/middleware"
 	"github.com/protomem/gotube/pkg/closing"
 	"github.com/protomem/gotube/pkg/logging"
 	"github.com/protomem/gotube/pkg/logging/zap"
+	"github.com/protomem/gotube/pkg/requestid"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -29,6 +31,7 @@ type App struct {
 	mdb *mongo.Client
 
 	handls *handler.Handlers
+	mdws   *middleware.Middlewares
 
 	router *chi.Mux
 	server *http.Server
@@ -48,6 +51,7 @@ func (app *App) Run(ctx context.Context) error {
 	}
 
 	app.handls = handler.New(app.logger)
+	app.mdws = middleware.New(app.logger)
 
 	app.registerOnShutdown()
 	app.setupRoutes()
@@ -118,6 +122,14 @@ func (app *App) registerOnShutdown() {
 }
 
 func (app *App) setupRoutes() {
+	app.router.Use(app.mdws.CORS())
+	app.router.Use(requestid.Middleware())
+	app.router.Use(app.mdws.RealIP())
+	app.router.Use(app.mdws.CleanPath())
+	app.router.Use(app.mdws.StripSlashes())
+	app.router.Use(app.mdws.RequestLogging())
+	app.router.Use(app.mdws.Recoverer())
+
 	app.router.Get("/ping", app.handls.Ping())
 }
 
