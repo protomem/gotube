@@ -16,6 +16,7 @@ import (
 	"github.com/protomem/gotube/internal/config"
 	"github.com/protomem/gotube/internal/handler"
 	"github.com/protomem/gotube/internal/middleware"
+	"github.com/protomem/gotube/internal/session"
 	"github.com/protomem/gotube/pkg/closing"
 	"github.com/protomem/gotube/pkg/logging"
 	"github.com/protomem/gotube/pkg/logging/zap"
@@ -29,6 +30,8 @@ type App struct {
 
 	pdb *pgxpool.Pool
 	mdb *mongo.Client
+
+	sessmng session.Manager
 
 	handls *handler.Handlers
 	mdws   *middleware.Middlewares
@@ -100,6 +103,13 @@ func (app *App) setup(ctx context.Context) error {
 		return fmt.Errorf("%s: mongo: %w", op, err)
 	}
 
+	if app.sessmng, err = session.NewRedis(ctx, app.logger, session.RedisOptions{
+		Addr: app.conf.Redis.Addr,
+		Ping: app.conf.Mode == config.Dev,
+	}); err != nil {
+		return fmt.Errorf("%s: session manager: %w", op, err)
+	}
+
 	app.router = chi.NewRouter()
 	app.server = &http.Server{
 		Addr:    httpAddr(app.conf.HTTP.Host, app.conf.HTTP.Port),
@@ -113,6 +123,7 @@ func (app *App) setup(ctx context.Context) error {
 
 func (app *App) registerOnShutdown() {
 	app.closer.Add(app.server.Shutdown)
+	app.closer.Add(app.sessmng.Close)
 	app.closer.Add(app.mdb.Disconnect)
 	app.closer.Add(func(_ context.Context) error {
 		app.pdb.Close()
