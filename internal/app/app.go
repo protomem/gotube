@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/protomem/gotube/internal/access"
 	"github.com/protomem/gotube/internal/bootstrap"
 	"github.com/protomem/gotube/internal/config"
 	"github.com/protomem/gotube/internal/handler"
@@ -34,6 +35,7 @@ type App struct {
 
 	store   storage.Storage
 	sessmng session.Manager
+	accmng  access.Manager
 
 	handls *handler.Handlers
 	mdws   *middleware.Middlewares
@@ -121,6 +123,14 @@ func (app *App) setup(ctx context.Context) error {
 		return fmt.Errorf("%s: session manager: %w", op, err)
 	}
 
+	if app.accmng, err = access.NewCasbin(ctx, app.logger, access.CasbinOptions{
+		MongoURI:  app.conf.Mongo.URI,
+		ModelPath: app.conf.Auth.Model,
+		Lazy:      app.conf.Mode == config.Prod,
+	}); err != nil {
+		return fmt.Errorf("%s: access manager: %w", op, err)
+	}
+
 	app.router = chi.NewRouter()
 	app.server = &http.Server{
 		Addr:    httpAddr(app.conf.HTTP.Host, app.conf.HTTP.Port),
@@ -134,6 +144,7 @@ func (app *App) setup(ctx context.Context) error {
 
 func (app *App) registerOnShutdown() {
 	app.closer.Add(app.server.Shutdown)
+	app.closer.Add(app.accmng.Close)
 	app.closer.Add(app.sessmng.Close)
 	app.closer.Add(app.store.Close)
 	app.closer.Add(app.mdb.Disconnect)

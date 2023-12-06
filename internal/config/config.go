@@ -32,6 +32,7 @@ type Config struct {
 	} `envPrefix:"HTTP_"`
 
 	Auth struct {
+		Model  string `env:"MODEL,notEmpty"`
 		Secret string `env:"SECRET,notEmpty,unset"`
 	} `envPrefix:"AUTH_"`
 
