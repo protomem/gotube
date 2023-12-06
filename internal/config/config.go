@@ -58,7 +58,7 @@ type Config struct {
 
 	S3 struct {
 		Addr   string `env:"ADDR" envDefault:"localhost:9000"`
-		Access string `env:"ACCESS,notEmpty"`
+		Key    string `env:"KEY,notEmpty"`
 		Secret string `env:"SECRET,notEmpty,unset"`
 		Secure bool   `env:"SECURE" envDefault:"false"`
 	} `envPrefix:"S3_"`

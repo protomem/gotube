@@ -17,6 +17,7 @@ import (
 	"github.com/protomem/gotube/internal/handler"
 	"github.com/protomem/gotube/internal/middleware"
 	"github.com/protomem/gotube/internal/session"
+	"github.com/protomem/gotube/internal/storage"
 	"github.com/protomem/gotube/pkg/closing"
 	"github.com/protomem/gotube/pkg/logging"
 	"github.com/protomem/gotube/pkg/logging/zap"
@@ -31,6 +32,7 @@ type App struct {
 	pdb *pgxpool.Pool
 	mdb *mongo.Client
 
+	store   storage.Storage
 	sessmng session.Manager
 
 	handls *handler.Handlers
@@ -103,6 +105,15 @@ func (app *App) setup(ctx context.Context) error {
 		return fmt.Errorf("%s: mongo: %w", op, err)
 	}
 
+	if app.store, err = storage.NewS3(ctx, app.logger, storage.S3Options{
+		Addr:   app.conf.S3.Addr,
+		Key:    app.conf.S3.Key,
+		Secret: app.conf.S3.Secret,
+		Secure: app.conf.S3.Secure,
+	}); err != nil {
+		return fmt.Errorf("%s: storage: %w", op, err)
+	}
+
 	if app.sessmng, err = session.NewRedis(ctx, app.logger, session.RedisOptions{
 		Addr: app.conf.Redis.Addr,
 		Ping: app.conf.Mode == config.Dev,
@@ -124,6 +135,7 @@ func (app *App) setup(ctx context.Context) error {
 func (app *App) registerOnShutdown() {
 	app.closer.Add(app.server.Shutdown)
 	app.closer.Add(app.sessmng.Close)
+	app.closer.Add(app.store.Close)
 	app.closer.Add(app.mdb.Disconnect)
 	app.closer.Add(func(_ context.Context) error {
 		app.pdb.Close()
