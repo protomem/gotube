@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"flag"
+	"os"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -31,7 +32,11 @@ func main() {
 	var err error
 
 	if *_databaseURL == "" {
-		panic("database url not set")
+		if databaseURL, exists := os.LookupEnv("DATABASE_URL"); exists && databaseURL != "" {
+			*_databaseURL = databaseURL
+		} else {
+			panic("database url not set")
+		}
 	}
 
 	source, err := iofs.New(assets.Assets, "migrations")

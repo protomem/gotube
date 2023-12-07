@@ -16,7 +16,7 @@ type PostgresOptions struct {
 
 	Database string
 
-	Secure bool
+	SSLMode string
 
 	Ping bool
 }
@@ -26,7 +26,7 @@ func Postgres(ctx context.Context, opts PostgresOptions) (*pgxpool.Pool, error) 
 
 	pool, err := pgxpool.New(
 		ctx,
-		buildPostgresConnect(opts.User, opts.Password, opts.Host, opts.Port, opts.Database, opts.Secure),
+		buildPostgresConnect(opts.User, opts.Password, opts.Host, opts.Port, opts.Database, opts.SSLMode),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
@@ -41,10 +41,7 @@ func Postgres(ctx context.Context, opts PostgresOptions) (*pgxpool.Pool, error) 
 	return pool, nil
 }
 
-func buildPostgresConnect(user, password, host string, port int, database string, secure bool) string {
-	connect := fmt.Sprintf("postgres://%s:%s@%s:%d/%s", user, password, host, port, database)
-	if secure {
-		connect += "?sslmode=require"
-	}
+func buildPostgresConnect(user, password, host string, port int, database, sslmode string) string {
+	connect := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s", user, password, host, port, database, sslmode)
 	return connect
 }

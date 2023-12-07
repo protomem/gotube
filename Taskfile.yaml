@@ -1,0 +1,44 @@
+# https://taskfile.dev
+
+version: "3"
+
+tasks:
+  default:
+    cmds:
+      - task: run-app-prod
+
+  run-infra:
+    cmds:
+      - echo "Hello, world!"
+
+  stop-infra:
+    cmds:
+      - echo "Hello, world!"
+
+  run-app-debug:
+    cmds:
+      - go run ./cmd/api-server -conf configs/app.debug.env
+
+  run-app-prod:
+    cmds:
+      - docker compose -p gotube-app-prod -f docker-compose.yaml up --build -d
+
+  stop-app-prod:
+    cmds:
+      - docker compose -p gotube-app-prod -f docker-compose.yaml down
+
+  run-web-dev:
+    cmds:
+      - echo "Hello, world!"
+
+  run-web-prod:
+    cmds:
+      - echo "Hello, world!"
+
+  stop-web-prod:
+    cmds:
+      - echo "Hello, world!"
+
+  migrate:
+    cmds:
+      - echo "Hello, world!"

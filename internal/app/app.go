@@ -94,7 +94,7 @@ func (app *App) setup(ctx context.Context) error {
 		User:     app.conf.Postgres.User,
 		Password: app.conf.Postgres.Password,
 		Database: app.conf.Postgres.Database,
-		Secure:   app.conf.Postgres.Secure,
+		SSLMode:  app.conf.Postgres.SSLMode,
 		Ping:     app.conf.Mode == config.Debug,
 	}); err != nil {
 		return fmt.Errorf("%s: postgres: %w", op, err)

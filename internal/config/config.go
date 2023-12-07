@@ -24,7 +24,7 @@ func (m Mode) Validate() error {
 }
 
 type Config struct {
-	Mode Mode `env:"MODE" envDefault:"dev"`
+	Mode Mode `env:"MODE" envDefault:"debug"`
 
 	HTTP struct {
 		Host string `env:"HOST" envDefault:"localhost"`
@@ -46,7 +46,7 @@ type Config struct {
 		User     string `env:"USER,notEmpty"`
 		Password string `env:"PASSWORD,notEmpty,unset"`
 		Database string `env:"DATABASE" envDefault:"gotubedb"`
-		Secure   bool   `env:"SECURE" envDefault:"false"`
+		SSLMode  string `env:"SSLMODE" envDefault:"disable"`
 	} `envPrefix:"POSTGRES_"`
 
 	Mongo struct {
@@ -70,6 +70,10 @@ func New() (Config, error) {
 	var conf Config
 
 	if err := env.Parse(&conf); err != nil {
+		return Config{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	if err := conf.Mode.Validate(); err != nil {
 		return Config{}, fmt.Errorf("%s: %w", op, err)
 	}
 
