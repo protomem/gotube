@@ -95,14 +95,14 @@ func (app *App) setup(ctx context.Context) error {
 		Password: app.conf.Postgres.Password,
 		Database: app.conf.Postgres.Database,
 		Secure:   app.conf.Postgres.Secure,
-		Ping:     app.conf.Mode == config.Dev,
+		Ping:     app.conf.Mode == config.Debug,
 	}); err != nil {
 		return fmt.Errorf("%s: postgres: %w", op, err)
 	}
 
 	if app.mdb, err = bootstrap.Mongo(ctx, bootstrap.MongoOptions{
 		URI:  app.conf.Mongo.URI,
-		Ping: app.conf.Mode == config.Dev,
+		Ping: app.conf.Mode == config.Debug,
 	}); err != nil {
 		return fmt.Errorf("%s: mongo: %w", op, err)
 	}
@@ -118,7 +118,7 @@ func (app *App) setup(ctx context.Context) error {
 
 	if app.sessmng, err = session.NewRedis(ctx, app.logger, session.RedisOptions{
 		Addr: app.conf.Redis.Addr,
-		Ping: app.conf.Mode == config.Dev,
+		Ping: app.conf.Mode == config.Debug,
 	}); err != nil {
 		return fmt.Errorf("%s: session manager: %w", op, err)
 	}
