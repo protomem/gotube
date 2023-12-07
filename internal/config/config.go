@@ -8,15 +8,15 @@ import (
 )
 
 const (
-	Dev  Mode = "dev"
-	Prod Mode = "prod"
+	Debug Mode = "debug"
+	Prod  Mode = "prod"
 )
 
 type Mode string
 
 func (m Mode) Validate() error {
 	switch m {
-	case Dev, Prod:
+	case Debug, Prod:
 		return nil
 	default:
 		return errors.New("invalid mode")
