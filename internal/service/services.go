@@ -5,8 +5,12 @@ import (
 	"github.com/protomem/gotube/internal/session"
 )
 
-type Services struct{}
+type Services struct {
+	User
+}
 
 func New(repos *repository.Repositories, sessmng session.Manager) *Services {
-	return &Services{}
+	return &Services{
+		User: NewUser(repos.User),
+	}
 }

@@ -42,5 +42,8 @@ tasks:
       - echo "Hello, world!"
 
   migrate:
+    env:
+      ACTION: up
+      DATABASE:
     cmds:
-      - echo "Hello, world!"
+      - go run ./cmd/migrator -action $ACTION -database $DATABASE {{.CLI_ARGS}}

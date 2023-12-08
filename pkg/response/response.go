@@ -19,12 +19,21 @@ func Send(w http.ResponseWriter, code int, res JSON) error {
 }
 
 func SendWithHeaders(w http.ResponseWriter, code int, res JSON, headers ...Header) error {
-	w.Header().Set(header.ContentType, header.ContentTypeJSON)
+	if res != nil {
+		w.Header().Set(header.ContentType, header.ContentTypeJSON)
+	}
+
 	for _, h := range headers {
 		w.Header().Set(h.Key, h.Value)
 	}
+
 	w.WriteHeader(code)
-	return json.NewEncoder(w).Encode(res)
+
+	if res != nil {
+		return json.NewEncoder(w).Encode(res)
+	} else {
+		return nil
+	}
 }
 
 type APIFunc func(w http.ResponseWriter, r *http.Request) error

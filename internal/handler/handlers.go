@@ -9,10 +9,14 @@ import (
 
 type Handlers struct {
 	*Common
+
+	*User
 }
 
 func New(logger logging.Logger, servs *service.Services, store storage.Storage, accmng access.Manager) *Handlers {
 	return &Handlers{
 		Common: NewCommon(logger),
+
+		User: NewUser(logger, servs.User, accmng),
 	}
 }

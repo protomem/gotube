@@ -6,8 +6,12 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type Repositories struct{}
+type Repositories struct {
+	User
+}
 
 func New(logger logging.Logger, pdb *pgxpool.Pool, mdb *mongo.Client) *Repositories {
-	return &Repositories{}
+	return &Repositories{
+		User: NewUser(logger, pdb),
+	}
 }

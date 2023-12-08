@@ -171,6 +171,15 @@ func (app *App) setupRoutes() {
 	app.router.Use(app.mdws.Recoverer())
 
 	app.router.Get("/ping", app.handls.Ping())
+
+	app.router.Route("/api/v1", func(r chi.Router) {
+		r.Route("/users", func(r chi.Router) {
+			r.Get("/{userNickname}", app.handls.User.Get())
+			r.Post("/", app.handls.User.Create())
+			r.Patch("/{userNickname}", app.handls.User.Update())
+			r.Delete("/{userNickname}", app.handls.User.Delete())
+		})
+	})
 }
 
 func (app *App) startServer(errs chan<- error) {
