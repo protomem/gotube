@@ -17,6 +17,8 @@ import (
 	"github.com/protomem/gotube/internal/config"
 	"github.com/protomem/gotube/internal/handler"
 	"github.com/protomem/gotube/internal/middleware"
+	"github.com/protomem/gotube/internal/repository"
+	"github.com/protomem/gotube/internal/service"
 	"github.com/protomem/gotube/internal/session"
 	"github.com/protomem/gotube/internal/storage"
 	"github.com/protomem/gotube/pkg/closing"
@@ -37,6 +39,8 @@ type App struct {
 	sessmng session.Manager
 	accmng  access.Manager
 
+	repos  *repository.Repositories
+	servs  *service.Services
 	handls *handler.Handlers
 	mdws   *middleware.Middlewares
 
@@ -57,7 +61,9 @@ func (app *App) Run(ctx context.Context) error {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	app.handls = handler.New(app.logger)
+	app.repos = repository.New(app.logger, app.pdb, app.mdb)
+	app.servs = service.New(app.repos, app.sessmng)
+	app.handls = handler.New(app.logger, app.servs, app.store, app.accmng)
 	app.mdws = middleware.New(app.logger)
 
 	app.registerOnShutdown()
