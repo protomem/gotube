@@ -101,6 +101,22 @@ func (h *User) Update() http.HandlerFunc {
 
 func (h *User) Delete() http.HandlerFunc {
 	return h.apiFunc(func(w http.ResponseWriter, r *http.Request) error {
+		const op = "handler:User.Delete"
+
+		ctx := r.Context()
+		logger := h.logger.With(
+			"operation", op,
+			requestid.Key, requestid.Extract(ctx),
+		)
+
+		userNickname := chi.URLParam(r, "userNickname")
+
+		if err := h.serv.DeleteByNickname(ctx, userNickname); err != nil {
+			logger.Error("failed to delete user", "error", err)
+
+			return ErrInternal("failed to delete user")
+		}
+
 		return response.Send(w, http.StatusNoContent, nil)
 	})
 }

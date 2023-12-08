@@ -23,6 +23,7 @@ type (
 		Get(ctx context.Context, id model.ID) (model.User, error)
 		GetByNickname(ctx context.Context, nickname string) (model.User, error)
 		Create(ctx context.Context, dto CreateUserDTO) (model.ID, error)
+		DeleteByNickname(ctx context.Context, nickname string) error
 	}
 
 	UserImpl struct {
@@ -96,6 +97,19 @@ func (r *UserImpl) Create(ctx context.Context, dto CreateUserDTO) (model.ID, err
 	}
 
 	return id, nil
+}
+
+func (r *UserImpl) DeleteByNickname(ctx context.Context, nickname string) error {
+	const op = "repository:User.DeleteByNickname"
+
+	query := `DELETE FROM users WHERE nickname = $1`
+	args := []any{nickname}
+
+	if _, err := r.pdb.Exec(ctx, query, args...); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
 }
 
 func (r *UserImpl) scan(row pgx.Row, user *model.User) error {
