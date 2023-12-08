@@ -115,8 +115,5 @@ func DefaultErrorHandler(logger logging.Logger, op string) ErrorHandler {
 		}
 
 		errS = Send(w, http.StatusInternalServerError, JSON{"error": "internal server error"})
-		if errS != nil {
-			errS = err
-		}
 	}
 }

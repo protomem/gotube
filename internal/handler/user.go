@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/protomem/gotube/internal/access"
 	"github.com/protomem/gotube/internal/model"
 	"github.com/protomem/gotube/internal/service"
@@ -29,7 +30,28 @@ func NewUser(logger logging.Logger, serv service.User, accmng access.Manager) *U
 
 func (h *User) Get() http.HandlerFunc {
 	return h.apiFunc(func(w http.ResponseWriter, r *http.Request) error {
-		return response.Send(w, http.StatusOK, response.JSON{"user": "some_user"})
+		const op = "handler:User.Get"
+
+		ctx := r.Context()
+		logger := h.logger.With(
+			"operation", op,
+			requestid.Key, requestid.Extract(ctx),
+		)
+
+		userNickname := chi.URLParam(r, "userNickname")
+
+		user, err := h.serv.GetByNickname(ctx, userNickname)
+		if err != nil {
+			logger.Error("failed to get user", "error", err)
+
+			if errors.Is(err, model.ErrUserNotFound) {
+				return ErrNotFound("user")
+			}
+
+			return ErrInternal("failed to get user")
+		}
+
+		return response.Send(w, http.StatusOK, response.JSON{"user": user})
 	})
 }
 

@@ -21,6 +21,7 @@ type CreateUserDTO struct {
 type (
 	User interface {
 		Get(ctx context.Context, id model.ID) (model.User, error)
+		GetByNickname(ctx context.Context, nickname string) (model.User, error)
 		Create(ctx context.Context, dto CreateUserDTO) (model.ID, error)
 	}
 
@@ -42,6 +43,26 @@ func (r *UserImpl) Get(ctx context.Context, id model.ID) (model.User, error) {
 
 	query := `SELECT * FROM users WHERE id = $1 LIMIT 1`
 	args := []any{id}
+
+	row := r.pdb.QueryRow(ctx, query, args...)
+
+	var user model.User
+	if err := r.scan(row, &user); err != nil {
+		if IsPgNotFound(err) {
+			return model.User{}, fmt.Errorf("%s: %w", op, model.ErrUserNotFound)
+		}
+
+		return model.User{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return user, nil
+}
+
+func (r *UserImpl) GetByNickname(ctx context.Context, nickname string) (model.User, error) {
+	const op = "repository:User.GetByNickname"
+
+	query := `SELECT * FROM users WHERE nickname = $1 LIMIT 1`
+	args := []any{nickname}
 
 	row := r.pdb.QueryRow(ctx, query, args...)
 

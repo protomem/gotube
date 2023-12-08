@@ -23,6 +23,7 @@ func (dto CreateUserDTO) Validate() error {
 
 type (
 	User interface {
+		GetByNickname(ctx context.Context, nickname string) (model.User, error)
 		Create(ctx context.Context, dto CreateUserDTO) (model.User, error)
 	}
 
@@ -37,6 +38,17 @@ func NewUser(repo repository.User, hasher hashing.Hasher) *UserImpl {
 		repo:   repo,
 		hasher: hasher,
 	}
+}
+
+func (s *UserImpl) GetByNickname(ctx context.Context, nickname string) (model.User, error) {
+	const op = "service:User.GetByNickname"
+
+	user, err := s.repo.GetByNickname(ctx, nickname)
+	if err != nil {
+		return model.User{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return user, nil
 }
 
 func (s *UserImpl) Create(ctx context.Context, dto CreateUserDTO) (model.User, error) {
