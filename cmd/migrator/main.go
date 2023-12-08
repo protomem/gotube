@@ -21,7 +21,6 @@ const (
 var (
 	_databaseURL     = flag.String("database", "", "database url")
 	_migrationAction = flag.String("action", "up", "migrations action")
-	_migrationStep   = flag.String("step", "", "migrations step")
 )
 
 func init() {
@@ -50,7 +49,6 @@ func main() {
 	}
 	defer func() { _, _ = m.Close() }()
 
-	// TODO: add step flag
 	switch *_migrationAction {
 	case _migrateUp:
 		err = m.Up()

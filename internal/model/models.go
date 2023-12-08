@@ -1,13 +1,23 @@
 package model
 
-import "github.com/google/uuid"
+import (
+	"errors"
+	"time"
+
+	"github.com/google/uuid"
+)
+
+var (
+	ErrUserNotFound      = errors.New("user not found")
+	ErrUserAlreadyExists = errors.New("user already exists")
+)
 
 type ID = uuid.UUID
 
 type User struct {
-	ID        ID     `json:"id"`
-	CreatedAt string `json:"createdAt"`
-	UpdatedAt string `json:"updatedAt"`
+	ID        ID        `json:"id"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 
 	Nickname string `json:"nickname"`
 	Password string `json:"-"`
