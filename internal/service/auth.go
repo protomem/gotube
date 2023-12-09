@@ -1,21 +1,83 @@
 package service
 
 import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/protomem/gotube/internal/jwt"
+	"github.com/protomem/gotube/internal/model"
 	"github.com/protomem/gotube/internal/session"
 )
 
+const _accessTokenTTL = 6 * time.Hour
+
+var _ Auth = (*AuthImpl)(nil)
+
+type RegisterDTO struct {
+	Nickname string
+	Password string
+	Email    string
+}
+
 type (
-	Auth interface{}
+	Auth interface {
+		Register(ctx context.Context, dto RegisterDTO) (model.User, model.PairTokens, error)
+	}
 
 	AuthImpl struct {
-		userServ User
-		sessmng  session.Manager
+		authSecret string
+		userServ   User
+		sessmng    session.Manager
 	}
 )
 
-func NewAuth(userServ User, sessmng session.Manager) *AuthImpl {
+func NewAuth(authSecret string, userServ User, sessmng session.Manager) *AuthImpl {
 	return &AuthImpl{
-		userServ: userServ,
-		sessmng:  sessmng,
+		authSecret: authSecret,
+		userServ:   userServ,
+		sessmng:    sessmng,
 	}
+}
+
+func (s *AuthImpl) Register(ctx context.Context, dto RegisterDTO) (model.User, model.PairTokens, error) {
+	const op = "service:Auth.Register"
+
+	user, err := s.userServ.Create(ctx, CreateUserDTO(dto))
+	if err != nil {
+		return model.User{}, model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	tokens, err := s.generateTokens(user)
+	if err != nil {
+		return model.User{}, model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return user, tokens, nil
+}
+
+func (s *AuthImpl) generateTokens(user model.User) (model.PairTokens, error) {
+	const op = "generate tokens"
+
+	payload := jwt.Payload{
+		UserID:   user.ID,
+		Nickname: user.Nickname,
+		Email:    user.Email,
+		Verified: user.Verified,
+	}
+
+	params := jwt.GenerateParams{SigningKey: s.authSecret, TTL: _accessTokenTTL}
+
+	accessToken, err := jwt.Generate(payload, params)
+	if err != nil {
+		return model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	refreshToken, err := uuid.NewRandom()
+	if err != nil {
+		return model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return model.PairTokens{Access: accessToken, Refresh: refreshToken.String()}, nil
 }

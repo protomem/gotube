@@ -62,7 +62,7 @@ func (app *App) Run(ctx context.Context) error {
 	}
 
 	app.repos = repository.New(app.logger, app.pdb, app.mdb)
-	app.servs = service.New(app.repos, app.sessmng)
+	app.servs = service.New(app.conf.Auth.Secret, app.repos, app.sessmng)
 	app.handls = handler.New(app.logger, app.servs, app.store, app.accmng)
 	app.mdws = middleware.New(app.logger)
 

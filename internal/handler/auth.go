@@ -1,11 +1,15 @@
 package handler
 
 import (
+	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/protomem/gotube/internal/access"
+	"github.com/protomem/gotube/internal/model"
 	"github.com/protomem/gotube/internal/service"
 	"github.com/protomem/gotube/pkg/logging"
+	"github.com/protomem/gotube/pkg/requestid"
 	"github.com/protomem/gotube/pkg/response"
 )
 
@@ -24,8 +28,44 @@ func NewAuth(logger logging.Logger, serv service.Auth, accmng access.Manager) *A
 }
 
 func (h *Auth) Register() http.HandlerFunc {
+	type Request struct {
+		Nickname string
+		Password string
+		Email    string
+	}
+
 	return h.apiFunc(func(w http.ResponseWriter, r *http.Request) error {
-		return response.Send(w, http.StatusCreated, response.JSON{"user": "some_user"})
+		const op = "handler:Auth.Register"
+
+		ctx := r.Context()
+		logger := h.logger.With(
+			"operation", op,
+			requestid.Key, requestid.Extract(ctx),
+		)
+
+		var req Request
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			logger.Error("failed to decode request body", "error", err)
+
+			return ErrBadRequest
+		}
+
+		user, token, err := h.serv.Register(ctx, service.RegisterDTO(req))
+		if err != nil {
+			logger.Error("failed to register", "error", err)
+
+			if errors.Is(err, model.ErrUserAlreadyExists) {
+				return ErrConflict("user")
+			}
+
+			return ErrInternal("failed to register")
+		}
+
+		return response.Send(w, http.StatusCreated, response.JSON{
+			"accessToken":  token.Access,
+			"refreshToken": token.Refresh,
+			"user":         user,
+		})
 	})
 }
 

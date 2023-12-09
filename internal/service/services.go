@@ -11,9 +11,9 @@ type Services struct {
 	Auth
 }
 
-func New(repos *repository.Repositories, sessmng session.Manager) *Services {
+func New(authSecret string, repos *repository.Repositories, sessmng session.Manager) *Services {
 	userServ := NewUser(repos.User, hashing.NewBcrypt(hashing.BcryptDefaultCost))
-	authServ := NewAuth(userServ, sessmng)
+	authServ := NewAuth(authSecret, userServ, sessmng)
 
 	return &Services{
 		User: userServ,

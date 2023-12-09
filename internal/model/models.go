@@ -28,3 +28,8 @@ type User struct {
 	AvatarPath  string `json:"avatarPath"`
 	Description string `json:"description"`
 }
+
+type PairTokens struct {
+	Access  string `json:"accessToken"`
+	Refresh string `json:"refreshToken"`
+}
