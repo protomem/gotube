@@ -36,7 +36,7 @@ func (b *Bcrypt) Generate(password string) (string, error) {
 	return string(hash), nil
 }
 
-func (b *Bcrypt) Compare(hashed string, password string) error {
+func (b *Bcrypt) Compare(password string, hashed string) error {
 	if err := bcrypt.CompareHashAndPassword([]byte(hashed), []byte(password)); err != nil {
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
 			return fmt.Errorf("hashing:Bcrypt.Compare: %w", ErrWrongPassword)
