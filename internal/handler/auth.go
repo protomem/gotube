@@ -29,9 +29,9 @@ func NewAuth(logger logging.Logger, serv service.Auth, accmng access.Manager) *A
 
 func (h *Auth) Register() http.HandlerFunc {
 	type Request struct {
-		Nickname string
-		Password string
-		Email    string
+		Nickname string `json:"nickname"`
+		Password string `json:"password"`
+		Email    string `json:"email"`
 	}
 
 	return h.apiFunc(func(w http.ResponseWriter, r *http.Request) error {
