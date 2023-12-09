@@ -22,6 +22,7 @@ type (
 	User interface {
 		Get(ctx context.Context, id model.ID) (model.User, error)
 		GetByNickname(ctx context.Context, nickname string) (model.User, error)
+		GetByEmail(ctx context.Context, email string) (model.User, error)
 		Create(ctx context.Context, dto CreateUserDTO) (model.ID, error)
 		DeleteByNickname(ctx context.Context, nickname string) error
 	}
@@ -64,6 +65,26 @@ func (r *UserImpl) GetByNickname(ctx context.Context, nickname string) (model.Us
 
 	query := `SELECT * FROM users WHERE nickname = $1 LIMIT 1`
 	args := []any{nickname}
+
+	row := r.pdb.QueryRow(ctx, query, args...)
+
+	var user model.User
+	if err := r.scan(row, &user); err != nil {
+		if IsPgNotFound(err) {
+			return model.User{}, fmt.Errorf("%s: %w", op, model.ErrUserNotFound)
+		}
+
+		return model.User{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return user, nil
+}
+
+func (r *UserImpl) GetByEmail(ctx context.Context, email string) (model.User, error) {
+	const op = "repository:User.GetByEmail"
+
+	query := `SELECT * FROM users WHERE email = $1 LIMIT 1`
+	args := []any{email}
 
 	row := r.pdb.QueryRow(ctx, query, args...)
 

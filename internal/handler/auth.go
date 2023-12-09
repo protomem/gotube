@@ -70,8 +70,43 @@ func (h *Auth) Register() http.HandlerFunc {
 }
 
 func (h *Auth) Login() http.HandlerFunc {
+	type Request struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
 	return h.apiFunc(func(w http.ResponseWriter, r *http.Request) error {
-		return response.Send(w, http.StatusOK, response.JSON{"user": "some_user"})
+		const op = "handler:Auth.Login"
+
+		ctx := r.Context()
+		logger := h.logger.With(
+			"operation", op,
+			requestid.Key, requestid.Extract(ctx),
+		)
+
+		var req Request
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			logger.Error("failed to decode request body", "error", err)
+
+			return ErrBadRequest
+		}
+
+		user, token, err := h.serv.Login(ctx, service.LoginDTO(req))
+		if err != nil {
+			logger.Error("failed to login", "error", err)
+
+			if errors.Is(err, model.ErrUserNotFound) {
+				return ErrNotFound("user")
+			}
+
+			return ErrInternal("failed to login")
+		}
+
+		return response.Send(w, http.StatusOK, response.JSON{
+			"accessToken":  token.Access,
+			"refreshToken": token.Refresh,
+			"user":         user,
+		})
 	})
 }
 

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/protomem/gotube/internal/hashing"
@@ -24,6 +25,7 @@ func (dto CreateUserDTO) Validate() error {
 type (
 	User interface {
 		GetByNickname(ctx context.Context, nickname string) (model.User, error)
+		GetByEmailAndPassword(ctx context.Context, email, password string) (model.User, error)
 		Create(ctx context.Context, dto CreateUserDTO) (model.User, error)
 		DeleteByNickname(ctx context.Context, nickname string) error
 	}
@@ -46,6 +48,25 @@ func (s *UserImpl) GetByNickname(ctx context.Context, nickname string) (model.Us
 
 	user, err := s.repo.GetByNickname(ctx, nickname)
 	if err != nil {
+		return model.User{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return user, nil
+}
+
+func (s *UserImpl) GetByEmailAndPassword(ctx context.Context, email, password string) (model.User, error) {
+	const op = "service:User.GetByEmailAndPassword"
+
+	user, err := s.repo.GetByEmail(ctx, email)
+	if err != nil {
+		return model.User{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	if err := s.hasher.Compare(password, user.Password); err != nil {
+		if errors.Is(err, hashing.ErrWrongPassword) {
+			return model.User{}, model.ErrUserNotFound
+		}
+
 		return model.User{}, fmt.Errorf("%s: %w", op, err)
 	}
 
