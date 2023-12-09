@@ -175,9 +175,15 @@ func (app *App) setupRoutes() {
 	app.router.Route("/api/v1", func(r chi.Router) {
 		r.Route("/users", func(r chi.Router) {
 			r.Get("/{userNickname}", app.handls.User.Get())
-			r.Post("/", app.handls.User.Create())
 			r.Patch("/{userNickname}", app.handls.User.Update())
 			r.Delete("/{userNickname}", app.handls.User.Delete())
+		})
+
+		r.Route("/auth", func(r chi.Router) {
+			r.Post("/register", app.handls.Register())
+			r.Post("/login", app.handls.Login())
+			r.Post("/refresh", app.handls.RefreshToken())
+			r.Post("/logout", app.handls.Logout())
 		})
 	})
 }

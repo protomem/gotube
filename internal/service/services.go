@@ -8,10 +8,15 @@ import (
 
 type Services struct {
 	User
+	Auth
 }
 
 func New(repos *repository.Repositories, sessmng session.Manager) *Services {
+	userServ := NewUser(repos.User, hashing.NewBcrypt(hashing.BcryptDefaultCost))
+	authServ := NewAuth(userServ, sessmng)
+
 	return &Services{
-		User: NewUser(repos.User, hashing.NewBcrypt(hashing.BcryptDefaultCost)),
+		User: userServ,
+		Auth: authServ,
 	}
 }

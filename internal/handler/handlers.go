@@ -11,6 +11,7 @@ type Handlers struct {
 	*Common
 
 	*User
+	*Auth
 }
 
 func New(logger logging.Logger, servs *service.Services, store storage.Storage, accmng access.Manager) *Handlers {
@@ -18,5 +19,6 @@ func New(logger logging.Logger, servs *service.Services, store storage.Storage, 
 		Common: NewCommon(logger),
 
 		User: NewUser(logger, servs.User, accmng),
+		Auth: NewAuth(logger, servs.Auth, accmng),
 	}
 }
