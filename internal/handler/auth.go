@@ -111,8 +111,37 @@ func (h *Auth) Login() http.HandlerFunc {
 }
 
 func (h *Auth) RefreshToken() http.HandlerFunc {
+	type Request struct {
+		RefreshToken string `json:"refreshToken"`
+	}
+
 	return h.apiFunc(func(w http.ResponseWriter, r *http.Request) error {
-		return response.Send(w, http.StatusOK, response.JSON{"user": "some_user"})
+		const op = "handler:Auth.RefreshToken"
+
+		ctx := r.Context()
+		logger := h.logger.With(
+			"operation", op,
+			requestid.Key, requestid.Extract(ctx),
+		)
+
+		var req Request
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			logger.Error("failed to decode request body", "error", err)
+
+			return ErrBadRequest
+		}
+
+		tokens, err := h.serv.RefreshToken(ctx, req.RefreshToken)
+		if err != nil {
+			logger.Error("failed to refresh token", "error", err)
+
+			return ErrInternal("failed to refresh token")
+		}
+
+		return response.Send(w, http.StatusOK, response.JSON{
+			"accessToken":  tokens.Access,
+			"refreshToken": tokens.Refresh,
+		})
 	})
 }
 

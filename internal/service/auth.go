@@ -33,6 +33,7 @@ type (
 	Auth interface {
 		Register(ctx context.Context, dto RegisterDTO) (model.User, model.PairTokens, error)
 		Login(ctx context.Context, dto LoginDTO) (model.User, model.PairTokens, error)
+		RefreshToken(ctx context.Context, token string) (model.PairTokens, error)
 	}
 
 	AuthImpl struct {
@@ -96,6 +97,39 @@ func (s *AuthImpl) Login(ctx context.Context, dto LoginDTO) (model.User, model.P
 	}
 
 	return user, tokens, nil
+}
+
+func (s *AuthImpl) RefreshToken(ctx context.Context, token string) (model.PairTokens, error) {
+	const op = "service:Auth.RefreshToken"
+
+	sess, err := s.sessmng.Get(ctx, token)
+	if err != nil {
+		return model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	user, err := s.userServ.Get(ctx, sess.UserID)
+	if err != nil {
+		return model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	tokens, err := s.generateTokens(user)
+	if err != nil {
+		return model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	if err := s.sessmng.Del(ctx, token); err != nil {
+		return model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	if err := s.sessmng.Put(ctx, session.Session{
+		Token:  tokens.Refresh,
+		UserID: user.ID,
+		Expiry: time.Now().Add(_refreshTokenTTL),
+	}); err != nil {
+		return model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return tokens, nil
 }
 
 func (s *AuthImpl) generateTokens(user model.User) (model.PairTokens, error) {
