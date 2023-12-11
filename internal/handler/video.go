@@ -61,6 +61,36 @@ func (h *Video) ListNew() http.HandlerFunc {
 	})
 }
 
+func (h *Video) ListPopular() http.HandlerFunc {
+	return h.apiFunc(func(w http.ResponseWriter, r *http.Request) error {
+		const op = "handler:Video.ListPopular"
+
+		ctx := r.Context()
+		logger := h.logger.With(
+			"operation", op,
+			requestid.Key, requestid.Extract(ctx),
+		)
+
+		opts, err := h.extractLimitAndOffsetFromRequest(r)
+		if err != nil {
+			logger.Error("failed to extract limit and offset", "error", err)
+
+			return ErrBadRequest
+		}
+
+		videos, err := h.serv.FindPopular(ctx, opts)
+		if err != nil {
+			logger.Error("failed to find popular videos", "error", err)
+
+			return ErrInternal("failed to find popular videos")
+		}
+
+		return response.Send(w, http.StatusOK, response.JSON{
+			"videos": videos,
+		})
+	})
+}
+
 func (h *Video) Get() http.HandlerFunc {
 	return h.apiFunc(func(w http.ResponseWriter, r *http.Request) error {
 		const op = "handler:Video.Get"

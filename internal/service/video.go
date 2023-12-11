@@ -26,6 +26,7 @@ func (dto CreateVideoDTO) Validate() error {
 type (
 	Video interface {
 		FindNew(ctx context.Context, opts FindOptions) ([]model.Video, error)
+		FindPopular(ctx context.Context, opts FindOptions) ([]model.Video, error)
 		Get(ctx context.Context, id model.ID) (model.Video, error)
 		Create(ctx context.Context, dto CreateVideoDTO) (model.Video, error)
 	}
@@ -41,6 +42,28 @@ func NewVideo(repo repository.Video) *VideoImpl {
 	}
 }
 
+func (s *VideoImpl) FindNew(ctx context.Context, opts FindOptions) ([]model.Video, error) {
+	const op = "service:Video.FindNew"
+
+	videos, err := s.repo.Find(ctx, repository.FindOptions(opts))
+	if err != nil {
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return videos, nil
+}
+
+func (s *VideoImpl) FindPopular(ctx context.Context, opts FindOptions) ([]model.Video, error) {
+	const op = "service:Video.FindPopular"
+
+	videos, err := s.repo.FindOrderByViews(ctx, repository.FindOptions(opts))
+	if err != nil {
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return videos, nil
+}
+
 func (s *VideoImpl) Get(ctx context.Context, id model.ID) (model.Video, error) {
 	const op = "service:Video.Get"
 
@@ -50,17 +73,6 @@ func (s *VideoImpl) Get(ctx context.Context, id model.ID) (model.Video, error) {
 	}
 
 	return video, nil
-}
-
-func (s *VideoImpl) FindNew(ctx context.Context, opts FindOptions) ([]model.Video, error) {
-	const op = "service:Video.FindNew"
-
-	videos, err := s.repo.Find(ctx, repository.FindOptions(opts))
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-
-	return videos, nil
 }
 
 func (s *VideoImpl) Create(ctx context.Context, dto CreateVideoDTO) (model.Video, error) {
