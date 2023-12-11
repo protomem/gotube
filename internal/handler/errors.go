@@ -7,7 +7,7 @@ import (
 	"github.com/protomem/gotube/pkg/response"
 )
 
-var ErrBadRequest = response.NewAPIMsg(http.StatusBadRequest, "failed to decode request body")
+var ErrBadRequest = response.NewAPIMsg(http.StatusBadRequest, "invalid request")
 
 func ErrInternal(msg string) *response.APIError {
 	return response.NewAPIMsg(http.StatusInternalServerError, msg)

@@ -25,6 +25,7 @@ func (dto CreateVideoDTO) Validate() error {
 
 type (
 	Video interface {
+		Get(ctx context.Context, id model.ID) (model.Video, error)
 		Create(ctx context.Context, dto CreateVideoDTO) (model.Video, error)
 	}
 
@@ -37,6 +38,17 @@ func NewVideo(repo repository.Video) *VideoImpl {
 	return &VideoImpl{
 		repo: repo,
 	}
+}
+
+func (s *VideoImpl) Get(ctx context.Context, id model.ID) (model.Video, error) {
+	const op = "service:Video.Get"
+
+	user, err := s.repo.Get(ctx, id)
+	if err != nil {
+		return model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return user, nil
 }
 
 func (s *VideoImpl) Create(ctx context.Context, dto CreateVideoDTO) (model.Video, error) {

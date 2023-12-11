@@ -5,6 +5,8 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/protomem/gotube/internal/access"
 	"github.com/protomem/gotube/internal/jwt"
 	"github.com/protomem/gotube/internal/model"
@@ -36,7 +38,35 @@ func (h *Video) List() http.HandlerFunc {
 
 func (h *Video) Get() http.HandlerFunc {
 	return h.apiFunc(func(w http.ResponseWriter, r *http.Request) error {
-		return response.Send(w, http.StatusOK, response.JSON{"video": "some_video"})
+		const op = "handler:Video.Get"
+
+		ctx := r.Context()
+		logger := h.logger.With(
+			"operation", op,
+			requestid.Key, requestid.Extract(ctx),
+		)
+
+		videoID, err := h.extractVideoIDFromRequest(r)
+		if err != nil {
+			logger.Error("failed to extract video id", "error", err)
+
+			return ErrBadRequest
+		}
+
+		video, err := h.serv.Get(ctx, videoID)
+		if err != nil {
+			logger.Error("failed to get video", "error", err)
+
+			if errors.Is(err, model.ErrVideoNotFound) {
+				return ErrNotFound("video")
+			}
+
+			return ErrInternal("failed to get video")
+		}
+
+		return response.Send(w, http.StatusOK, response.JSON{
+			"video": video,
+		})
 	})
 }
 
@@ -109,4 +139,15 @@ func (h *Video) apiFunc(apiFn response.APIFunc) http.HandlerFunc {
 
 func (h *Video) errorHandler() response.ErrorHandler {
 	return response.DefaultErrorHandler(h.logger, "handler:User.errorHandler")
+}
+
+func (h *Video) extractVideoIDFromRequest(r *http.Request) (model.ID, error) {
+	videoIDRaw := chi.URLParam(r, "videoId")
+
+	videoID, err := uuid.Parse(videoIDRaw)
+	if err != nil {
+		return model.ID{}, err
+	}
+
+	return videoID, nil
 }
