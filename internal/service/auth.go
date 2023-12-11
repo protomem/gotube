@@ -35,6 +35,7 @@ type (
 		Login(ctx context.Context, dto LoginDTO) (model.User, model.PairTokens, error)
 		RefreshToken(ctx context.Context, token string) (model.PairTokens, error)
 		Logout(ctx context.Context, token string) error
+		VerifyToken(ctx context.Context, token string) (model.User, jwt.Payload, error)
 	}
 
 	AuthImpl struct {
@@ -141,6 +142,22 @@ func (s *AuthImpl) Logout(ctx context.Context, token string) error {
 	}
 
 	return nil
+}
+
+func (s *AuthImpl) VerifyToken(ctx context.Context, token string) (model.User, jwt.Payload, error) {
+	const op = "service:Auth.VerifyToken"
+
+	payload, err := jwt.Parse(token, jwt.ParseParams{SigningKey: s.authSecret})
+	if err != nil {
+		return model.User{}, jwt.Payload{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	user, err := s.userServ.Get(ctx, payload.UserID)
+	if err != nil {
+		return model.User{}, jwt.Payload{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return user, payload, nil
 }
 
 func (s *AuthImpl) generateTokens(user model.User) (model.PairTokens, error) {

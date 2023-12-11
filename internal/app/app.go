@@ -64,7 +64,7 @@ func (app *App) Run(ctx context.Context) error {
 	app.repos = repository.New(app.logger, app.pdb, app.mdb)
 	app.servs = service.New(app.conf.Auth.Secret, app.repos, app.sessmng)
 	app.handls = handler.New(app.logger, app.servs, app.store, app.accmng)
-	app.mdws = middleware.New(app.logger)
+	app.mdws = middleware.New(app.logger, app.servs)
 
 	app.registerOnShutdown()
 	app.setupRoutes()
@@ -169,21 +169,32 @@ func (app *App) setupRoutes() {
 	app.router.Use(app.mdws.StripSlashes())
 	app.router.Use(app.mdws.RequestLogging())
 	app.router.Use(app.mdws.Recoverer())
+	app.router.Use(app.mdws.Authenticate())
 
 	app.router.Get("/ping", app.handls.Ping())
 
 	app.router.Route("/api/v1", func(r chi.Router) {
 		r.Route("/users", func(r chi.Router) {
 			r.Get("/{userNickname}", app.handls.User.Get())
-			r.Patch("/{userNickname}", app.handls.User.Update())
-			r.Delete("/{userNickname}", app.handls.User.Delete())
+
+			r.Group(func(r chi.Router) {
+				r.Use(app.mdws.IsAuthenticated())
+
+				r.Patch("/{userNickname}", app.handls.User.Update())
+				r.Delete("/{userNickname}", app.handls.User.Delete())
+			})
 		})
 
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/register", app.handls.Register())
 			r.Post("/login", app.handls.Login())
-			r.Post("/refresh", app.handls.RefreshToken())
-			r.Delete("/logout", app.handls.Logout())
+
+			r.Group(func(r chi.Router) {
+				r.Use(app.mdws.IsAuthenticated())
+
+				r.Post("/refresh", app.handls.RefreshToken())
+				r.Delete("/logout", app.handls.Logout())
+			})
 		})
 	})
 }
