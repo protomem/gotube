@@ -10,6 +10,9 @@ import (
 var (
 	ErrUserNotFound      = errors.New("user not found")
 	ErrUserAlreadyExists = errors.New("user already exists")
+
+	ErrVideoNotFound      = errors.New("video not found")
+	ErrVideoAlreadyExists = errors.New("video already exists")
 )
 
 type ID = uuid.UUID

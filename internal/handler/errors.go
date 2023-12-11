@@ -13,10 +13,10 @@ func ErrInternal(msg string) *response.APIError {
 	return response.NewAPIMsg(http.StatusInternalServerError, msg)
 }
 
-func ErrNotFound(model string) *response.APIError {
-	return response.NewAPIMsg(http.StatusNotFound, fmt.Sprintf("%s not found", model))
+func ErrNotFound(resource string) *response.APIError {
+	return response.NewAPIMsg(http.StatusNotFound, fmt.Sprintf("%s not found", resource))
 }
 
-func ErrConflict(model string) *response.APIError {
-	return response.NewAPIMsg(http.StatusConflict, fmt.Sprintf("%s already exists", model))
+func ErrConflict(resource string) *response.APIError {
+	return response.NewAPIMsg(http.StatusConflict, fmt.Sprintf("%s already exists", resource))
 }

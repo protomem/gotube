@@ -8,6 +8,9 @@ CREATE TABLE IF NOT EXISTS videos (
   title TEXT NOT NULL UNIQUE,
   description TEXT NOT NULL,
 
+  thumbnail_path TEXT NOT NULL,
+  video_path TEXT NOT NULL,
+
   author_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 
   is_public BOOLEAN NOT NULL DEFAULT false,

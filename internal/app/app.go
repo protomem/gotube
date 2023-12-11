@@ -204,7 +204,7 @@ func (app *App) setupRoutes() {
 			r.Group(func(r chi.Router) {
 				r.Use(app.mdws.IsAuthenticated())
 
-				r.Post("/{videoId}", app.handls.Video.Create())
+				r.Post("/", app.handls.Video.Create())
 				r.Patch("/{videoId}", app.handls.Video.Update())
 				r.Delete("/{videoId}", app.handls.Video.Delete())
 			})
