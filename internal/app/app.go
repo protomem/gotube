@@ -196,6 +196,19 @@ func (app *App) setupRoutes() {
 				r.Delete("/logout", app.handls.Logout())
 			})
 		})
+
+		r.Route("/videos", func(r chi.Router) {
+			r.Get("/", app.handls.Video.List())
+			r.Get("/{videoId}", app.handls.Video.Get())
+
+			r.Group(func(r chi.Router) {
+				r.Use(app.mdws.IsAuthenticated())
+
+				r.Post("/{videoId}", app.handls.Video.Create())
+				r.Patch("/{videoId}", app.handls.Video.Update())
+				r.Delete("/{videoId}", app.handls.Video.Delete())
+			})
+		})
 	})
 }
 

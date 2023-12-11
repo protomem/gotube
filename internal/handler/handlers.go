@@ -12,13 +12,15 @@ type Handlers struct {
 
 	*User
 	*Auth
+	*Video
 }
 
 func New(logger logging.Logger, servs *service.Services, store storage.Storage, accmng access.Manager) *Handlers {
 	return &Handlers{
 		Common: NewCommon(logger),
 
-		User: NewUser(logger, servs.User, accmng),
-		Auth: NewAuth(logger, servs.Auth, accmng),
+		User:  NewUser(logger, servs.User, accmng),
+		Auth:  NewAuth(logger, servs.Auth, accmng),
+		Video: NewVideo(logger, servs.Video, accmng),
 	}
 }

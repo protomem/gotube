@@ -8,10 +8,12 @@ import (
 
 type Repositories struct {
 	User
+	Video
 }
 
 func New(logger logging.Logger, pdb *pgxpool.Pool, mdb *mongo.Client) *Repositories {
 	return &Repositories{
-		User: NewUser(logger, pdb),
+		User:  NewUser(logger, pdb),
+		Video: NewVideo(logger, pdb),
 	}
 }

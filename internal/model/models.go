@@ -33,3 +33,20 @@ type PairTokens struct {
 	Access  string `json:"accessToken"`
 	Refresh string `json:"refreshToken"`
 }
+
+type Video struct {
+	ID        ID        `json:"id"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+
+	Title       string `json:"title"`
+	Description string `json:"description"`
+
+	ThumbnailPath string `json:"thumbnailPath"`
+	VideoPath     string `json:"videoPath"`
+
+	Author User `json:"author"`
+
+	Public bool   `json:"isPublic"`
+	Views  uint64 `json:"views"`
+}
