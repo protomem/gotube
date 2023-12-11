@@ -183,7 +183,7 @@ func (app *App) setupRoutes() {
 			r.Post("/register", app.handls.Register())
 			r.Post("/login", app.handls.Login())
 			r.Post("/refresh", app.handls.RefreshToken())
-			r.Post("/logout", app.handls.Logout())
+			r.Delete("/logout", app.handls.Logout())
 		})
 	})
 }

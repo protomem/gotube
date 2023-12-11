@@ -34,6 +34,7 @@ type (
 		Register(ctx context.Context, dto RegisterDTO) (model.User, model.PairTokens, error)
 		Login(ctx context.Context, dto LoginDTO) (model.User, model.PairTokens, error)
 		RefreshToken(ctx context.Context, token string) (model.PairTokens, error)
+		Logout(ctx context.Context, token string) error
 	}
 
 	AuthImpl struct {
@@ -130,6 +131,16 @@ func (s *AuthImpl) RefreshToken(ctx context.Context, token string) (model.PairTo
 	}
 
 	return tokens, nil
+}
+
+func (s *AuthImpl) Logout(ctx context.Context, token string) error {
+	const op = "service:Auth.Logout"
+
+	if err := s.sessmng.Del(ctx, token); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
 }
 
 func (s *AuthImpl) generateTokens(user model.User) (model.PairTokens, error) {

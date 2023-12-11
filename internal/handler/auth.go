@@ -146,7 +146,32 @@ func (h *Auth) RefreshToken() http.HandlerFunc {
 }
 
 func (h *Auth) Logout() http.HandlerFunc {
+	type Request struct {
+		RefreshToken string `json:"refreshToken"`
+	}
+
 	return h.apiFunc(func(w http.ResponseWriter, r *http.Request) error {
+		const op = "handler:Auth.Logout"
+
+		ctx := r.Context()
+		logger := h.logger.With(
+			"operation", op,
+			requestid.Key, requestid.Extract(ctx),
+		)
+
+		var req Request
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			logger.Error("failed to decode request body", "error", err)
+
+			return ErrBadRequest
+		}
+
+		if err := h.serv.Logout(ctx, req.RefreshToken); err != nil {
+			logger.Error("failed to logout", "error", err)
+
+			return ErrInternal("failed to logout")
+		}
+
 		return response.Send(w, http.StatusNoContent, nil)
 	})
 }
