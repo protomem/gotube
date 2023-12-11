@@ -11,7 +11,10 @@ import (
 	"github.com/protomem/gotube/internal/session"
 )
 
-const _accessTokenTTL = 6 * time.Hour
+const (
+	_accessTokenTTL  = 6 * time.Hour
+	_refreshTokenTTL = 3 * 24 * time.Hour
+)
 
 var _ Auth = (*AuthImpl)(nil)
 
@@ -60,6 +63,14 @@ func (s *AuthImpl) Register(ctx context.Context, dto RegisterDTO) (model.User, m
 		return model.User{}, model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
 	}
 
+	if err := s.sessmng.Put(ctx, session.Session{
+		Token:  tokens.Refresh,
+		UserID: user.ID,
+		Expiry: time.Now().Add(_refreshTokenTTL),
+	}); err != nil {
+		return model.User{}, model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
+	}
+
 	return user, tokens, nil
 }
 
@@ -73,6 +84,14 @@ func (s *AuthImpl) Login(ctx context.Context, dto LoginDTO) (model.User, model.P
 
 	tokens, err := s.generateTokens(user)
 	if err != nil {
+		return model.User{}, model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	if err := s.sessmng.Put(ctx, session.Session{
+		Token:  tokens.Refresh,
+		UserID: user.ID,
+		Expiry: time.Now().Add(_refreshTokenTTL),
+	}); err != nil {
 		return model.User{}, model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
 	}
 
