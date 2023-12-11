@@ -8,9 +8,9 @@ import (
 )
 
 type Session struct {
-	Token     string
-	UserID    uuid.UUID
-	ExpiresAt time.Duration
+	Token  string    `json:"token"`
+	UserID uuid.UUID `json:"userId"`
+	Expiry time.Time `json:"expiry"`
 }
 
 type Manager interface {
