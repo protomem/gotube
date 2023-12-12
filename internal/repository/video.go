@@ -26,6 +26,7 @@ type (
 		FindOrderByViews(ctx context.Context, opts FindOptions) ([]model.Video, error)
 		Get(ctx context.Context, id model.ID) (model.Video, error)
 		Create(ctx context.Context, dto CreateVideoDTO) (model.ID, error)
+		Delete(ctx context.Context, id model.ID) error
 	}
 
 	VideoImpl struct {
@@ -178,6 +179,19 @@ func (r *VideoImpl) Create(ctx context.Context, dto CreateVideoDTO) (model.ID, e
 	}
 
 	return id, nil
+}
+
+func (r *VideoImpl) Delete(ctx context.Context, id model.ID) error {
+	const op = "repository:Video.Delete"
+
+	query := `DELETE FROM videos WHERE id = $1`
+	args := []any{id}
+
+	if _, err := r.pdb.Exec(ctx, query, args...); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
 }
 
 func (r *VideoImpl) scan(row Scanable, video *model.Video) error {

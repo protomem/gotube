@@ -184,6 +184,27 @@ func (h *Video) Update() http.HandlerFunc {
 
 func (h *Video) Delete() http.HandlerFunc {
 	return h.apiFunc(func(w http.ResponseWriter, r *http.Request) error {
+		const op = "handler:Video.Delete"
+
+		ctx := r.Context()
+		logger := h.logger.With(
+			"operation", op,
+			requestid.Key, requestid.Extract(ctx),
+		)
+
+		videoID, err := h.extractVideoIDFromRequest(r)
+		if err != nil {
+			logger.Error("failed to extract video id", "error", err)
+
+			return ErrBadRequest
+		}
+
+		if err := h.serv.Delete(ctx, videoID); err != nil {
+			logger.Error("failed to delete video", "error", err)
+
+			return ErrInternal("failed to delete video")
+		}
+
 		return response.Send(w, http.StatusNoContent, nil)
 	})
 }

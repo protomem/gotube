@@ -199,7 +199,7 @@ func (app *App) setupRoutes() {
 
 		r.Route("/videos", func(r chi.Router) {
 			r.Get("/new", app.handls.Video.ListNew())
-			r.Get("/popular", app.handls.ListPopular())
+			r.Get("/popular", app.handls.Video.ListPopular())
 			r.Get("/{videoId}", app.handls.Video.Get())
 
 			r.Group(func(r chi.Router) {

@@ -29,6 +29,7 @@ type (
 		FindPopular(ctx context.Context, opts FindOptions) ([]model.Video, error)
 		Get(ctx context.Context, id model.ID) (model.Video, error)
 		Create(ctx context.Context, dto CreateVideoDTO) (model.Video, error)
+		Delete(ctx context.Context, id model.ID) error
 	}
 
 	VideoImpl struct {
@@ -93,4 +94,14 @@ func (s *VideoImpl) Create(ctx context.Context, dto CreateVideoDTO) (model.Video
 	}
 
 	return video, nil
+}
+
+func (s *VideoImpl) Delete(ctx context.Context, id model.ID) error {
+	const op = "service:Video.Delete"
+
+	if err := s.repo.Delete(ctx, id); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
 }
