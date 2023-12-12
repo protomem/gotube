@@ -24,6 +24,7 @@ func (dto CreateUserDTO) Validate() error {
 
 type (
 	User interface {
+		FindByIDs(ctx context.Context, ids ...model.ID) ([]model.User, error)
 		Get(ctx context.Context, id model.ID) (model.User, error)
 		GetByNickname(ctx context.Context, nickname string) (model.User, error)
 		GetByEmailAndPassword(ctx context.Context, email, password string) (model.User, error)
@@ -42,6 +43,17 @@ func NewUser(repo repository.User, hasher hashing.Hasher) *UserImpl {
 		repo:   repo,
 		hasher: hasher,
 	}
+}
+
+func (s *UserImpl) FindByIDs(ctx context.Context, ids ...model.ID) ([]model.User, error) {
+	const op = "service:User.FindByIDs"
+
+	users, err := s.repo.FindByIDs(ctx, ids...)
+	if err != nil {
+		return []model.User{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return users, nil
 }
 
 func (s *UserImpl) Get(ctx context.Context, id model.ID) (model.User, error) {

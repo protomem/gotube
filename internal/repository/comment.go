@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var _ Comment = (*CommentImpl)(nil)
@@ -24,6 +25,7 @@ type CreateCommentDTO struct {
 
 type (
 	Comment interface {
+		FindByVideoID(ctx context.Context, videoID model.ID) ([]model.Comment, error)
 		Get(ctx context.Context, id model.ID) (model.Comment, error)
 		Create(ctx context.Context, dto CreateCommentDTO) (model.ID, error)
 	}
@@ -39,6 +41,41 @@ func NewComment(logger logging.Logger, mdb *mongo.Client) *CommentImpl {
 		logger: logger.With("repository", "comment", "repositoryType", "mongo"),
 		mdb:    mdb,
 	}
+}
+
+func (r *CommentImpl) FindByVideoID(ctx context.Context, videoID model.ID) ([]model.Comment, error) {
+	const op = "repository:Comment.FindByVideoID"
+
+	filter := bson.D{{Key: "videoId", Value: videoID.String()}}
+
+	opts := options.Find().SetSort(bson.D{{Key: "createdAt", Value: -1}})
+
+	cur, err := r.collection("comments").Find(ctx, filter, opts)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	defer func() { _ = cur.Close(ctx) }()
+
+	docs := make([]commendDocuemnt, 0)
+	for cur.Next(ctx) {
+		var doc commendDocuemnt
+		if err := cur.Decode(&doc); err != nil {
+			return nil, fmt.Errorf("%s: %w", op, err)
+		}
+
+		docs = append(docs, doc)
+	}
+
+	if cur.Err() != nil {
+		return nil, fmt.Errorf("%s: %w", op, cur.Err())
+	}
+
+	comments := make([]model.Comment, 0, len(docs))
+	for _, doc := range docs {
+		comments = append(comments, doc.Model())
+	}
+
+	return comments, nil
 }
 
 func (r *CommentImpl) Get(ctx context.Context, id model.ID) (model.Comment, error) {

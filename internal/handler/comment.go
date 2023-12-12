@@ -31,8 +31,30 @@ func NewComment(logger logging.Logger, serv service.Comment, accmng access.Manag
 
 func (h *Comment) List() http.HandlerFunc {
 	return h.apiFunc(func(w http.ResponseWriter, r *http.Request) error {
+		const op = "handler:Comment.List"
+
+		ctx := r.Context()
+		logger := h.logger.With(
+			"operation", op,
+			requestid.Key, requestid.Extract(ctx),
+		)
+
+		videoID, err := h.extractVideoIDFromRequest(r)
+		if err != nil {
+			logger.Error("failed to extract video id", "error", err)
+
+			return ErrBadRequest
+		}
+
+		videos, err := h.serv.FindByVideoID(ctx, videoID)
+		if err != nil {
+			logger.Error("failed to find comments", "error", err)
+
+			return ErrInternal("failed to find comments")
+		}
+
 		return response.Send(w, http.StatusOK, response.JSON{
-			"videos": "some_videos",
+			"videos": videos,
 		})
 	})
 }

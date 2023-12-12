@@ -22,6 +22,7 @@ func (dto CreateCommentDTO) Validate() error {
 
 type (
 	Comment interface {
+		FindByVideoID(ctx context.Context, videoID model.ID) ([]model.Comment, error)
 		Create(ctx context.Context, dto CreateCommentDTO) (model.Comment, error)
 	}
 
@@ -38,6 +39,35 @@ func NewComment(repo repository.Comment, userServ User, videoServ Video) *Commen
 		userServ:  userServ,
 		videoServ: videoServ,
 	}
+}
+
+func (s *CommentImpl) FindByVideoID(ctx context.Context, videoID model.ID) ([]model.Comment, error) {
+	const op = "service:Comment.FindByVideoID"
+
+	videos, err := s.repo.FindByVideoID(ctx, videoID)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	userIDs := make([]model.ID, 0, len(videos))
+	for _, video := range videos {
+		userIDs = append(userIDs, video.Author.ID)
+	}
+
+	users, err := s.userServ.FindByIDs(ctx, userIDs...)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	for i, video := range videos {
+		for _, user := range users {
+			if video.Author.ID == user.ID {
+				videos[i].Author = user
+			}
+		}
+	}
+
+	return videos, nil
 }
 
 func (s *CommentImpl) Create(ctx context.Context, dto CreateCommentDTO) (model.Comment, error) {

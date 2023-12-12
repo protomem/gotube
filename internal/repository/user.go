@@ -20,6 +20,7 @@ type CreateUserDTO struct {
 
 type (
 	User interface {
+		FindByIDs(ctx context.Context, ids ...model.ID) ([]model.User, error)
 		Get(ctx context.Context, id model.ID) (model.User, error)
 		GetByNickname(ctx context.Context, nickname string) (model.User, error)
 		GetByEmail(ctx context.Context, email string) (model.User, error)
@@ -38,6 +39,39 @@ func NewUser(logger logging.Logger, pdb *pgxpool.Pool) *UserImpl {
 		logger: logger.With("repository", "user", "repositoryType", "postgres"),
 		pdb:    pdb,
 	}
+}
+
+func (r *UserImpl) FindByIDs(ctx context.Context, ids ...model.ID) ([]model.User, error) {
+	const op = "repository:User.FindByIDs"
+
+	query := `SELECT * FROM users WHERE id = ANY($1::uuid[])`
+	args := []any{ids}
+
+	rows, err := r.pdb.Query(ctx, query, args...)
+	if err != nil {
+		if IsPgNotFound(err) {
+			return []model.User{}, nil
+		}
+
+		return []model.User{}, fmt.Errorf("%s: %w", op, err)
+	}
+	defer func() { rows.Close() }()
+
+	users := make([]model.User, 0, len(ids))
+	for rows.Next() {
+		var user model.User
+		if err := r.scan(rows, &user); err != nil {
+			return []model.User{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		users = append(users, user)
+	}
+
+	if len(users) == 0 {
+		return []model.User{}, nil
+	}
+
+	return users, nil
 }
 
 func (r *UserImpl) Get(ctx context.Context, id model.ID) (model.User, error) {
