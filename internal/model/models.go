@@ -53,3 +53,14 @@ type Video struct {
 	Public bool   `json:"isPublic"`
 	Views  uint64 `json:"views"`
 }
+
+type Comment struct {
+	ID        ID        `json:"id"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+
+	Message string `json:"message"`
+
+	Author  User `json:"author"`
+	VideoID ID   `json:"videoId"`
+}

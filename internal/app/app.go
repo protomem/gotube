@@ -209,6 +209,18 @@ func (app *App) setupRoutes() {
 				r.Patch("/{videoId}", app.handls.Video.Update())
 				r.Delete("/{videoId}", app.handls.Video.Delete())
 			})
+
+			r.Route("/{videoId}/comments", func(r chi.Router) {
+				r.Get("/", app.handls.Comment.List())
+
+				r.Group(func(r chi.Router) {
+					r.Use(app.mdws.IsAuthenticated())
+
+					r.Post("/", app.handls.Comment.Create())
+					r.Patch("/{commentId}", app.handls.Comment.Update())
+					r.Delete("/{commentId}", app.handls.Comment.Delete())
+				})
+			})
 		})
 	})
 }

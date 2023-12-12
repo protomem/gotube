@@ -10,16 +10,19 @@ type Services struct {
 	User
 	Auth
 	Video
+	Comment
 }
 
 func New(authSecret string, repos *repository.Repositories, sessmng session.Manager) *Services {
 	userServ := NewUser(repos.User, hashing.NewBcrypt(hashing.BcryptDefaultCost))
 	authServ := NewAuth(authSecret, userServ, sessmng)
 	videoServ := NewVideo(repos.Video)
+	commentServ := NewComment(repos.Comment, userServ)
 
 	return &Services{
-		User:  userServ,
-		Auth:  authServ,
-		Video: videoServ,
+		User:    userServ,
+		Auth:    authServ,
+		Video:   videoServ,
+		Comment: commentServ,
 	}
 }
