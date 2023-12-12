@@ -13,6 +13,8 @@ var (
 
 	ErrVideoNotFound      = errors.New("video not found")
 	ErrVideoAlreadyExists = errors.New("video already exists")
+
+	ErrCommentNotFound = errors.New("comment not found")
 )
 
 type ID = uuid.UUID

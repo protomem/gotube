@@ -17,7 +17,7 @@ func New(authSecret string, repos *repository.Repositories, sessmng session.Mana
 	userServ := NewUser(repos.User, hashing.NewBcrypt(hashing.BcryptDefaultCost))
 	authServ := NewAuth(authSecret, userServ, sessmng)
 	videoServ := NewVideo(repos.Video)
-	commentServ := NewComment(repos.Comment, userServ)
+	commentServ := NewComment(repos.Comment, userServ, videoServ)
 
 	return &Services{
 		User:    userServ,

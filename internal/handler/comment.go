@@ -1,11 +1,17 @@
 package handler
 
 import (
+	"encoding/json"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/protomem/gotube/internal/access"
+	"github.com/protomem/gotube/internal/jwt"
+	"github.com/protomem/gotube/internal/model"
 	"github.com/protomem/gotube/internal/service"
 	"github.com/protomem/gotube/pkg/logging"
+	"github.com/protomem/gotube/pkg/requestid"
 	"github.com/protomem/gotube/pkg/response"
 )
 
@@ -32,9 +38,48 @@ func (h *Comment) List() http.HandlerFunc {
 }
 
 func (h *Comment) Create() http.HandlerFunc {
+	type Request struct {
+		Message string `json:"message"`
+	}
+
 	return h.apiFunc(func(w http.ResponseWriter, r *http.Request) error {
+		const op = "handler:Comment.Create"
+
+		ctx := r.Context()
+		logger := h.logger.With(
+			"operation", op,
+			requestid.Key, requestid.Extract(ctx),
+		)
+
+		authPayload, _ := jwt.Extract(ctx)
+
+		videoID, err := h.extractVideoIDFromRequest(r)
+		if err != nil {
+			logger.Error("failed to extract video id", "error", err)
+
+			return ErrBadRequest
+		}
+
+		var req Request
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			logger.Error("failed to decode request", "error", err)
+
+			return ErrBadRequest
+		}
+
+		comment, err := h.serv.Create(ctx, service.CreateCommentDTO{
+			Message:  req.Message,
+			AuthorID: authPayload.UserID,
+			VideoID:  videoID,
+		})
+		if err != nil {
+			logger.Error("failed to create comment", "error", err)
+
+			return ErrInternal("failed to create comment")
+		}
+
 		return response.Send(w, http.StatusOK, response.JSON{
-			"comment": "some_comment",
+			"comment": comment,
 		})
 	})
 }
@@ -61,4 +106,15 @@ func (h *Comment) apiFunc(apiFn response.APIFunc) http.HandlerFunc {
 
 func (h *Comment) errorHandler() response.ErrorHandler {
 	return response.DefaultErrorHandler(h.logger, "handler:Auth.errorHandler")
+}
+
+func (h *Comment) extractVideoIDFromRequest(r *http.Request) (model.ID, error) {
+	videoIDRaw := chi.URLParam(r, "videoId")
+
+	videoID, err := uuid.Parse(videoIDRaw)
+	if err != nil {
+		return model.ID{}, err
+	}
+
+	return videoID, nil
 }
