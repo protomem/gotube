@@ -116,9 +116,28 @@ func (h *Comment) Update() http.HandlerFunc {
 
 func (h *Comment) Delete() http.HandlerFunc {
 	return h.apiFunc(func(w http.ResponseWriter, r *http.Request) error {
-		return response.Send(w, http.StatusOK, response.JSON{
-			"comment": "some_comment",
-		})
+		const op = "handler:Comment.Delete"
+
+		ctx := r.Context()
+		logger := h.logger.With(
+			"operation", op,
+			requestid.Key, requestid.Extract(ctx),
+		)
+
+		commentID, err := h.extractCommentIDFromRequest(r)
+		if err != nil {
+			logger.Error("failed to extract comment id", "error", err)
+
+			return ErrBadRequest
+		}
+
+		if err := h.serv.Delete(ctx, commentID); err != nil {
+			logger.Error("failed to delete comment", "error", err)
+
+			return ErrInternal("failed to delete comment")
+		}
+
+		return response.Send(w, http.StatusNoContent, nil)
 	})
 }
 
@@ -139,4 +158,15 @@ func (h *Comment) extractVideoIDFromRequest(r *http.Request) (model.ID, error) {
 	}
 
 	return videoID, nil
+}
+
+func (h *Comment) extractCommentIDFromRequest(r *http.Request) (model.ID, error) {
+	commentIDRaw := chi.URLParam(r, "commentId")
+
+	commentID, err := uuid.Parse(commentIDRaw)
+	if err != nil {
+		return model.ID{}, err
+	}
+
+	return commentID, nil
 }

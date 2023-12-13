@@ -28,6 +28,7 @@ type (
 		FindByVideoID(ctx context.Context, videoID model.ID) ([]model.Comment, error)
 		Get(ctx context.Context, id model.ID) (model.Comment, error)
 		Create(ctx context.Context, dto CreateCommentDTO) (model.ID, error)
+		Delete(ctx context.Context, id model.ID) error
 	}
 
 	CommentImpl struct {
@@ -110,6 +111,18 @@ func (r *CommentImpl) Create(ctx context.Context, dto CreateCommentDTO) (model.I
 	}
 
 	return doc.ModelID(), nil
+}
+
+func (r *CommentImpl) Delete(ctx context.Context, id model.ID) error {
+	const op = "repository:Comment.Delete"
+
+	filter := bson.D{{Key: "commentId", Value: id.String()}}
+
+	if _, err := r.collection("comments").DeleteOne(ctx, filter); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
 }
 
 func (r *CommentImpl) collection(name string) *mongo.Collection {

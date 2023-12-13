@@ -24,6 +24,7 @@ type (
 	Comment interface {
 		FindByVideoID(ctx context.Context, videoID model.ID) ([]model.Comment, error)
 		Create(ctx context.Context, dto CreateCommentDTO) (model.Comment, error)
+		Delete(ctx context.Context, id model.ID) error
 	}
 
 	CommentImpl struct {
@@ -93,4 +94,14 @@ func (s *CommentImpl) Create(ctx context.Context, dto CreateCommentDTO) (model.C
 	}
 
 	return comment, nil
+}
+
+func (s *CommentImpl) Delete(ctx context.Context, id model.ID) error {
+	const op = "service:Comment.Delete"
+
+	if err := s.repo.Delete(ctx, id); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
 }
