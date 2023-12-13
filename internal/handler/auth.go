@@ -58,7 +58,7 @@ func (h *Auth) Register() http.HandlerFunc {
 				return ErrConflict("user")
 			}
 
-			return ErrInternal("failed to register")
+			return ErrInternal("failed to register", err)
 		}
 
 		return response.Send(w, http.StatusCreated, response.JSON{

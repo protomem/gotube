@@ -9,6 +9,7 @@ import (
 	"github.com/protomem/gotube/pkg/header"
 	"github.com/protomem/gotube/pkg/logging"
 	"github.com/protomem/gotube/pkg/requestid"
+	"github.com/protomem/gotube/pkg/validation"
 )
 
 type JSON map[string]any
@@ -107,6 +108,12 @@ func DefaultErrorHandler(logger logging.Logger, op string) ErrorHandler {
 				).Error("failed to send response")
 			}
 		}()
+
+		var vErr *validation.Validator
+		if errors.As(err, &vErr) {
+			errS = Send(w, http.StatusUnprocessableEntity, JSON{"error": vErr})
+			return
+		}
 
 		var apiErr *APIError
 		if errors.As(err, &apiErr) {

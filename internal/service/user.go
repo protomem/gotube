@@ -8,6 +8,7 @@ import (
 	"github.com/protomem/gotube/internal/hashing"
 	"github.com/protomem/gotube/internal/model"
 	"github.com/protomem/gotube/internal/repository"
+	"github.com/protomem/gotube/pkg/validation"
 )
 
 var _ User = (*UserImpl)(nil)
@@ -19,7 +20,22 @@ type CreateUserDTO struct {
 }
 
 func (dto CreateUserDTO) Validate() error {
-	return nil
+	return validation.Validate(func(v *validation.Validator) {
+		v.CheckField(
+			validation.NotBlank(dto.Nickname) &&
+				validation.MinRunes(dto.Nickname, 4) &&
+				validation.MaxRunes(dto.Nickname, 16),
+			"nickname", "invalid nickname",
+		)
+
+		v.CheckField(
+			validation.MinRunes(dto.Password, 8) &&
+				validation.MaxRunes(dto.Password, 32),
+			"password", "invalid password",
+		)
+
+		v.CheckField(validation.IsEmail(dto.Email), "email", "invalid email")
+	})
 }
 
 type (

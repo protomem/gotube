@@ -9,8 +9,9 @@ import (
 
 var ErrBadRequest = response.NewAPIMsg(http.StatusBadRequest, "invalid request")
 
-func ErrInternal(msg string) *response.APIError {
-	return response.NewAPIMsg(http.StatusInternalServerError, msg)
+func ErrInternal(msg string, err ...error) *response.APIError {
+	err = append(err, nil)
+	return response.NewAPIError(http.StatusInternalServerError, msg, err[0])
 }
 
 func ErrNotFound(resource string) *response.APIError {

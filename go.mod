@@ -18,6 +18,7 @@ require (
 	go.mongodb.org/mongo-driver v1.13.0
 	go.uber.org/zap v1.26.0
 	golang.org/x/crypto v0.16.0
+	golang.org/x/exp v0.0.0-20230315142452-642cacee5cc0
 )
 
 require (
