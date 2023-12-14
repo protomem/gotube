@@ -8,8 +8,10 @@ import (
 	"runtime/debug"
 	"sync"
 
+	"github.com/protomem/gotube/internal/blobstore"
 	"github.com/protomem/gotube/internal/database"
 	"github.com/protomem/gotube/internal/env"
+	"github.com/protomem/gotube/internal/flashstore"
 	"github.com/protomem/gotube/internal/version"
 )
 
@@ -17,8 +19,6 @@ import (
 // TODO: Add request id
 // TODO: Add CORS
 // TODO: Add docker, docker-compose
-// TODO: Flash storage (Redis?)
-// TODO: Blob storage (S3?)
 // TODO: Add JWT
 // TODO: Add access and refresh tokens
 // TODO: Add Casbin
@@ -50,11 +50,21 @@ type config struct {
 		dsn         string
 		automigrate bool
 	}
+	flash struct {
+		dsn string
+	}
+	blob struct {
+		addr      string
+		accessKey string
+		secretKey string
+	}
 }
 
 type application struct {
 	config config
 	db     *database.DB
+	fstore *flashstore.Storage
+	bstore *blobstore.Storage
 	logger *slog.Logger
 	wg     sync.WaitGroup
 }
@@ -67,6 +77,10 @@ func run(logger *slog.Logger) error {
 	cfg.cookie.secretKey = env.GetString("COOKIE_SECRET_KEY", "34gqafpamolgom4njk6wjcxh2qilxdwd")
 	cfg.db.dsn = env.GetString("DB_DSN", "user:pass@localhost:5432/db")
 	cfg.db.automigrate = env.GetBool("DB_AUTOMIGRATE", true)
+	cfg.flash.dsn = env.GetString("FLASH_DSN", "localhost:6379/0")
+	cfg.blob.addr = env.GetString("BLOB_ADDR", "localhost:9000")
+	cfg.blob.accessKey = env.GetString("BLOB_ACCESS_KEY", "user")
+	cfg.blob.secretKey = env.GetString("BLOB_SECRET_KEY", "pass")
 
 	showVersion := flag.Bool("version", false, "display version and exit")
 
@@ -81,11 +95,24 @@ func run(logger *slog.Logger) error {
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
+
+	bstore, err := blobstore.New(cfg.blob.addr, cfg.blob.accessKey, cfg.blob.secretKey, false)
+	if err != nil {
+		return err
+	}
+
+	fstore, err := flashstore.New(cfg.flash.dsn)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = fstore.Close() }()
 
 	app := &application{
 		config: cfg,
 		db:     db,
+		bstore: bstore,
+		fstore: fstore,
 		logger: logger,
 	}
 
