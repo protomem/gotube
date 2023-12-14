@@ -8,24 +8,19 @@ import (
 )
 
 var (
-	ErrUserNotFound = errors.New("user not found")
-	ErrUserExists   = errors.New("user already exists")
+	ErrUserNotFound      = errors.New("user not found")
+	ErrUserAlreadyExists = errors.New("user already exists")
 
-	ErrSubscriptionNotFound = errors.New("subscription not found")
-	ErrSubscriptionExists   = errors.New("subscription already exists")
-
-	ErrVideoNotFound = errors.New("video not found")
-	ErrVideoExists   = errors.New("video already exists")
-
-	ErrRatingNotFound = errors.New("rating not found")
-	ErrRatingExists   = errors.New("rating already exists")
+	ErrVideoNotFound      = errors.New("video not found")
+	ErrVideoAlreadyExists = errors.New("video already exists")
 
 	ErrCommentNotFound = errors.New("comment not found")
 )
 
-type User struct {
-	ID uuid.UUID `json:"id"`
+type ID = uuid.UUID
 
+type User struct {
+	ID        ID        `json:"id"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 
@@ -44,19 +39,8 @@ type PairTokens struct {
 	Refresh string `json:"refreshToken"`
 }
 
-type Subscription struct {
-	ID uuid.UUID `json:"id"`
-
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
-
-	FromUser User `json:"fromUser"`
-	ToUser   User `json:"toUser"`
-}
-
 type Video struct {
-	ID uuid.UUID `json:"id"`
-
+	ID        ID        `json:"id"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 
@@ -72,27 +56,13 @@ type Video struct {
 	Views  uint64 `json:"views"`
 }
 
-type Rating struct {
-	ID uuid.UUID `json:"id"`
-
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
-
-	Like bool `json:"isLike"`
-
-	VideoID uuid.UUID `json:"videoID"`
-	UserID  uuid.UUID `json:"userID"`
-}
-
 type Comment struct {
-	ID uuid.UUID `json:"id"`
-
+	ID        ID        `json:"id"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 
-	Content string `json:"content"`
+	Message string `json:"message"`
 
-	Author User `json:"author"`
-
-	VideoID uuid.UUID `json:"videoID"`
+	Author  User `json:"author"`
+	VideoID ID   `json:"videoId"`
 }

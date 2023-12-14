@@ -2,29 +2,46 @@ package bootstrap
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type PostgresOptions struct {
-	Connect string
+	User     string
+	Password string
+
+	Host string
+	Port int
+
+	Database string
+
+	SSLMode string
+
+	Ping bool
 }
 
-func Postgres(ctx context.Context, opts PostgresOptions) (*sql.DB, error) {
+func Postgres(ctx context.Context, opts PostgresOptions) (*pgxpool.Pool, error) {
 	const op = "bootstrap.Postgres"
-	var err error
 
-	db, err := sql.Open("pgx", opts.Connect)
+	pool, err := pgxpool.New(
+		ctx,
+		buildPostgresConnect(opts.User, opts.Password, opts.Host, opts.Port, opts.Database, opts.SSLMode),
+	)
 	if err != nil {
-		return nil, fmt.Errorf("%s: connect: %w", op, err)
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	err = db.PingContext(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("%s: ping: %w", op, err)
+	if opts.Ping {
+		if err := pool.Ping(ctx); err != nil {
+			return nil, fmt.Errorf("%s: ping: %w", op, err)
+		}
 	}
 
-	return db, nil
+	return pool, nil
+}
+
+func buildPostgresConnect(user, password, host string, port int, database, sslmode string) string {
+	connect := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s", user, password, host, port, database, sslmode)
+	return connect
 }

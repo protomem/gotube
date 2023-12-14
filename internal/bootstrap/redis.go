@@ -9,20 +9,25 @@ import (
 
 type RedisOptions struct {
 	Addr string
+
+	Ping bool
 }
 
 func Redis(ctx context.Context, opts RedisOptions) (*redis.Client, error) {
 	const op = "bootstrap.Redis"
 
-	client := redis.NewClient(&redis.Options{
+	ropts := &redis.Options{
 		Addr:     opts.Addr,
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
+		Password: "",
+		DB:       0,
+	}
 
-	res := client.Ping(ctx)
-	if res.Err() != nil {
-		return nil, fmt.Errorf("%s: ping: %w", op, res.Err())
+	client := redis.NewClient(ropts)
+
+	if opts.Ping {
+		if res := client.Ping(ctx); res.Err() != nil {
+			return nil, fmt.Errorf("%s: ping: %w", op, res.Err())
+		}
 	}
 
 	return client, nil

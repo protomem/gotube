@@ -2,7 +2,6 @@ package application
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"net/http"
@@ -11,404 +10,237 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/protomem/gotube/internal/access"
 	"github.com/protomem/gotube/internal/bootstrap"
 	"github.com/protomem/gotube/internal/config"
-	httphandl "github.com/protomem/gotube/internal/handler/http"
-	httpmdw "github.com/protomem/gotube/internal/middleware/http"
+	"github.com/protomem/gotube/internal/handler"
+	"github.com/protomem/gotube/internal/middleware"
 	"github.com/protomem/gotube/internal/repository"
-	mongorepo "github.com/protomem/gotube/internal/repository/mongo"
-	postgresrepo "github.com/protomem/gotube/internal/repository/postgres"
 	"github.com/protomem/gotube/internal/service"
 	"github.com/protomem/gotube/internal/session"
-	"github.com/protomem/gotube/internal/session/redis"
 	"github.com/protomem/gotube/internal/storage"
-	"github.com/protomem/gotube/internal/storage/s3"
-	"github.com/protomem/gotube/pkg/closure"
+	"github.com/protomem/gotube/pkg/closing"
 	"github.com/protomem/gotube/pkg/logging"
-	"github.com/protomem/gotube/pkg/logging/stdlog"
+	"github.com/protomem/gotube/pkg/logging/zap"
+	"github.com/protomem/gotube/pkg/requestid"
 	"go.mongodb.org/mongo-driver/mongo"
 )
-
-type repositories struct {
-	repository.User
-	repository.Subscription
-	repository.Video
-	repository.Rating
-	repository.Comment
-}
-
-func newRepositories(logger logging.Logger, pgdb *sql.DB, mgdb *mongo.Client) *repositories {
-	repos := &repositories{}
-
-	repos.User = postgresrepo.NewUserRepository(logger, pgdb)
-	repos.Subscription = postgresrepo.NewSubscriptionRepository(logger, pgdb)
-	repos.Video = postgresrepo.NewVideoRepository(logger, pgdb)
-	repos.Rating = postgresrepo.NewRatingRepository(logger, pgdb)
-	repos.Comment = mongorepo.NewCommentRepository(logger, mgdb, repos.User)
-
-	return repos
-}
-
-type services struct {
-	service.User
-	service.Auth
-	service.Subscription
-	service.Video
-	service.Rating
-	service.Comment
-}
-
-func newServices(authSigngingKey string, repos *repositories, sessmng session.Manager) *services {
-	servs := &services{}
-
-	servs.User = service.NewUser(repos.User)
-	servs.Auth = service.NewAuth(authSigngingKey, sessmng, servs.User)
-	servs.Subscription = service.NewSubscription(repos.Subscription, servs.User)
-	servs.Video = service.NewVideo(repos.Video, servs.Subscription)
-	servs.Rating = service.NewRating(repos.Rating)
-	servs.Comment = service.NewComment(repos.Comment)
-
-	return servs
-}
-
-type handlers struct {
-	*httphandl.CommonHandler
-	*httphandl.UserHandler
-	*httphandl.AuthHandler
-	*httphandl.SubscriptionHandler
-	*httphandl.VideoHandler
-	*httphandl.RatingHandler
-	*httphandl.CommentHandler
-
-	*httphandl.MediaHandler
-}
-
-func newHandlers(logger logging.Logger, servs *services, store storage.Storage) *handlers {
-	return &handlers{
-		CommonHandler:       httphandl.NewCommonHandler(logger),
-		UserHandler:         httphandl.NewUserHandler(logger, servs.User),
-		AuthHandler:         httphandl.NewAuthHandler(logger, servs.Auth),
-		SubscriptionHandler: httphandl.NewSubscriptionHandler(logger, servs.Subscription),
-		VideoHandler:        httphandl.NewVideoHandler(logger, servs.Video),
-		RatingHandler:       httphandl.NewRatingHandler(logger, servs.Rating),
-		CommentHandler:      httphandl.NewCommentHandler(logger, servs.Comment),
-
-		MediaHandler: httphandl.NewMediaHandler(logger, store),
-	}
-}
-
-type middlewares struct {
-	*httpmdw.CommonMiddleware
-	*httpmdw.AuthMiddleware
-}
-
-func newMiddlewares(logger logging.Logger, servs *services) *middlewares {
-	return &middlewares{
-		CommonMiddleware: httpmdw.NewCommonMiddleware(logger),
-		AuthMiddleware:   httpmdw.NewAuthMiddleware(logger, servs.Auth),
-	}
-}
 
 type App struct {
 	conf   config.Config
 	logger logging.Logger
 
-	pgdb *sql.DB
-	mgdb *mongo.Client
+	pdb *pgxpool.Pool
+	mdb *mongo.Client
 
-	sessmng session.Manager
 	store   storage.Storage
+	sessmng session.Manager
+	accmng  access.Manager
 
-	repos  *repositories
-	servs  *services
-	handls *handlers
-	mdws   *middlewares
+	repos  *repository.Repositories
+	servs  *service.Services
+	handls *handler.Handlers
+	mdws   *middleware.Middlewares
 
-	router *mux.Router
+	router *chi.Mux
 	server *http.Server
 
-	closer *closure.Closer
+	closer *closing.Closer
 }
 
-func New(conf config.Config) (*App, error) {
-	const op = "app.New"
-	var err error
+func New(conf config.Config) *App {
+	return &App{conf: conf}
+}
 
-	app := new(App)
+func (app *App) Run(ctx context.Context) error {
+	const op = "application:App.Run"
 
-	err = app.setup(conf)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+	if err := app.setup(ctx); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	return app, nil
-}
-
-func (app *App) Run() error {
-	const op = "app.Run"
-	var err error
+	app.repos = repository.New(app.logger, app.pdb, app.mdb)
+	app.servs = service.New(app.conf.Auth.Secret, app.repos, app.sessmng)
+	app.handls = handler.New(app.logger, app.servs, app.store, app.accmng)
+	app.mdws = middleware.New(app.logger, app.servs)
 
 	app.registerOnShutdown()
 	app.setupRoutes()
 
-	app.logger.Debug("app configured", "config", app.conf)
-
-	errs := make(chan error)
+	errs := make(chan error, 1)
 
 	go func() { app.startServer(errs) }()
 	go func() { app.gracefulShutdown(errs) }()
 
-	app.logger.Info("app started ...")
-	defer app.logger.Info("app finished")
+	app.logger.Info("app started ...", "addr", app.server.Addr)
+	defer app.logger.Info("app stopped.")
 
-	err = <-errs
-	if err != nil {
+	if err := <-errs; err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
 	return nil
 }
 
-func (app *App) setup(conf config.Config) error {
+func (app *App) setup(ctx context.Context) error {
 	const op = "setup"
 	var err error
-	ctx := context.Background()
 
-	app.conf = conf
-
-	app.logger, err = stdlog.New(conf.Log.Level)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
+	if app.logger, err = zap.NewLogger(app.conf.Log.Level); err != nil {
+		return fmt.Errorf("%s: logger: %w", op, err)
 	}
 
-	app.pgdb, err = bootstrap.Postgres(ctx, bootstrap.PostgresOptions{
-		Connect: conf.Postgres.Connect,
-	})
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
+	app.logger.Debug("app configure ...", "config", app.conf)
+
+	if app.pdb, err = bootstrap.Postgres(ctx, bootstrap.PostgresOptions{
+		Host:     app.conf.Postgres.Host,
+		Port:     app.conf.Postgres.Port,
+		User:     app.conf.Postgres.User,
+		Password: app.conf.Postgres.Password,
+		Database: app.conf.Postgres.Database,
+		SSLMode:  app.conf.Postgres.SSLMode,
+		Ping:     app.conf.Mode == config.Debug,
+	}); err != nil {
+		return fmt.Errorf("%s: postgres: %w", op, err)
 	}
 
-	app.mgdb, err = bootstrap.Mongo(ctx, bootstrap.MongoOptions{
-		URI: conf.Mongo.URI,
-	})
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
+	if app.mdb, err = bootstrap.Mongo(ctx, bootstrap.MongoOptions{
+		URI:  app.conf.Mongo.URI,
+		Ping: app.conf.Mode == config.Debug,
+	}); err != nil {
+		return fmt.Errorf("%s: mongo: %w", op, err)
 	}
 
-	app.sessmng, err = redis.NewSessionManager(ctx, app.logger, conf.Redis.Addr)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
+	if app.store, err = storage.NewS3(ctx, app.logger, storage.S3Options{
+		Addr:   app.conf.S3.Addr,
+		Key:    app.conf.S3.Key,
+		Secret: app.conf.S3.Secret,
+		Secure: app.conf.S3.Secure,
+	}); err != nil {
+		return fmt.Errorf("%s: storage: %w", op, err)
 	}
 
-	app.store, err = s3.NewObjectStorage(ctx, app.logger, conf.S3.Addr, conf.S3.Keys.Access, conf.S3.Keys.Secret)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
+	if app.sessmng, err = session.NewRedis(ctx, app.logger, session.RedisOptions{
+		Addr: app.conf.Redis.Addr,
+		Ping: app.conf.Mode == config.Debug,
+	}); err != nil {
+		return fmt.Errorf("%s: session manager: %w", op, err)
 	}
 
-	app.repos = newRepositories(app.logger, app.pgdb, app.mgdb)
-	app.servs = newServices(conf.Auth.Secret, app.repos, app.sessmng)
-	app.handls = newHandlers(app.logger, app.servs, app.store)
-	app.mdws = newMiddlewares(app.logger, app.servs)
+	if app.accmng, err = access.NewCasbin(ctx, app.logger, access.CasbinOptions{
+		MongoURI:  app.conf.Mongo.URI,
+		ModelPath: app.conf.Auth.Model,
+		Lazy:      app.conf.Mode == config.Prod,
+	}); err != nil {
+		return fmt.Errorf("%s: access manager: %w", op, err)
+	}
 
-	app.router = mux.NewRouter()
-
+	app.router = chi.NewRouter()
 	app.server = &http.Server{
-		Addr:    conf.HTTP.Addr,
+		Addr:    httpAddr(app.conf.HTTP.Host, app.conf.HTTP.Port),
 		Handler: app.router,
 	}
 
-	app.closer = closure.New()
+	app.closer = closing.New()
 
 	return nil
 }
 
 func (app *App) registerOnShutdown() {
 	app.closer.Add(app.server.Shutdown)
+	app.closer.Add(app.accmng.Close)
 	app.closer.Add(app.sessmng.Close)
 	app.closer.Add(app.store.Close)
-	app.closer.Add(app.mgdb.Disconnect)
+	app.closer.Add(app.mdb.Disconnect)
 	app.closer.Add(func(_ context.Context) error {
-		return app.pgdb.Close()
+		app.pdb.Close()
+		return nil
 	})
 	app.closer.Add(app.logger.Sync)
 }
 
 func (app *App) setupRoutes() {
-	app.router.Use(app.mdws.RequestID())
-	app.router.Use(app.mdws.Logging())
-	app.router.Use(app.mdws.Recovery())
 	app.router.Use(app.mdws.CORS())
-
+	app.router.Use(requestid.Middleware())
+	app.router.Use(app.mdws.RealIP())
+	app.router.Use(app.mdws.CleanPath())
+	app.router.Use(app.mdws.StripSlashes())
+	app.router.Use(app.mdws.RequestLogging())
+	app.router.Use(app.mdws.Recoverer())
 	app.router.Use(app.mdws.Authenticate())
 
-	app.router.NotFoundHandler = app.handls.NotFound()
-	app.router.MethodNotAllowedHandler = app.handls.MethodNotAllowed()
+	app.router.Get("/ping", app.handls.Ping())
 
-	app.router.HandleFunc("/ping", app.handls.Ping()).Methods(http.MethodGet)
+	app.router.Route("/api/v1", func(r chi.Router) {
+		r.Route("/users", func(r chi.Router) {
+			r.Get("/{userNickname}", app.handls.User.Get())
 
-	// Auth endpoints
-	{
-		app.router.HandleFunc("/api/v1/auth/register", app.handls.AuthHandler.Register()).Methods(http.MethodPost)
-		app.router.HandleFunc("/api/v1/auth/login", app.handls.AuthHandler.Login()).Methods(http.MethodPost)
+			r.Group(func(r chi.Router) {
+				r.Use(app.mdws.IsAuthenticated())
 
-		// Protected
-		{
-			app.router.Handle(
-				"/api/v1/auth/refresh",
-				app.mdws.Protect()(app.handls.AuthHandler.Refresh()),
-			).Methods(http.MethodPost)
-			app.router.Handle(
-				"/api/v1/auth/logout",
-				app.mdws.Protect()(app.handls.AuthHandler.Logout()),
-			).Methods(http.MethodPost)
-		}
-	}
+				r.Patch("/{userNickname}", app.handls.User.Update())
+				r.Delete("/{userNickname}", app.handls.User.Delete())
+			})
+		})
 
-	// User endpoints
-	{
-		app.router.HandleFunc("/api/v1/users/{nickname}", app.handls.UserHandler.Get()).Methods(http.MethodGet)
+		r.Route("/auth", func(r chi.Router) {
+			r.Post("/register", app.handls.Register())
+			r.Post("/login", app.handls.Login())
 
-		// Protected
-		{
-			app.router.Handle(
-				"/api/v1/users/{nickname}",
-				app.mdws.Protect()(app.handls.UserHandler.Update()),
-			).Methods(http.MethodPatch)
-			app.router.Handle(
-				"/api/v1/users/{nickname}",
-				app.mdws.Protect()(app.handls.UserHandler.Delete()),
-			).Methods(http.MethodDelete)
-		}
-	}
+			r.Group(func(r chi.Router) {
+				r.Use(app.mdws.IsAuthenticated())
 
-	// Media endpoints
-	{
-		app.router.HandleFunc("/api/v1/media/{parent}/{name}", app.handls.MediaHandler.Get()).Methods(http.MethodGet)
+				r.Post("/refresh", app.handls.RefreshToken())
+				r.Delete("/logout", app.handls.Logout())
+			})
+		})
 
-		// Protected
-		{
-			app.router.Handle(
-				"/api/v1/media/{parent}/{name}",
-				app.mdws.Protect()(app.handls.MediaHandler.Save()),
-			).Methods(http.MethodPost)
-			app.router.Handle(
-				"/api/v1/media/{parent}/{name}",
-				app.mdws.Protect()(app.handls.MediaHandler.Delete()),
-			).Methods(http.MethodDelete)
-		}
-	}
+		r.Route("/videos", func(r chi.Router) {
+			r.Get("/new", app.handls.Video.ListNew())
+			r.Get("/popular", app.handls.Video.ListPopular())
+			r.Get("/{videoId}", app.handls.Video.Get())
 
-	// Subscription endpoints
-	{
-		// Protected
-		{
-			app.router.Handle(
-				"/api/v1/users/{nickname}/subs",
-				app.mdws.Protect()(app.handls.SubscriptionHandler.FindByFromUserNickname()),
-			).Methods(http.MethodGet)
-			app.router.Handle(
-				"/api/v1/subs",
-				app.mdws.Protect()(app.handls.SubscriptionHandler.Subscribe()),
-			).Methods(http.MethodPost)
-			app.router.Handle(
-				"/api/v1/subs",
-				app.mdws.Protect()(app.handls.SubscriptionHandler.Unsubscribe()),
-			).Methods(http.MethodDelete)
-		}
-	}
+			r.Group(func(r chi.Router) {
+				r.Use(app.mdws.IsAuthenticated())
 
-	// Video endpoints
-	{
-		app.router.HandleFunc("/api/v1/users/{nickname}/videos",
-			app.handls.VideoHandler.FindByAuthor()).Methods(http.MethodGet)
-		app.router.HandleFunc("/api/v1/videos/new", app.handls.VideoHandler.FindNew()).Methods(http.MethodGet)
-		app.router.HandleFunc("/api/v1/videos/popular", app.handls.VideoHandler.FindPopular()).Methods(http.MethodGet)
-		app.router.HandleFunc("/api/v1/videos/search", app.handls.VideoHandler.Search()).Methods(http.MethodGet)
-		app.router.HandleFunc("/api/v1/videos/{id}", app.handls.VideoHandler.Get()).Methods(http.MethodGet)
+				r.Post("/", app.handls.Video.Create())
+				r.Patch("/{videoId}", app.handls.Video.Update())
+				r.Delete("/{videoId}", app.handls.Video.Delete())
+			})
 
-		// Protected
-		{
-			app.router.Handle(
-				"/api/v1/users/{nickname}/videos/subs",
-				app.mdws.Protect()(app.handls.VideoHandler.FindByAuthorSubscriptions()),
-			).Methods(http.MethodGet)
-			app.router.Handle(
-				"/api/v1/videos",
-				app.mdws.Protect()(app.handls.VideoHandler.Create()),
-			).Methods(http.MethodPost)
-			app.router.Handle(
-				"/api/v1/videos/{id}",
-				app.mdws.Protect()(app.handls.VideoHandler.Update()),
-			).Methods(http.MethodPatch)
-			app.router.Handle(
-				"/api/v1/videos/{id}",
-				app.mdws.Protect()(app.handls.VideoHandler.Delete()),
-			).Methods(http.MethodDelete)
-		}
-	}
+			r.Route("/{videoId}/comments", func(r chi.Router) {
+				r.Get("/", app.handls.Comment.List())
 
-	// Rating endpoints
-	{
-		app.router.HandleFunc("/api/v1/videos/{id}/ratings",
-			app.handls.RatingHandler.FindByVideoID()).Methods(http.MethodGet)
+				r.Group(func(r chi.Router) {
+					r.Use(app.mdws.IsAuthenticated())
 
-		// Protected
-		{
-			app.router.Handle(
-				"/api/v1/videos/{id}/ratings/like",
-				app.mdws.Protect()(app.handls.RatingHandler.Like()),
-			).Methods(http.MethodPost)
-			app.router.Handle(
-				"/api/v1/videos/{id}/ratings/dislike",
-				app.mdws.Protect()(app.handls.RatingHandler.Dislike()),
-			).Methods(http.MethodPost)
-			app.router.Handle(
-				"/api/v1/videos/{id}/ratings",
-				app.mdws.Protect()(app.handls.RatingHandler.Delete()),
-			).Methods(http.MethodDelete)
-		}
-	}
-
-	// Comment endpoints
-	{
-		app.router.HandleFunc("/api/v1/videos/{id}/comments",
-			app.handls.CommentHandler.FindByVideoID()).Methods(http.MethodGet)
-
-		// Protected
-		{
-			app.router.Handle(
-				"/api/v1/videos/{id}/comments",
-				app.mdws.Protect()(app.handls.CommentHandler.Create()),
-			).Methods(http.MethodPost)
-			app.router.Handle(
-				"/api/v1/videos/{videoId}/comments/{commentId}",
-				app.mdws.Protect()(app.handls.CommentHandler.Delete()),
-			).Methods(http.MethodDelete)
-		}
-	}
+					r.Post("/", app.handls.Comment.Create())
+					r.Patch("/{commentId}", app.handls.Comment.Update())
+					r.Delete("/{commentId}", app.handls.Comment.Delete())
+				})
+			})
+		})
+	})
 }
 
 func (app *App) startServer(errs chan<- error) {
-	const op = "startServer"
-
-	err := app.server.ListenAndServe()
-	if err != nil && !errors.Is(err, http.ErrServerClosed) {
-		errs <- fmt.Errorf("%s: %w", op, err)
+	if err := app.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		errs <- fmt.Errorf("start server: %w", err)
+		return
 	}
 }
 
 func (app *App) gracefulShutdown(errs chan<- error) {
-	const op = "gracefulShutdown"
-
 	<-wait()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	err := app.closer.Close(ctx)
-	if err != nil {
-		errs <- fmt.Errorf("%s: %w", op, err)
+	if err := app.closer.Close(ctx); err != nil {
+		errs <- fmt.Errorf("graceful shutdown: %w", err)
+		return
 	}
 
 	errs <- nil
@@ -418,4 +250,8 @@ func wait() <-chan os.Signal {
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	return ch
+}
+
+func httpAddr(host string, port int) string {
+	return fmt.Sprintf("%s:%d", host, port)
 }

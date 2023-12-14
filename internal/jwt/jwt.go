@@ -42,8 +42,6 @@ type GenerateParams struct {
 }
 
 func Generate(payload Payload, params GenerateParams) (string, error) {
-	const op = "jwt.Generate"
-
 	claims := Claims{
 		Payload: payload,
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -56,7 +54,7 @@ func Generate(payload Payload, params GenerateParams) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signedToken, err := token.SignedString([]byte(params.SigningKey))
 	if err != nil {
-		return "", fmt.Errorf("%s: %w", op, err)
+		return "", fmt.Errorf("jwt.Generate: %w", err)
 	}
 
 	return signedToken, nil
@@ -67,8 +65,6 @@ type ParseParams struct {
 }
 
 func Parse(tokenStr string, params ParseParams) (Payload, error) {
-	const op = "jwt.Parse"
-
 	token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
@@ -76,7 +72,7 @@ func Parse(tokenStr string, params ParseParams) (Payload, error) {
 		return []byte(params.SigningKey), nil
 	})
 	if err != nil {
-		return Payload{}, fmt.Errorf("%s: %w", op, err)
+		return Payload{}, fmt.Errorf("jwt.Parse: %w", err)
 	}
 
 	claims, ok := token.Claims.(*Claims)
@@ -84,5 +80,5 @@ func Parse(tokenStr string, params ParseParams) (Payload, error) {
 		return claims.Payload, nil
 	}
 
-	return Payload{}, fmt.Errorf("%s: %w", op, ErrInvalidToken)
+	return Payload{}, fmt.Errorf("jwt.Parse: %w", ErrInvalidToken)
 }

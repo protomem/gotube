@@ -10,19 +10,22 @@ import (
 
 type S3Options struct {
 	Addr   string
-	Access string
+	Key    string
 	Secret string
+	Secure bool
 }
 
-func S3(ctx context.Context, opts S3Options) (*minio.Client, error) {
+func S3(_ context.Context, opts S3Options) (*minio.Client, error) {
 	const op = "bootstrap.S3"
 
-	client, err := minio.New(opts.Addr, &minio.Options{
-		Creds:  credentials.NewStaticV4(opts.Access, opts.Secret, ""),
-		Secure: false,
-	})
+	mopts := &minio.Options{
+		Creds:  credentials.NewStaticV4(opts.Key, opts.Secret, ""),
+		Secure: opts.Secure,
+	}
+
+	client, err := minio.New(opts.Addr, mopts)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+		return nil, fmt.Errorf("%v: %w", op, err)
 	}
 
 	return client, nil

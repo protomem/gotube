@@ -18,171 +18,161 @@ const (
 
 var _ Auth = (*AuthImpl)(nil)
 
+type RegisterDTO struct {
+	Nickname string
+	Password string
+	Email    string
+}
+
+type LoginDTO struct {
+	Email    string
+	Password string
+}
+
 type (
-	RegisterDTO struct {
-		Nickname string
-		Password string
-		Email    string
-	}
-
-	LoginDTO struct {
-		Email    string
-		Password string
-	}
-
 	Auth interface {
 		Register(ctx context.Context, dto RegisterDTO) (model.User, model.PairTokens, error)
 		Login(ctx context.Context, dto LoginDTO) (model.User, model.PairTokens, error)
-		RefreshTokens(ctx context.Context, refreshToken string) (model.PairTokens, error)
-		VerifyToken(ctx context.Context, accessToken string) (model.User, jwt.Payload, error)
-		Logout(ctx context.Context, refreshToken string) error
+		RefreshToken(ctx context.Context, token string) (model.PairTokens, error)
+		Logout(ctx context.Context, token string) error
+		VerifyToken(ctx context.Context, token string) (model.User, jwt.Payload, error)
 	}
 
 	AuthImpl struct {
-		signingKey string
-		sessmng    session.Manager
+		authSecret string
 		userServ   User
+		sessmng    session.Manager
 	}
 )
 
-func NewAuth(signingKey string, sessmng session.Manager, userServ User) *AuthImpl {
+func NewAuth(authSecret string, userServ User, sessmng session.Manager) *AuthImpl {
 	return &AuthImpl{
-		signingKey: signingKey,
-		sessmng:    sessmng,
+		authSecret: authSecret,
 		userServ:   userServ,
+		sessmng:    sessmng,
 	}
 }
 
-func (serv *AuthImpl) Register(ctx context.Context, dto RegisterDTO) (model.User, model.PairTokens, error) {
-	const op = "service.Auth.Register"
-	var err error
+func (s *AuthImpl) Register(ctx context.Context, dto RegisterDTO) (model.User, model.PairTokens, error) {
+	const op = "service:Auth.Register"
 
-	user, err := serv.userServ.Create(ctx, CreateUserDTO(dto))
+	user, err := s.userServ.Create(ctx, CreateUserDTO(dto))
 	if err != nil {
 		return model.User{}, model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
 	}
 
-	tokens, err := serv.generatePairTokens(user, _accessTokenTTL)
+	tokens, err := s.generateTokens(user)
 	if err != nil {
 		return model.User{}, model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
 	}
 
-	err = serv.sessmng.Set(ctx, session.Session{
-		Token:     tokens.Refresh,
-		UserID:    user.ID,
-		ExpiresAt: time.Now().Add(_refreshTokenTTL),
-	})
-	if err != nil {
+	if err := s.sessmng.Put(ctx, session.Session{
+		Token:  tokens.Refresh,
+		UserID: user.ID,
+		Expiry: time.Now().Add(_refreshTokenTTL),
+	}); err != nil {
 		return model.User{}, model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return user, tokens, nil
 }
 
-func (serv *AuthImpl) Login(ctx context.Context, dto LoginDTO) (model.User, model.PairTokens, error) {
-	const op = "service.Auth.Login"
+func (s *AuthImpl) Login(ctx context.Context, dto LoginDTO) (model.User, model.PairTokens, error) {
+	const op = "service:Auth.Login"
 
-	user, err := serv.userServ.GetByEmailAndPassword(ctx, dto.Email, dto.Password)
+	user, err := s.userServ.GetByEmailAndPassword(ctx, dto.Email, dto.Password)
 	if err != nil {
 		return model.User{}, model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
 	}
 
-	tokens, err := serv.generatePairTokens(user, _accessTokenTTL)
+	tokens, err := s.generateTokens(user)
 	if err != nil {
 		return model.User{}, model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
 	}
 
-	err = serv.sessmng.Set(ctx, session.Session{
-		Token:     tokens.Refresh,
-		UserID:    user.ID,
-		ExpiresAt: time.Now().Add(_refreshTokenTTL),
-	})
-	if err != nil {
+	if err := s.sessmng.Put(ctx, session.Session{
+		Token:  tokens.Refresh,
+		UserID: user.ID,
+		Expiry: time.Now().Add(_refreshTokenTTL),
+	}); err != nil {
 		return model.User{}, model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return user, tokens, nil
 }
 
-func (serv *AuthImpl) RefreshTokens(ctx context.Context, refreshToken string) (model.PairTokens, error) {
-	const op = "service.Auth.RefreshTokens"
-	var err error
+func (s *AuthImpl) RefreshToken(ctx context.Context, token string) (model.PairTokens, error) {
+	const op = "service:Auth.RefreshToken"
 
-	sess, err := serv.sessmng.Get(ctx, refreshToken)
+	sess, err := s.sessmng.Get(ctx, token)
 	if err != nil {
 		return model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
 	}
 
-	user, err := serv.userServ.Get(ctx, sess.UserID)
+	user, err := s.userServ.Get(ctx, sess.UserID)
 	if err != nil {
 		return model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
 	}
 
-	tokens, err := serv.generatePairTokens(user, _accessTokenTTL)
+	tokens, err := s.generateTokens(user)
 	if err != nil {
 		return model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
 	}
 
-	err = serv.sessmng.Del(ctx, refreshToken)
-	if err != nil {
+	if err := s.sessmng.Del(ctx, token); err != nil {
 		return model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
 	}
 
-	err = serv.sessmng.Set(ctx, session.Session{
-		Token:     tokens.Refresh,
-		UserID:    user.ID,
-		ExpiresAt: time.Now().Add(_refreshTokenTTL),
-	})
-	if err != nil {
+	if err := s.sessmng.Put(ctx, session.Session{
+		Token:  tokens.Refresh,
+		UserID: user.ID,
+		Expiry: time.Now().Add(_refreshTokenTTL),
+	}); err != nil {
 		return model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return tokens, nil
 }
 
-func (serv *AuthImpl) VerifyToken(ctx context.Context, accessToken string) (model.User, jwt.Payload, error) {
-	const op = "service.Auth.VerifyToken"
+func (s *AuthImpl) Logout(ctx context.Context, token string) error {
+	const op = "service:Auth.Logout"
 
-	payload, err := serv.parseToken(accessToken)
-	if err != nil {
-		return model.User{}, payload, fmt.Errorf("%s: %w", op, err)
-	}
-
-	user, err := serv.userServ.Get(ctx, payload.UserID)
-	if err != nil {
-		return model.User{}, payload, fmt.Errorf("%s: %w", op, err)
-	}
-
-	return user, payload, nil
-}
-
-func (serv *AuthImpl) Logout(ctx context.Context, refreshToken string) error {
-	const op = "service.Auth.Logout"
-
-	err := serv.sessmng.Del(ctx, refreshToken)
-	if err != nil {
+	if err := s.sessmng.Del(ctx, token); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
 	return nil
 }
 
-func (serv *AuthImpl) generatePairTokens(user model.User, ttl time.Duration) (model.PairTokens, error) {
-	const op = "generatePairTokens"
-	var err error
+func (s *AuthImpl) VerifyToken(ctx context.Context, token string) (model.User, jwt.Payload, error) {
+	const op = "service:Auth.VerifyToken"
 
-	accessToken, err := jwt.Generate(
-		jwt.Payload{
-			UserID:   user.ID,
-			Nickname: user.Nickname,
-			Email:    user.Email,
-			Verified: user.Verified,
-		},
-		jwt.GenerateParams{
-			SigningKey: serv.signingKey,
-			TTL:        ttl,
-		},
-	)
+	payload, err := jwt.Parse(token, jwt.ParseParams{SigningKey: s.authSecret})
+	if err != nil {
+		return model.User{}, jwt.Payload{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	user, err := s.userServ.Get(ctx, payload.UserID)
+	if err != nil {
+		return model.User{}, jwt.Payload{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return user, payload, nil
+}
+
+func (s *AuthImpl) generateTokens(user model.User) (model.PairTokens, error) {
+	const op = "generate tokens"
+
+	payload := jwt.Payload{
+		UserID:   user.ID,
+		Nickname: user.Nickname,
+		Email:    user.Email,
+		Verified: user.Verified,
+	}
+
+	params := jwt.GenerateParams{SigningKey: s.authSecret, TTL: _accessTokenTTL}
+
+	accessToken, err := jwt.Generate(payload, params)
 	if err != nil {
 		return model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
 	}
@@ -192,21 +182,5 @@ func (serv *AuthImpl) generatePairTokens(user model.User, ttl time.Duration) (mo
 		return model.PairTokens{}, fmt.Errorf("%s: %w", op, err)
 	}
 
-	return model.PairTokens{
-		Access:  accessToken,
-		Refresh: refreshToken.String(),
-	}, nil
-}
-
-func (serv *AuthImpl) parseToken(token string) (jwt.Payload, error) {
-	const op = "parseToken"
-
-	payload, err := jwt.Parse(token, jwt.ParseParams{
-		SigningKey: serv.signingKey,
-	})
-	if err != nil {
-		return jwt.Payload{}, fmt.Errorf("%s: %w", op, err)
-	}
-
-	return payload, nil
+	return model.PairTokens{Access: accessToken, Refresh: refreshToken.String()}, nil
 }

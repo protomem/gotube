@@ -9,7 +9,7 @@ import (
 
 const (
 	Header = "X-Request-Id"
-	LogKey = "requestId"
+	Key    = "requestId"
 )
 
 func Middleware() func(http.Handler) http.Handler {

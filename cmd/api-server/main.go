@@ -1,31 +1,36 @@
 package main
 
 import (
-	"log"
-	"os"
+	"context"
+	"flag"
+	"fmt"
 
 	application "github.com/protomem/gotube/internal/app"
 	"github.com/protomem/gotube/internal/config"
+	"github.com/protomem/gotube/pkg/env"
 )
 
+var _confFile = flag.String("conf", "", "path to config file")
+
+func init() {
+	flag.Parse()
+}
+
 func main() {
-	var err error
+	ctx := context.Background()
+
+	if *_confFile != "" {
+		if err := env.Load(*_confFile); err != nil {
+			panic(fmt.Sprintf("failed load env from file %s: %v", *_confFile, err))
+		}
+	}
 
 	conf, err := config.New()
 	if err != nil {
-		log.Printf("config error: %v\n", err)
-		os.Exit(1)
+		panic(fmt.Sprintf("failed init config: %v", err))
 	}
 
-	app, err := application.New(conf)
-	if err != nil {
-		log.Printf("application error: %v\n", err)
-		os.Exit(1)
-	}
-
-	err = app.Run()
-	if err != nil {
-		log.Printf("application error: %v\n", err)
-		os.Exit(1)
+	if err := application.New(conf).Run(ctx); err != nil {
+		panic(fmt.Sprintf("failed run application: %v", err))
 	}
 }

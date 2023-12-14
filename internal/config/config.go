@@ -3,99 +3,78 @@ package config
 import (
 	"errors"
 	"fmt"
-	"os"
+
+	"github.com/protomem/gotube/pkg/env"
 )
 
-type Config struct {
-	HTTP struct {
-		Addr string
-	}
+const (
+	Debug Mode = "debug"
+	Prod  Mode = "prod"
+)
 
-	Log struct {
-		Level string
-	}
+type Mode string
 
-	Auth struct {
-		Secret string
-	}
-
-	Postgres struct {
-		Connect string
-	}
-
-	Mongo struct {
-		URI string
-	}
-
-	Redis struct {
-		Addr string
-	}
-
-	S3 struct {
-		Addr string
-
-		Keys struct {
-			Access string
-			Secret string
-		}
+func (m Mode) Validate() error {
+	switch m {
+	case Debug, Prod:
+		return nil
+	default:
+		return errors.New("invalid mode")
 	}
 }
 
+type Config struct {
+	Mode Mode `env:"MODE" envDefault:"debug"`
+
+	HTTP struct {
+		Host string `env:"HOST" envDefault:"localhost"`
+		Port int    `env:"PORT" envDefault:"8080"`
+	} `envPrefix:"HTTP_"`
+
+	Auth struct {
+		Model  string `env:"MODEL,notEmpty"`
+		Secret string `env:"SECRET,notEmpty,unset"`
+	} `envPrefix:"AUTH_"`
+
+	Log struct {
+		Level string `env:"LEVEL" envDefault:"debug"`
+	} `envPrefix:"LOG_"`
+
+	Postgres struct {
+		Host     string `env:"HOST" envDefault:"localhost"`
+		Port     int    `env:"PORT" envDefault:"5432"`
+		User     string `env:"USER,notEmpty"`
+		Password string `env:"PASSWORD,notEmpty,unset"`
+		Database string `env:"DATABASE" envDefault:"gotubedb"`
+		SSLMode  string `env:"SSLMODE" envDefault:"disable"`
+	} `envPrefix:"POSTGRES_"`
+
+	Mongo struct {
+		URI string `env:"URI,notEmpty"`
+	} `envPrefix:"MONGO_"`
+
+	Redis struct {
+		Addr string `env:"ADDR" envDefault:"localhost:6379"`
+	} `envPrefix:"REDIS_"`
+
+	S3 struct {
+		Addr   string `env:"ADDR" envDefault:"localhost:9000"`
+		Key    string `env:"KEY,notEmpty"`
+		Secret string `env:"SECRET,notEmpty,unset"`
+		Secure bool   `env:"SECURE" envDefault:"false"`
+	} `envPrefix:"S3_"`
+}
+
 func New() (Config, error) {
-	const op = "config.New"
-	var (
-		conf Config
-		ok   bool
-		errs error
-	)
+	const op = "config:Config.New"
+	var conf Config
 
-	conf.HTTP.Addr, ok = os.LookupEnv("HTTP__ADDR")
-	if !ok {
-		errs = errors.Join(errs, errors.New("HTTP__ADDR is not set"))
+	if err := env.Parse(&conf); err != nil {
+		return Config{}, fmt.Errorf("%s: %w", op, err)
 	}
 
-	conf.Log.Level, ok = os.LookupEnv("LOG__LEVEL")
-	if !ok {
-		errs = errors.Join(errs, errors.New("LOG__LEVEL is not set"))
-	}
-
-	conf.Auth.Secret, ok = os.LookupEnv("AUTH__SECRET")
-	if !ok {
-		errs = errors.Join(errs, errors.New("AUTH__SECRET is not set"))
-	}
-
-	conf.Postgres.Connect, ok = os.LookupEnv("POSTGRES__CONNECT")
-	if !ok {
-		errs = errors.Join(errs, errors.New("POSTGRES__CONNECT is not set"))
-	}
-
-	conf.Mongo.URI, ok = os.LookupEnv("MONGO__URI")
-	if !ok {
-		errs = errors.Join(errs, errors.New("MONGO__URI is not set"))
-	}
-
-	conf.Redis.Addr, ok = os.LookupEnv("REDIS__ADDR")
-	if !ok {
-		errs = errors.Join(errs, errors.New("REDIS__ADDR is not set"))
-	}
-
-	conf.S3.Addr, ok = os.LookupEnv("S3__ADDR")
-	if !ok {
-		errs = errors.Join(errs, errors.New("S3__ADDR is not set"))
-	}
-
-	conf.S3.Keys.Access, ok = os.LookupEnv("S3__KEYS__ACCESS")
-	if !ok {
-		errs = errors.Join(errs, errors.New("S3__KEYS__ACCESS is not set"))
-	}
-
-	conf.S3.Keys.Secret, ok = os.LookupEnv("S3__KEYS__SECRET")
-	if !ok {
-		errs = errors.Join(errs, errors.New("S3__KEYS__SECRET is not set"))
-	}
-
-	if errs != nil {
-		return Config{}, fmt.Errorf("%s: %w", op, errs)
+	if err := conf.Mode.Validate(); err != nil {
+		return Config{}, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return conf, nil

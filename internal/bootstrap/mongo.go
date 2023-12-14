@@ -11,21 +11,24 @@ import (
 
 type MongoOptions struct {
 	URI string
+
+	Ping bool
 }
 
 func Mongo(ctx context.Context, opts MongoOptions) (*mongo.Client, error) {
 	const op = "bootstrap.Mongo"
-	var err error
 
 	mopts := options.Client().ApplyURI(opts.URI)
+
 	client, err := mongo.Connect(ctx, mopts)
 	if err != nil {
-		return nil, fmt.Errorf("%s: connect: %w", op, err)
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	err = client.Ping(ctx, readpref.Primary())
-	if err != nil {
-		return nil, fmt.Errorf("%s: ping: %w", op, err)
+	if opts.Ping {
+		if err := client.Ping(ctx, readpref.Primary()); err != nil {
+			return nil, fmt.Errorf("%s: ping: %w", op, err)
+		}
 	}
 
 	return client, nil
