@@ -5,6 +5,7 @@ import (
 	"net/http"
 )
 
+// nolint
 func (app *application) backgroundTask(r *http.Request, fn func() error) {
 	app.wg.Add(1)
 

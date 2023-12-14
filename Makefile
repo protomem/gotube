@@ -28,6 +28,10 @@ audit:
 	go run golang.org/x/vuln/cmd/govulncheck@latest ./...
 	go test -race -buildvcs -vet=off ./...
 
+.PHONY: lint
+lint:
+	golangci-lint run -E gofumpt ./...
+
 
 # ==================================================================================== #
 # DEVELOPMENT
