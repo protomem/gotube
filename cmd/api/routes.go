@@ -17,5 +17,11 @@ func (app *application) routes() http.Handler {
 
 	mux.Get("/status", app.status)
 
+	mux.Route("/api", func(mux chi.Router) {
+		mux.Route("/auth", func(mux chi.Router) {
+			mux.Post("/register", app.handleRegister)
+		})
+	})
+
 	return mux
 }

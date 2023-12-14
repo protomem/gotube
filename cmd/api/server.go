@@ -13,10 +13,10 @@ import (
 )
 
 const (
-	defaultIdleTimeout    = time.Minute
-	defaultReadTimeout    = 5 * time.Second
-	defaultWriteTimeout   = 10 * time.Second
-	defaultShutdownPeriod = 30 * time.Second
+	_defaultIdleTimeout    = time.Minute
+	_defaultReadTimeout    = 5 * time.Second
+	_defaultWriteTimeout   = 10 * time.Second
+	_defaultShutdownPeriod = 30 * time.Second
 )
 
 func (app *application) serveHTTP() error {
@@ -24,9 +24,9 @@ func (app *application) serveHTTP() error {
 		Addr:         fmt.Sprintf(":%d", app.config.httpPort),
 		Handler:      app.routes(),
 		ErrorLog:     slog.NewLogLogger(app.logger.Handler(), slog.LevelWarn),
-		IdleTimeout:  defaultIdleTimeout,
-		ReadTimeout:  defaultReadTimeout,
-		WriteTimeout: defaultWriteTimeout,
+		IdleTimeout:  _defaultIdleTimeout,
+		ReadTimeout:  _defaultReadTimeout,
+		WriteTimeout: _defaultWriteTimeout,
 	}
 
 	shutdownErrorChan := make(chan error)
@@ -36,7 +36,7 @@ func (app *application) serveHTTP() error {
 		signal.Notify(quitChan, syscall.SIGINT, syscall.SIGTERM)
 		<-quitChan
 
-		ctx, cancel := context.WithTimeout(context.Background(), defaultShutdownPeriod)
+		ctx, cancel := context.WithTimeout(context.Background(), _defaultShutdownPeriod)
 		defer cancel()
 
 		shutdownErrorChan <- srv.Shutdown(ctx)

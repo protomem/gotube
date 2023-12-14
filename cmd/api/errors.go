@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"net/http"
 	"runtime/debug"
-	"strings"
 
 	"github.com/protomem/gotube/internal/response"
 	"github.com/protomem/gotube/internal/validator"
@@ -24,8 +23,6 @@ func (app *application) reportServerError(r *http.Request, err error) {
 }
 
 func (app *application) errorMessage(w http.ResponseWriter, r *http.Request, status int, message string, headers http.Header) {
-	message = strings.ToUpper(message[:1]) + message[1:]
-
 	err := response.JSONWithHeaders(w, status, map[string]string{"error": message}, headers)
 	if err != nil {
 		app.reportServerError(r, err)

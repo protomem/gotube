@@ -15,14 +15,14 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-const defaultTimeout = 3 * time.Second
+const _defaultTimeout = 3 * time.Second
 
 type DB struct {
 	*sqlx.DB
 }
 
 func New(dsn string, automigrate bool) (*DB, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), _defaultTimeout)
 	defer cancel()
 
 	db, err := sqlx.ConnectContext(ctx, "pgx", "postgres://"+dsn)

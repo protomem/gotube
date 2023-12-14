@@ -13,6 +13,22 @@ import (
 	"github.com/protomem/gotube/internal/version"
 )
 
+// TODO: Add common middleware
+// TODO: Add request id
+// TODO: Add CORS
+// TODO: Add docker, docker-compose
+// TODO: Flash storage (Redis?)
+// TODO: Blob storage (S3?)
+// TODO: Add JWT
+// TODO: Add access and refresh tokens
+// TODO: Add Casbin
+
+// TODO: Add subscriptions
+// TODO: Add videos
+// TODO: Add raitings
+// TODO: Add comments
+// TODO: Add media
+
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
 
