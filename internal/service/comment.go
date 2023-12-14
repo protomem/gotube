@@ -6,6 +6,7 @@ import (
 
 	"github.com/protomem/gotube/internal/model"
 	"github.com/protomem/gotube/internal/repository"
+	"github.com/protomem/gotube/pkg/validation"
 )
 
 var _ Comment = (*CommentImpl)(nil)
@@ -17,7 +18,13 @@ type CreateCommentDTO struct {
 }
 
 func (dto CreateCommentDTO) Validate() error {
-	return nil
+	return validation.Validate(func(v *validation.Validator) {
+		v.CheckField(
+			validation.NotBlank(dto.Message) &&
+				validation.MaxRunes(dto.Message, 500),
+			"message", "invalid message",
+		)
+	})
 }
 
 type (

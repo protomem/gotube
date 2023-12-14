@@ -6,6 +6,7 @@ import (
 
 	"github.com/protomem/gotube/internal/model"
 	"github.com/protomem/gotube/internal/repository"
+	"github.com/protomem/gotube/pkg/validation"
 )
 
 var _ Video = (*VideoImpl)(nil)
@@ -20,7 +21,26 @@ type CreateVideoDTO struct {
 }
 
 func (dto CreateVideoDTO) Validate() error {
-	return nil
+	return validation.Validate(func(v *validation.Validator) {
+		v.CheckField(
+			validation.MinRunes(dto.Title, 5) &&
+				validation.MaxRunes(dto.Title, 100),
+			"title", "invalid title",
+		)
+		v.CheckField(validation.MaxRunes(dto.Description, 500), "description", "invalid description")
+		v.CheckField(
+			dto.ThumbnailPath == "" ||
+				(validation.MaxRunes(dto.ThumbnailPath, 300) &&
+					validation.IsURL(dto.ThumbnailPath)),
+			"thumbnailPath", "invalid thumbnailPath",
+		)
+		v.CheckField(
+			dto.VideoPath == "" ||
+				(validation.MaxRunes(dto.VideoPath, 300) &&
+					validation.IsURL(dto.VideoPath)),
+			"videoPath", "invalid videoPath",
+		)
+	})
 }
 
 type (
