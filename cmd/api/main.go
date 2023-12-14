@@ -15,9 +15,7 @@ import (
 	"github.com/protomem/gotube/internal/version"
 )
 
-// TODO: Add common middleware
 // TODO: Add request id
-// TODO: Add CORS
 // TODO: Add docker, docker-compose
 // TODO: Add JWT
 // TODO: Add access and refresh tokens

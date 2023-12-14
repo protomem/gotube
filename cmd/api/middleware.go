@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	"github.com/protomem/gotube/internal/response"
 
 	"github.com/tomasen/realip"
@@ -41,4 +43,30 @@ func (app *application) logAccess(next http.Handler) http.Handler {
 
 		app.logger.Info("access", userAttrs, requestAttrs, responseAttrs)
 	})
+}
+
+func (app *application) cleanPath(next http.Handler) http.Handler {
+	return middleware.CleanPath(next)
+}
+
+func (app *application) stripSlashes(next http.Handler) http.Handler {
+	return middleware.StripSlashes(next)
+}
+
+func (app *application) CORS(next http.Handler) http.Handler {
+	return cors.Handler(cors.Options{
+		AllowedOrigins: []string{"https://*", "http://*"},
+		AllowedMethods: []string{
+			http.MethodGet, http.MethodPost,
+			http.MethodPut, http.MethodPatch,
+			http.MethodDelete, http.MethodOptions,
+		},
+		AllowedHeaders: []string{
+			HeaderAccept, HeaderAuthorization,
+			HeaderContentType, HeaderXCSRFToken,
+		},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: false,
+		MaxAge:           300,
+	})(next)
 }

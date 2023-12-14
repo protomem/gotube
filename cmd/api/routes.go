@@ -12,6 +12,11 @@ func (app *application) routes() http.Handler {
 	mux.NotFound(app.notFound)
 	mux.MethodNotAllowed(app.methodNotAllowed)
 
+	mux.Use(app.CORS)
+
+	mux.Use(app.cleanPath)
+	mux.Use(app.stripSlashes)
+
 	mux.Use(app.logAccess)
 	mux.Use(app.recoverPanic)
 
