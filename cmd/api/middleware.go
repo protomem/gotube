@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/google/uuid"
 	"github.com/protomem/gotube/internal/response"
 
 	"github.com/tomasen/realip"
@@ -38,7 +39,12 @@ func (app *application) logAccess(next http.Handler) http.Handler {
 		)
 
 		userAttrs := slog.Group("user", "ip", ip)
-		requestAttrs := slog.Group("request", "method", method, "url", url, "proto", proto)
+		requestAttrs := slog.Group("request",
+			"method", method,
+			"url", url,
+			"proto", proto,
+			string(_contextRequestIDKey), contextGetRequestID(r),
+		)
 		responseAttrs := slog.Group("repsonse", "status", mw.StatusCode, "size", mw.BytesCount)
 
 		app.logger.Info("access", userAttrs, requestAttrs, responseAttrs)
@@ -69,4 +75,15 @@ func (app *application) CORS(next http.Handler) http.Handler {
 		AllowCredentials: false,
 		MaxAge:           300,
 	})(next)
+}
+
+func (app *application) requestID(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		rid := uuid.New().String()
+
+		r = contextSetRequestID(r, rid)
+		w.Header().Set(HeaderXRequestID, rid)
+
+		next.ServeHTTP(w, r)
+	})
 }

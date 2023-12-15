@@ -16,7 +16,6 @@ import (
 	"github.com/protomem/gotube/internal/version"
 )
 
-// TODO: Add request id
 // TODO: Add docker, docker-compose
 // TODO: Add Casbin
 

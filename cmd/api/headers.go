@@ -5,4 +5,5 @@ const (
 	HeaderAuthorization = "Authorization"
 	HeaderContentType   = "Content-Type"
 	HeaderXCSRFToken    = "X-CSRF-Token"
+	HeaderXRequestID    = "X-Request-ID"
 )

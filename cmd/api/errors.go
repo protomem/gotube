@@ -18,7 +18,11 @@ func (app *application) reportServerError(r *http.Request, err error) {
 		//trace   = string(debug.Stack())
 	)
 
-	requestAttrs := slog.Group("request", "method", method, "url", url)
+	requestAttrs := slog.Group("request",
+		"method", method,
+		"url", url,
+		string(_contextRequestIDKey), contextGetRequestID(r),
+	)
 	// app.logger.Error(message, requestAttrs, "trace", trace)
 	app.logger.Error(message, requestAttrs)
 }

@@ -17,6 +17,7 @@ func (app *application) routes() http.Handler {
 	mux.Use(app.cleanPath)
 	mux.Use(app.stripSlashes)
 
+	mux.Use(app.requestID)
 	mux.Use(app.logAccess)
 	mux.Use(app.recoverPanic)
 
