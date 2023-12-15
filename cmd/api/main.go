@@ -7,6 +7,7 @@ import (
 	"os"
 	"runtime/debug"
 	"sync"
+	"time"
 
 	"github.com/protomem/gotube/internal/blobstore"
 	"github.com/protomem/gotube/internal/database"
@@ -41,7 +42,12 @@ func main() {
 type config struct {
 	baseURL  string
 	httpPort int
-	cookie   struct {
+	auth     struct {
+		secretKey  string
+		tokenTTL   time.Duration
+		sessionTTL time.Duration
+	}
+	cookie struct {
 		secretKey string
 	}
 	db struct {
@@ -72,6 +78,9 @@ func run(logger *slog.Logger) error {
 
 	cfg.baseURL = env.GetString("BASE_URL", "http://localhost:4444")
 	cfg.httpPort = env.GetInt("HTTP_PORT", 4444)
+	cfg.auth.secretKey = env.GetString("AUTH_SECRET_KEY", "3hpAS1crzYhPYtAekCxyNfcwBffWbvCH")
+	cfg.auth.tokenTTL = env.GetDuration("AUTH_TOKEN_TTL", 6*time.Hour)
+	cfg.auth.sessionTTL = env.GetDuration("AUTH_SESSION_TTL", 6*24*time.Hour)
 	cfg.cookie.secretKey = env.GetString("COOKIE_SECRET_KEY", "34gqafpamolgom4njk6wjcxh2qilxdwd")
 	cfg.db.dsn = env.GetString("DB_DSN", "user:pass@localhost:5432/db")
 	cfg.db.automigrate = env.GetBool("DB_AUTOMIGRATE", true)

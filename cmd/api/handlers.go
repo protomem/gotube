@@ -4,7 +4,9 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/protomem/gotube/internal/database"
+	"github.com/protomem/gotube/internal/jwt"
 	"github.com/protomem/gotube/internal/request"
 	"github.com/protomem/gotube/internal/response"
 	"github.com/protomem/gotube/internal/validator"
@@ -84,5 +86,26 @@ func (app *application) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	app.mustResponseSend(w, http.StatusCreated, response.Object{"user": user})
+	accessToken, err := jwt.Generate(jwt.GenerateParams{
+		SigningKey: app.config.auth.secretKey,
+		TTL:        app.config.auth.tokenTTL,
+		Subject:    user.ID,
+		Issuer:     app.config.baseURL,
+	})
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	refreshToken, err := uuid.NewRandom()
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustResponseSend(w, http.StatusCreated, response.Object{
+		"accessToken":  accessToken,
+		"refreshToken": refreshToken,
+		"user":         user,
+	})
 }
