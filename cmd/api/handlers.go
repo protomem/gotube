@@ -14,15 +14,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func (app *application) status(w http.ResponseWriter, r *http.Request) {
-	data := map[string]string{
-		"status": "ok",
-	}
-
-	err := response.JSON(w, http.StatusOK, data)
-	if err != nil {
-		app.serverError(w, r, err)
-	}
+func (app *application) handleStatus(w http.ResponseWriter, r *http.Request) {
+	app.mustResponseSend(w, http.StatusOK, response.Object{
+		"status": "OK",
+	})
 }
 
 func (app *application) handleRegister(w http.ResponseWriter, r *http.Request) {

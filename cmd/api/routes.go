@@ -20,7 +20,7 @@ func (app *application) routes() http.Handler {
 	mux.Use(app.logAccess)
 	mux.Use(app.recoverPanic)
 
-	mux.Get("/status", app.status)
+	mux.Get("/status", app.handleStatus)
 
 	mux.Route("/api", func(mux chi.Router) {
 		mux.Route("/auth", func(mux chi.Router) {
