@@ -25,6 +25,7 @@ func (app *application) routes() http.Handler {
 	mux.Route("/api", func(mux chi.Router) {
 		mux.Route("/auth", func(mux chi.Router) {
 			mux.Post("/register", app.handleRegister)
+			mux.Post("/login", app.handleLogin)
 		})
 	})
 

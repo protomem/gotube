@@ -109,3 +109,75 @@ func (app *application) handleRegister(w http.ResponseWriter, r *http.Request) {
 		"user":         user,
 	})
 }
+
+func (app *application) handleLogin(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+
+		validator.Validator `json:"-"`
+	}
+
+	if err := request.DecodeJSONStrict(w, r, &input); err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	input.Validator.CheckField(
+		validator.NotBlank(input.Email) && validator.IsEmail(input.Email),
+		"email", "invalid email address",
+	)
+	input.Validator.CheckField(
+		validator.MinRunes(input.Password, 8) && validator.MaxRunes(input.Password, 16),
+		"password", "password must be between 8 and 16 characters",
+	)
+
+	if input.Validator.HasErrors() {
+		app.failedValidation(w, r, input.Validator)
+		return
+	}
+
+	user, err := app.db.GetUserByEmail(r.Context(), input.Email)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			app.mustResponseSend(w, http.StatusNotFound, response.Object{"error": err.Error()})
+			return
+		}
+
+		app.serverError(w, r, err)
+		return
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password)); err != nil {
+		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+			app.mustResponseSend(w, http.StatusNotFound, response.Object{"error": database.ErrUserNotFound.Error()})
+			return
+		}
+
+		app.serverError(w, r, err)
+		return
+	}
+
+	accessToken, err := jwt.Generate(jwt.GenerateParams{
+		SigningKey: app.config.auth.secretKey,
+		TTL:        app.config.auth.tokenTTL,
+		Subject:    user.ID,
+		Issuer:     app.config.baseURL,
+	})
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	refreshToken, err := uuid.NewRandom()
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustResponseSend(w, http.StatusOK, response.Object{
+		"accessToken":  accessToken,
+		"refreshToken": refreshToken,
+		"user":         user,
+	})
+}
