@@ -18,8 +18,6 @@ import (
 
 // TODO: Add request id
 // TODO: Add docker, docker-compose
-// TODO: Add JWT
-// TODO: Add access and refresh tokens
 // TODO: Add Casbin
 
 // TODO: Add subscriptions

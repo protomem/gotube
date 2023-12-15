@@ -1,6 +1,15 @@
 package flashstore
 
-import "github.com/redis/go-redis/v9"
+import (
+	"time"
+
+	"github.com/redis/go-redis/v9"
+)
+
+const (
+	_defaultTimeout = 3 * time.Second
+	_defaultLeeway  = 15 * time.Second
+)
 
 type Storage struct {
 	*redis.Client

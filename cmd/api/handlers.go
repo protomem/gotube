@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/protomem/gotube/internal/database"
+	"github.com/protomem/gotube/internal/flashstore"
 	"github.com/protomem/gotube/internal/jwt"
 	"github.com/protomem/gotube/internal/request"
 	"github.com/protomem/gotube/internal/response"
@@ -103,6 +104,15 @@ func (app *application) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := app.fstore.PutSession(r.Context(), flashstore.Session{
+		Token:  refreshToken.String(),
+		TTL:    app.config.auth.sessionTTL,
+		UserID: user.ID,
+	}); err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
 	app.mustResponseSend(w, http.StatusCreated, response.Object{
 		"accessToken":  accessToken,
 		"refreshToken": refreshToken,
@@ -171,6 +181,15 @@ func (app *application) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	refreshToken, err := uuid.NewRandom()
 	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	if err := app.fstore.PutSession(r.Context(), flashstore.Session{
+		Token:  refreshToken.String(),
+		TTL:    app.config.auth.sessionTTL,
+		UserID: user.ID,
+	}); err != nil {
 		app.serverError(w, r, err)
 		return
 	}
