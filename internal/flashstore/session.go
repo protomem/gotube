@@ -32,3 +32,16 @@ func (s *Storage) PutSession(ctx context.Context, session Session) error {
 
 	return nil
 }
+
+func (s *Storage) DelSession(ctx context.Context, token string) error {
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	sessKey := fmt.Sprintf("session:%s", token)
+
+	if status := s.Del(ctx, sessKey); status.Err() != nil {
+		return status.Err()
+	}
+
+	return nil
+}

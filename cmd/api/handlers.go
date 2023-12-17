@@ -220,3 +220,20 @@ func (app *application) handleLogin(w http.ResponseWriter, r *http.Request) {
 		"user":         user,
 	})
 }
+
+func (app *application) handleLogout(w http.ResponseWriter, r *http.Request) {
+	refreshToken := getRefreshTokenFromRequest(r, app.config.cookie.secretKey)
+	if refreshToken == "" {
+		app.serverError(w, r, errors.New("missing refresh token"))
+		return
+	}
+
+	if err := app.fstore.DelSession(r.Context(), refreshToken); err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	// TODO: remove session cookie
+
+	w.WriteHeader(http.StatusNoContent)
+}

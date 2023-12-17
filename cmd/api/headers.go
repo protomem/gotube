@@ -6,4 +6,5 @@ const (
 	HeaderContentType   = "Content-Type"
 	HeaderXCSRFToken    = "X-CSRF-Token"
 	HeaderXRequestID    = "X-Request-ID"
+	HeaderXRefreshToken = "X-Refresh-Token"
 )
