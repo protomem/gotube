@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/protomem/gotube/internal/cookies"
 	"github.com/protomem/gotube/internal/database"
 	"github.com/protomem/gotube/internal/flashstore"
 	"github.com/protomem/gotube/internal/jwt"
@@ -108,6 +109,18 @@ func (app *application) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := cookies.WriteSigned(w, http.Cookie{
+		Name:     "session",
+		Value:    refreshToken.String(),
+		Path:     "/",
+		Secure:   true,
+		HttpOnly: true,
+		MaxAge:   int(app.config.auth.sessionTTL), // TODO: to seconds
+	}, app.config.cookie.secretKey); err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
 	app.mustResponseSend(w, http.StatusCreated, response.Object{
 		"accessToken":  accessToken,
 		"refreshToken": refreshToken,
@@ -185,6 +198,18 @@ func (app *application) handleLogin(w http.ResponseWriter, r *http.Request) {
 		TTL:    app.config.auth.sessionTTL,
 		UserID: user.ID,
 	}); err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	if err := cookies.WriteSigned(w, http.Cookie{
+		Name:     "session",
+		Value:    refreshToken.String(),
+		Path:     "/",
+		Secure:   true,
+		HttpOnly: true,
+		MaxAge:   int(app.config.auth.sessionTTL), // TODO: to seconds
+	}, app.config.cookie.secretKey); err != nil {
 		app.serverError(w, r, err)
 		return
 	}
