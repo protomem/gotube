@@ -15,6 +15,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+var ErrMissingRefreshToken = errors.New("missing refresh token")
+
 func (app *application) handleStatus(w http.ResponseWriter, r *http.Request) {
 	app.mustResponseSend(w, http.StatusOK, response.Object{
 		"status": "OK",
@@ -224,7 +226,7 @@ func (app *application) handleLogin(w http.ResponseWriter, r *http.Request) {
 func (app *application) handleLogout(w http.ResponseWriter, r *http.Request) {
 	refreshToken := getRefreshTokenFromRequest(r, app.config.cookie.secretKey)
 	if refreshToken == "" {
-		app.serverError(w, r, errors.New("missing refresh token"))
+		app.serverError(w, r, ErrMissingRefreshToken)
 		return
 	}
 
@@ -236,4 +238,60 @@ func (app *application) handleLogout(w http.ResponseWriter, r *http.Request) {
 	// TODO: remove session cookie
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (app *application) handleRefreshToken(w http.ResponseWriter, r *http.Request) {
+	refreshTokenFromRequest := getRefreshTokenFromRequest(r, app.config.cookie.secretKey)
+	if refreshTokenFromRequest == "" {
+		app.serverError(w, r, ErrMissingRefreshToken)
+		return
+	}
+
+	session, err := app.fstore.GetSession(r.Context(), refreshTokenFromRequest)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	user, err := app.db.GetUser(r.Context(), session.UserID)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	accessToken, err := jwt.Generate(jwt.GenerateParams{
+		SigningKey: app.config.auth.secretKey,
+		TTL:        app.config.auth.tokenTTL,
+		Subject:    user.ID,
+		Issuer:     app.config.baseURL,
+	})
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	refreshToken, err := uuid.NewRandom()
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	if err := app.fstore.PutSession(r.Context(), flashstore.Session{
+		Token:  refreshToken.String(),
+		TTL:    app.config.auth.sessionTTL,
+		UserID: user.ID,
+	}); err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	if err := app.fstore.DelSession(r.Context(), refreshTokenFromRequest); err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustResponseSend(w, http.StatusOK, response.Object{
+		"accessToken":  accessToken,
+		"refreshToken": refreshToken,
+	})
 }

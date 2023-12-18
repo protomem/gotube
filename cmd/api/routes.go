@@ -28,6 +28,7 @@ func (app *application) routes() http.Handler {
 			mux.Post("/register", app.handleRegister)
 			mux.Post("/login", app.handleLogin)
 			mux.Delete("/logout", app.handleLogout)
+			mux.Get("/refresh", app.handleRefreshToken)
 		})
 	})
 

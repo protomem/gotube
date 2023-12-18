@@ -15,6 +15,30 @@ type Session struct {
 	UserID uuid.UUID     `json:"userId"`
 }
 
+func (s *Storage) GetSession(ctx context.Context, token string) (Session, error) {
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	sessKey := fmt.Sprintf("session:%s", token)
+
+	status := s.Get(ctx, sessKey)
+	if status.Err() != nil {
+		return Session{}, status.Err()
+	}
+
+	sessBody, err := status.Bytes()
+	if err != nil {
+		return Session{}, err
+	}
+
+	var session Session
+	if err := json.Unmarshal(sessBody, &session); err != nil {
+		return Session{}, err
+	}
+
+	return session, nil
+}
+
 func (s *Storage) PutSession(ctx context.Context, session Session) error {
 	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
 	defer cancel()
