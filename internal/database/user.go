@@ -49,6 +49,28 @@ func (db *DB) GetUser(ctx context.Context, id uuid.UUID) (User, error) {
 	return user, nil
 }
 
+func (db *DB) GetUserByNickname(ctx context.Context, nickname string) (User, error) {
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	query := `SELECT * FROM users WHERE nickname = $1 LIMIT 1`
+	args := []any{nickname}
+
+	var user User
+
+	if err := db.
+		QueryRowxContext(ctx, query, args...).
+		StructScan(&user); err != nil {
+		if IsNoRows(err) {
+			return User{}, ErrUserNotFound
+		}
+
+		return User{}, err
+	}
+
+	return user, nil
+}
+
 func (db *DB) GetUserByEmail(ctx context.Context, email string) (User, error) {
 	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
 	defer cancel()

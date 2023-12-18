@@ -295,3 +295,20 @@ func (app *application) handleRefreshToken(w http.ResponseWriter, r *http.Reques
 		"refreshToken": refreshToken,
 	})
 }
+
+func (app *application) handleGetUser(w http.ResponseWriter, r *http.Request) {
+	userNickname := getUserNicknameFromRequest(r)
+
+	user, err := app.db.GetUserByNickname(r.Context(), userNickname)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			app.mustResponseSend(w, http.StatusNotFound, response.Object{"error": err.Error()})
+			return
+		}
+
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustResponseSend(w, http.StatusOK, response.Object{"user": user})
+}

@@ -30,6 +30,10 @@ func (app *application) routes() http.Handler {
 			mux.Delete("/logout", app.handleLogout)
 			mux.Get("/refresh", app.handleRefreshToken)
 		})
+
+		mux.Route("/users", func(mux chi.Router) {
+			mux.Get("/{userNickname}", app.handleGetUser)
+		})
 	})
 
 	return mux

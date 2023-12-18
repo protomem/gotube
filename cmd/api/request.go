@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/protomem/gotube/internal/cookies"
 )
 
@@ -20,4 +21,8 @@ func getRefreshTokenFromRequest(r *http.Request, cookieSecret string) string {
 		token = sessionToken
 	}
 	return token
+}
+
+func getUserNicknameFromRequest(r *http.Request) string {
+	return chi.URLParam(r, "userNickname")
 }
