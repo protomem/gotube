@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -119,4 +120,55 @@ func (db *DB) InsertUser(ctx context.Context, dto InsertUserDTO) (uuid.UUID, err
 	}
 
 	return id, nil
+}
+
+type UpdateUserDTO struct {
+	Nickname    *string
+	Password    *string
+	Email       *string
+	AvatarPath  *string
+	Description *string
+}
+
+func (db *DB) UpdateUser(ctx context.Context, id uuid.UUID, dto UpdateUserDTO) error {
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	counter := 1
+	query := `UPDATE users SET updated_at = now()`
+	args := []any{id}
+
+	if dto.Nickname != nil {
+		counter++
+		query += `, nickname = $` + strconv.Itoa(counter)
+		args = append(args, *dto.Nickname)
+	}
+	if dto.Password != nil {
+		counter++
+		query += `, password = $` + strconv.Itoa(counter)
+		args = append(args, *dto.Password)
+	}
+	if dto.Email != nil {
+		counter++
+		query += `, email = $` + strconv.Itoa(counter)
+
+	}
+	if dto.AvatarPath != nil {
+		counter++
+		query += `, avatar_path = $` + strconv.Itoa(counter)
+		args = append(args, *dto.AvatarPath)
+	}
+	if dto.Description != nil {
+		counter++
+		query += `, description = $` + strconv.Itoa(counter)
+		args = append(args, *dto.Description)
+	}
+
+	query += ` WHERE id = $1`
+
+	if _, err := db.ExecContext(ctx, query, args...); err != nil {
+		return err
+	}
+
+	return nil
 }

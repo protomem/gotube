@@ -33,6 +33,10 @@ func (app *application) routes() http.Handler {
 
 		mux.Route("/users", func(mux chi.Router) {
 			mux.Get("/{userNickname}", app.handleGetUser)
+
+			mux.Group(func(mux chi.Router) {
+				mux.Patch("/{userNickname}", app.handleUpdateUser)
+			})
 		})
 	})
 

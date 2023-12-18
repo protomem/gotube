@@ -312,3 +312,115 @@ func (app *application) handleGetUser(w http.ResponseWriter, r *http.Request) {
 
 	app.mustResponseSend(w, http.StatusOK, response.Object{"user": user})
 }
+
+func (app *application) handleUpdateUser(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Nickname    *string `json:"nickname"`
+		Email       *string `json:"email"`
+		AvatarPath  *string `json:"avatarPath"`
+		Description *string `json:"description"`
+
+		OldPassword *string `json:"oldPassword"`
+		NewPassword *string `json:"newPassword"`
+
+		validator.Validator `json:"-"`
+	}
+
+	if err := request.DecodeJSONStrict(w, r, &input); err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	if input.Nickname != nil {
+		input.Validator.CheckField(
+			validator.MinRunes(*input.Nickname, 3) && validator.MaxRunes(*input.Nickname, 18),
+			"nickname", "nickname must be between 3 and 18 characters",
+		)
+	}
+	if input.Email != nil {
+		input.Validator.CheckField(
+			validator.NotBlank(*input.Email) &&
+				validator.IsEmail(*input.Email) && validator.MaxRunes(*input.Email, 32),
+			"email", "invalid email address",
+		)
+	}
+	if input.AvatarPath != nil {
+		input.Validator.CheckField(
+			validator.MaxRunes(*input.AvatarPath, 255) && validator.IsURL(*input.AvatarPath),
+			"avatarPath", "invalid avatar path",
+		)
+	}
+	if input.Description != nil {
+		input.Validator.CheckField(
+			validator.MaxRunes(*input.Description, 500),
+			"description", "description must be less than 500 characters",
+		)
+	}
+	if input.NewPassword != nil && input.OldPassword != nil {
+		input.Validator.CheckField(
+			validator.MinRunes(*input.NewPassword, 8) && validator.MaxRunes(*input.NewPassword, 32),
+			"newPassword", "new password must be between 8 and 32 characters",
+		)
+		input.Validator.CheckField(
+			validator.MinRunes(*input.OldPassword, 8) && validator.MaxRunes(*input.OldPassword, 32),
+			"oldPassword", "old password must be between 8 and 32 characters",
+		)
+		input.Validator.Check(*input.NewPassword != *input.OldPassword, "new password must be different from old password")
+	}
+
+	if input.HasErrors() {
+		app.failedValidation(w, r, input.Validator)
+		return
+	}
+
+	userNickname := getUserNicknameFromRequest(r)
+
+	oldUser, err := app.db.GetUserByNickname(r.Context(), userNickname)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			app.mustResponseSend(w, http.StatusNotFound, response.Object{"error": err.Error()})
+			return
+		}
+
+		app.serverError(w, r, err)
+		return
+	}
+
+	var hashedNewPassword *string
+	if input.NewPassword != nil && input.OldPassword != nil {
+		if err := bcrypt.CompareHashAndPassword([]byte(oldUser.Password), []byte(*input.OldPassword)); err != nil {
+			app.mustResponseSend(w, http.StatusInternalServerError, response.Object{"error": "incorrect old password"})
+			return
+		}
+
+		hashedNewPasswordBytes, err := bcrypt.GenerateFromPassword([]byte(*input.NewPassword), bcrypt.DefaultCost)
+		if err != nil {
+			app.serverError(w, r, err)
+			return
+		}
+
+		hashedNewPassword = new(string)
+		*hashedNewPassword = string(hashedNewPasswordBytes)
+	}
+
+	dto := database.UpdateUserDTO{
+		Nickname:    input.Nickname,
+		Password:    hashedNewPassword,
+		Email:       input.Email,
+		AvatarPath:  input.AvatarPath,
+		Description: input.Description,
+	}
+
+	if err := app.db.UpdateUser(r.Context(), oldUser.ID, dto); err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	newUser, err := app.db.GetUser(r.Context(), oldUser.ID)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustResponseSend(w, http.StatusOK, response.Object{"user": newUser})
+}
