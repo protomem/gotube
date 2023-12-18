@@ -424,3 +424,25 @@ func (app *application) handleUpdateUser(w http.ResponseWriter, r *http.Request)
 
 	app.mustResponseSend(w, http.StatusOK, response.Object{"user": newUser})
 }
+
+func (app *application) handleDeleteUser(w http.ResponseWriter, r *http.Request) {
+	userNickname := getUserNicknameFromRequest(r)
+
+	user, err := app.db.GetUserByNickname(r.Context(), userNickname)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			app.mustResponseSend(w, http.StatusNotFound, response.Object{"error": err.Error()})
+			return
+		}
+
+		app.serverError(w, r, err)
+		return
+	}
+
+	if err := app.db.DeleteUser(r.Context(), user.ID); err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}

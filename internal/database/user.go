@@ -172,3 +172,17 @@ func (db *DB) UpdateUser(ctx context.Context, id uuid.UUID, dto UpdateUserDTO) e
 
 	return nil
 }
+
+func (db *DB) DeleteUser(ctx context.Context, id uuid.UUID) error {
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	qeury := `DELETE FROM users WHERE id = $1`
+	args := []any{id}
+
+	if _, err := db.ExecContext(ctx, qeury, args...); err != nil {
+		return err
+	}
+
+	return nil
+}

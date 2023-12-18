@@ -36,6 +36,7 @@ func (app *application) routes() http.Handler {
 
 			mux.Group(func(mux chi.Router) {
 				mux.Patch("/{userNickname}", app.handleUpdateUser)
+				mux.Delete("/{userNickname}", app.handleDeleteUser)
 			})
 		})
 	})
