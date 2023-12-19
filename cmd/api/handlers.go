@@ -71,7 +71,7 @@ func (app *application) handleRegister(w http.ResponseWriter, r *http.Request) {
 	userID, err := app.db.InsertUser(r.Context(), dto)
 	if err != nil {
 		if errors.Is(err, database.ErrAlreadyExists) {
-			app.mustResponseSend(w, http.StatusConflict, response.Object{"error": err.Error()})
+			app.errorMessage(w, r, http.StatusConflict, database.ErrUserAlreadyExists.Error(), nil)
 			return
 		}
 
@@ -160,7 +160,7 @@ func (app *application) handleLogin(w http.ResponseWriter, r *http.Request) {
 	user, err := app.db.GetUserByEmail(r.Context(), input.Email)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			app.mustResponseSend(w, http.StatusNotFound, response.Object{"error": err.Error()})
+			app.errorMessage(w, r, http.StatusNotFound, database.ErrUserNotFound.Error(), nil)
 			return
 		}
 
@@ -170,7 +170,7 @@ func (app *application) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password)); err != nil {
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-			app.mustResponseSend(w, http.StatusNotFound, response.Object{"error": database.ErrUserNotFound.Error()})
+			app.errorMessage(w, r, http.StatusNotFound, database.ErrUserNotFound.Error(), nil)
 			return
 		}
 
@@ -302,7 +302,7 @@ func (app *application) handleGetUser(w http.ResponseWriter, r *http.Request) {
 	user, err := app.db.GetUserByNickname(r.Context(), userNickname)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			app.mustResponseSend(w, http.StatusNotFound, response.Object{"error": err.Error()})
+			app.errorMessage(w, r, http.StatusNotFound, database.ErrUserNotFound.Error(), nil)
 			return
 		}
 
@@ -378,7 +378,7 @@ func (app *application) handleUpdateUser(w http.ResponseWriter, r *http.Request)
 	oldUser, err := app.db.GetUserByNickname(r.Context(), userNickname)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			app.mustResponseSend(w, http.StatusNotFound, response.Object{"error": err.Error()})
+			app.errorMessage(w, r, http.StatusNotFound, database.ErrUserNotFound.Error(), nil)
 			return
 		}
 
@@ -389,7 +389,7 @@ func (app *application) handleUpdateUser(w http.ResponseWriter, r *http.Request)
 	var hashedNewPassword *string
 	if input.NewPassword != nil && input.OldPassword != nil {
 		if err := bcrypt.CompareHashAndPassword([]byte(oldUser.Password), []byte(*input.OldPassword)); err != nil {
-			app.mustResponseSend(w, http.StatusInternalServerError, response.Object{"error": "incorrect old password"})
+			app.serverError(w, r, errors.New("invalid old password"))
 			return
 		}
 
@@ -431,7 +431,7 @@ func (app *application) handleDeleteUser(w http.ResponseWriter, r *http.Request)
 	user, err := app.db.GetUserByNickname(r.Context(), userNickname)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			app.mustResponseSend(w, http.StatusNotFound, response.Object{"error": err.Error()})
+			app.errorMessage(w, r, http.StatusNotFound, database.ErrUserNotFound.Error(), nil)
 			return
 		}
 
