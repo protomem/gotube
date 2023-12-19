@@ -73,8 +73,8 @@ type application struct {
 func run(logger *slog.Logger) error {
 	var cfg config
 
-	cfg.baseURL = env.GetString("BASE_URL", "http://localhost:4444")
-	cfg.httpPort = env.GetInt("HTTP_PORT", 4444)
+	cfg.baseURL = env.GetString("BASE_URL", "http://localhost:8080")
+	cfg.httpPort = env.GetInt("HTTP_PORT", 8080)
 	cfg.auth.secretKey = env.GetString("AUTH_SECRET_KEY", "3hpAS1crzYhPYtAekCxyNfcwBffWbvCH")
 	cfg.auth.tokenTTL = env.GetDuration("AUTH_TOKEN_TTL", 6*time.Hour)
 	cfg.auth.sessionTTL = env.GetDuration("AUTH_SESSION_TTL", 6*24*time.Hour)

@@ -1,4 +1,12 @@
 # ==================================================================================== #
+# ENVIRONMENT VARIABLES
+# ==================================================================================== #
+
+DOCKER_COMPOSE := docker compose
+
+PROJECT := $(shell basename $(shell pwd))
+
+# ==================================================================================== #
 # HELPERS
 # ==================================================================================== #
 
@@ -28,6 +36,7 @@ audit:
 	go run golang.org/x/vuln/cmd/govulncheck@latest ./...
 	go test -race -buildvcs -vet=off ./...
 
+## lint: run linter
 .PHONY: lint
 lint:
 	golangci-lint run -E gofumpt ./...
@@ -48,15 +57,31 @@ test/cover:
 	go test -v -race -buildvcs -coverprofile=/tmp/coverage.out ./...
 	go tool cover -html=/tmp/coverage.out
 
-## build: build the cmd/api application
-.PHONY: build
-build:
-	go build -o=/tmp/bin/api ./cmd/api
-	
-## run: run the cmd/api application
-.PHONY: run
-run: build
-	/tmp/bin/api
+
+# ==================================================================================== #
+# DOCKER
+# ==================================================================================== #
+
+## run/docker: run the cmd/api application in docker
+.PHONY: run/docker
+run/docker: config_file=.debug.env
+run/docker:
+	${DOCKER_COMPOSE} -p ${PROJECT} -f docker-compose.yml --env-file ${config_file} up --build -d 
+
+## stop/docker: stop the cmd/api application in docker
+.PHONY: stop/docker
+stop/docker:
+	${DOCKER_COMPOSE} -p ${PROJECT} -f docker-compose.yml down
+
+## run/docker/infra: run the db, inmemory db and s3 storage 
+.PHONY: run/docker/infra
+run/docker/infra:
+	${DOCKER_COMPOSE} -p ${PROJECT} -f infra/docker-compose.yml up -d
+
+## stop/docker/infra: stop the db, inmemory db and s3 storage 
+.PHONY: stop/docker/infra
+stop/docker/infra:
+	${DOCKER_COMPOSE} -p ${PROJECT} -f infra/docker-compose.yml down
 
 
 # ==================================================================================== #
@@ -77,6 +102,11 @@ migrations/up:
 .PHONY: migrations/down
 migrations/down:
 	go run -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest -path=./assets/migrations -database="postgres://${DB_DSN}" down
+
+## migrations/drop: drop all database migrations
+.PHONY: migrations/drop
+migrations/drop:
+	go run -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest -path=./assets/migrations -database="postgres://${DB_DSN}" drop
 
 ## migrations/goto version=$1: migrate to a specific version number
 .PHONY: migrations/goto
