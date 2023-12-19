@@ -21,6 +21,8 @@ func (app *application) routes() http.Handler {
 	mux.Use(app.logAccess)
 	mux.Use(app.recoverPanic)
 
+	mux.Use(app.authenticate)
+
 	mux.Get("/status", app.handleStatus)
 
 	mux.Route("/api", func(mux chi.Router) {
@@ -29,6 +31,8 @@ func (app *application) routes() http.Handler {
 			mux.Post("/login", app.handleLogin)
 
 			mux.Group(func(mux chi.Router) {
+				mux.Use(app.requireAuthentication)
+
 				mux.Delete("/logout", app.handleLogout)
 				mux.Get("/refresh", app.handleRefreshToken)
 			})
@@ -38,6 +42,8 @@ func (app *application) routes() http.Handler {
 			mux.Get("/{userNickname}", app.handleGetUser)
 
 			mux.Group(func(mux chi.Router) {
+				mux.Use(app.requireAuthentication)
+
 				mux.Patch("/{userNickname}", app.handleUpdateUser)
 				mux.Delete("/{userNickname}", app.handleDeleteUser)
 			})

@@ -2,10 +2,20 @@ package main
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/protomem/gotube/internal/cookies"
 )
+
+func getAccessTokenFromRequest(r *http.Request) string {
+	header := r.Header.Get(HeaderAuthorization)
+	hedaerParts := strings.Split(header, " ")
+	if len(hedaerParts) != 2 && hedaerParts[0] != "Bearer" {
+		return ""
+	}
+	return hedaerParts[1]
+}
 
 func getRefreshTokenFromRequest(r *http.Request, cookieSecret string) string {
 	var token string

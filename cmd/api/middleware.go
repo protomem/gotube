@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -8,6 +9,8 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/google/uuid"
+	"github.com/protomem/gotube/internal/database"
+	"github.com/protomem/gotube/internal/jwt"
 	"github.com/protomem/gotube/internal/response"
 
 	"github.com/tomasen/realip"
@@ -45,7 +48,7 @@ func (app *application) logAccess(next http.Handler) http.Handler {
 			"proto", proto,
 			string(_contextRequestIDKey), contextGetRequestID(r),
 		)
-		responseAttrs := slog.Group("repsonse", "status", mw.StatusCode, "size", mw.BytesCount)
+		responseAttrs := slog.Group("response", "status", mw.StatusCode, "size", mw.BytesCount)
 
 		app.logger.Info("access", userAttrs, requestAttrs, responseAttrs)
 	})
@@ -83,6 +86,51 @@ func (app *application) requestID(next http.Handler) http.Handler {
 
 		r = contextSetRequestID(r, rid)
 		w.Header().Set(HeaderXRequestID, rid)
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (app *application) authenticate(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token := getAccessTokenFromRequest(r)
+		if token == "" {
+			app.logger.Debug("auth header missing or invalid")
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		userID, err := jwt.Parse(token, jwt.ParseParams{
+			SigningKey: app.config.auth.secretKey,
+			Issuer:     app.config.baseURL,
+		})
+		if err != nil {
+			app.errorMessage(w, r, http.StatusUnauthorized, "invalid token", nil)
+			return
+		}
+
+		user, err := app.db.GetUser(r.Context(), userID)
+		if err != nil {
+			if errors.Is(err, database.ErrNotFound) {
+				app.errorMessage(w, r, http.StatusUnauthorized, database.ErrUserNotFound.Error(), nil)
+				return
+			}
+
+			app.serverError(w, r, err)
+			return
+		}
+
+		r = contextSetUser(r, user)
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (app *application) requireAuthentication(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := contextGetUser(r); !ok {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
 
 		next.ServeHTTP(w, r)
 	})
