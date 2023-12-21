@@ -557,3 +557,28 @@ func (app *application) handleCreateVideo(w http.ResponseWriter, r *http.Request
 
 	app.mustResponseSend(w, r, http.StatusCreated, response.Object{"video": video})
 }
+
+func (app *application) handleDeleteVideo(w http.ResponseWriter, r *http.Request) {
+	videoID, err := getVideoIDFromRequest(r)
+	if err != nil {
+		app.badRequest(w, r, errors.New("invalid video id"))
+		return
+	}
+
+	if _, err := app.db.GetVideo(r.Context(), videoID); err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			app.errorMessage(w, r, http.StatusNotFound, database.ErrVideoNotFound.Error(), nil)
+			return
+		}
+
+		app.serverError(w, r, err)
+		return
+	}
+
+	if err := app.db.DeleteVideo(r.Context(), videoID); err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}

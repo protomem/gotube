@@ -92,6 +92,20 @@ func (db *DB) InsertVideo(ctx context.Context, dto InsertVideoDTO) (uuid.UUID, e
 	return id, nil
 }
 
+func (db *DB) DeleteVideo(ctx context.Context, id uuid.UUID) error {
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	query := "DELETE FROM videos WHERE id = $1"
+	args := []any{id}
+
+	if _, err := db.ExecContext(ctx, query, args...); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *DB) videoScan(row *sqlx.Row, video *Video) error {
 	return row.Scan(
 		&video.ID,
