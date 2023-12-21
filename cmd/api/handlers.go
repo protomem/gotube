@@ -447,6 +447,33 @@ func (app *application) handleDeleteUser(w http.ResponseWriter, r *http.Request)
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (app *application) handleGetVideo(w http.ResponseWriter, r *http.Request) {
+	videoID, err := getVideoIDFromRequest(r)
+	if err != nil {
+		app.badRequest(w, r, errors.New("invalid video id"))
+		return
+	}
+
+	video, err := app.db.GetVideo(r.Context(), videoID)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			app.errorMessage(w, r, http.StatusNotFound, database.ErrVideoNotFound.Error(), nil)
+			return
+		}
+
+		app.serverError(w, r, err)
+		return
+	}
+
+	user, isAuth := contextGetUser(r)
+	if !video.Public && (!isAuth && video.AuthorID != user.ID) {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	app.mustResponseSend(w, r, http.StatusOK, response.Object{"video": video})
+}
+
 func (app *application) handleCreateVideo(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		Title         string  `json:"title"`

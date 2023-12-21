@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/protomem/gotube/internal/cookies"
 )
 
@@ -35,4 +36,13 @@ func getRefreshTokenFromRequest(r *http.Request, cookieSecret string) string {
 
 func getUserNicknameFromRequest(r *http.Request) string {
 	return chi.URLParam(r, "userNickname")
+}
+
+func getVideoIDFromRequest(r *http.Request) (uuid.UUID, error) {
+	videoIDRaw := chi.URLParam(r, "videoId")
+	videoID, err := uuid.Parse(videoIDRaw)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	return videoID, nil
 }

@@ -50,6 +50,8 @@ func (app *application) routes() http.Handler {
 		})
 
 		mux.Route("/videos", func(mux chi.Router) {
+			mux.Get("/{videoId}", app.handleGetVideo)
+
 			mux.Group(func(mux chi.Router) {
 				mux.Use(app.requireAuthentication)
 
