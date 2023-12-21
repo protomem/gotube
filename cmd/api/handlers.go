@@ -18,7 +18,7 @@ import (
 var ErrMissingRefreshToken = errors.New("missing refresh token")
 
 func (app *application) handleStatus(w http.ResponseWriter, r *http.Request) {
-	app.mustResponseSend(w, http.StatusOK, response.Object{
+	app.mustResponseSend(w, r, http.StatusOK, response.Object{
 		"status": "OK",
 	})
 }
@@ -123,7 +123,7 @@ func (app *application) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	app.mustResponseSend(w, http.StatusCreated, response.Object{
+	app.mustResponseSend(w, r, http.StatusCreated, response.Object{
 		"accessToken":  accessToken,
 		"refreshToken": refreshToken,
 		"user":         user,
@@ -216,7 +216,7 @@ func (app *application) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	app.mustResponseSend(w, http.StatusOK, response.Object{
+	app.mustResponseSend(w, r, http.StatusOK, response.Object{
 		"accessToken":  accessToken,
 		"refreshToken": refreshToken,
 		"user":         user,
@@ -290,7 +290,7 @@ func (app *application) handleRefreshToken(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	app.mustResponseSend(w, http.StatusOK, response.Object{
+	app.mustResponseSend(w, r, http.StatusOK, response.Object{
 		"accessToken":  accessToken,
 		"refreshToken": refreshToken,
 	})
@@ -310,7 +310,7 @@ func (app *application) handleGetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	app.mustResponseSend(w, http.StatusOK, response.Object{"user": user})
+	app.mustResponseSend(w, r, http.StatusOK, response.Object{"user": user})
 }
 
 func (app *application) handleUpdateUser(w http.ResponseWriter, r *http.Request) {
@@ -422,7 +422,7 @@ func (app *application) handleUpdateUser(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	app.mustResponseSend(w, http.StatusOK, response.Object{"user": newUser})
+	app.mustResponseSend(w, r, http.StatusOK, response.Object{"user": newUser})
 }
 
 func (app *application) handleDeleteUser(w http.ResponseWriter, r *http.Request) {
@@ -445,4 +445,88 @@ func (app *application) handleDeleteUser(w http.ResponseWriter, r *http.Request)
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (app *application) handleCreateVideo(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Title         string  `json:"title"`
+		Description   *string `json:"description"`
+		ThumbnailPath *string `json:"thumbnailPath"`
+		VideoPath     *string `json:"videoPath"`
+		Public        *bool   `json:"isPublic"`
+
+		validator.Validator `json:"-"`
+	}
+
+	if err := request.DecodeJSONStrict(w, r, &input); err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	input.Validator.CheckField(
+		validator.NotBlank(input.Title) &&
+			validator.MinRunes(input.Title, 3) && validator.MaxRunes(input.Title, 100),
+		"title", "title must be between 3 and 100 characters",
+	)
+	if input.Description != nil {
+		input.Validator.CheckField(
+			validator.NotBlank(*input.Description) && validator.MaxRunes(*input.Description, 1000),
+			"description", "description must be between 1 and 1000 characters",
+		)
+	}
+	if input.ThumbnailPath != nil {
+		input.Validator.CheckField(
+			validator.NotBlank(*input.ThumbnailPath) && validator.IsURL(*input.ThumbnailPath),
+			"thumbnailPath", "invalid thumbnail path",
+		)
+	}
+	if input.VideoPath != nil {
+		input.Validator.CheckField(
+			validator.NotBlank(*input.VideoPath) && validator.IsURL(*input.VideoPath),
+			"videoPath", "invalid video path",
+		)
+	}
+
+	if input.Validator.HasErrors() {
+		app.failedValidation(w, r, input.Validator)
+		return
+	}
+
+	user, _ := contextGetUser(r)
+
+	dto := database.InsertVideoDTO{
+		Title:    input.Title,
+		AuthorID: user.ID,
+	}
+	if input.Description != nil {
+		dto.Description = *input.Description
+	}
+	if input.ThumbnailPath != nil {
+		dto.ThumbnailPath = *input.ThumbnailPath
+	}
+	if input.VideoPath != nil {
+		dto.VideoPath = *input.VideoPath
+	}
+	if input.Public != nil {
+		dto.Public = *input.Public
+	}
+
+	videoID, err := app.db.InsertVideo(r.Context(), dto)
+	if err != nil {
+		if errors.Is(err, database.ErrAlreadyExists) {
+			app.errorMessage(w, r, http.StatusConflict, database.ErrVideoAlreadyExists.Error(), nil)
+			return
+		}
+
+		app.serverError(w, r, err)
+		return
+	}
+
+	video, err := app.db.GetVideo(r.Context(), videoID)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustResponseSend(w, r, http.StatusCreated, response.Object{"video": video})
 }

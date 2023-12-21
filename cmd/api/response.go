@@ -6,9 +6,9 @@ import (
 	"github.com/protomem/gotube/internal/response"
 )
 
-func (app *application) mustResponseSend(w http.ResponseWriter, status int, data any) {
+func (app *application) mustResponseSend(w http.ResponseWriter, r *http.Request, status int, data any) {
 	if err := response.JSON(w, status, data); err != nil {
-		app.serverError(w, nil, err)
+		app.serverError(w, r, err)
 		return
 	}
 }

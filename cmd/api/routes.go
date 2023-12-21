@@ -48,6 +48,14 @@ func (app *application) routes() http.Handler {
 				mux.Delete("/{userNickname}", app.handleDeleteUser)
 			})
 		})
+
+		mux.Route("/videos", func(mux chi.Router) {
+			mux.Group(func(mux chi.Router) {
+				mux.Use(app.requireAuthentication)
+
+				mux.Post("/", app.handleCreateVideo)
+			})
+		})
 	})
 
 	return mux
