@@ -51,7 +51,8 @@ func (app *application) routes() http.Handler {
 		})
 
 		mux.Route("/videos", func(mux chi.Router) {
-			mux.Get("/", app.handleGetNewVideos)
+			mux.Get("/new", app.handleGetNewVideos)
+			mux.Get("/popular", app.handleGetPopularVideos)
 			mux.Get("/{videoId}", app.handleGetVideo)
 
 			mux.Group(func(mux chi.Router) {

@@ -67,6 +67,41 @@ func (db *DB) FindPublicVideosSortByCreatedAt(ctx context.Context, opts FindOpti
 	return videos, nil
 }
 
+func (db *DB) FindPublicVideosSortByViews(ctx context.Context, opts FindOptions) ([]Video, error) {
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	query := `
+        SELECT videos.*, author.* FROM videos
+        JOIN users AS author ON videos.author_id = author.id
+        ORDER BY videos.views DESC
+        LIMIT $1 OFFSET $2
+    `
+	args := []any{opts.Limit, opts.Offset}
+
+	rows, err := db.QueryxContext(ctx, query, args...)
+	if err != nil {
+		if IsNoRows(err) {
+			return []Video{}, nil
+		}
+
+		return []Video{}, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	videos := make([]Video, 0, opts.Limit)
+
+	for rows.Next() {
+		var video Video
+		if err = db.videoScan(rows, &video); err != nil {
+			return []Video{}, err
+		}
+		videos = append(videos, video)
+	}
+
+	return videos, nil
+}
+
 func (db *DB) GetVideo(ctx context.Context, id uuid.UUID) (Video, error) {
 	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
 	defer cancel()

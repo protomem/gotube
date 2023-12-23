@@ -463,6 +463,22 @@ func (app *application) handleGetNewVideos(w http.ResponseWriter, r *http.Reques
 	app.mustResponseSend(w, r, http.StatusOK, response.Object{"videos": videos})
 }
 
+func (app *application) handleGetPopularVideos(w http.ResponseWriter, r *http.Request) {
+	findOpts, err := getFindOptionsFromRequest(r)
+	if err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	videos, err := app.db.FindPublicVideosSortByViews(r.Context(), findOpts)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustResponseSend(w, r, http.StatusOK, response.Object{"videos": videos})
+}
+
 func (app *application) handleGetVideo(w http.ResponseWriter, r *http.Request) {
 	videoID, err := getVideoIDFromRequest(r)
 	if err != nil {
