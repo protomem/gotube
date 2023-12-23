@@ -44,6 +44,7 @@ func (app *application) routes() http.Handler {
 			mux.Group(func(mux chi.Router) {
 				mux.Use(app.requireAuthentication)
 
+				mux.Put("/{userNickname}", app.handleUpdateUser)
 				mux.Patch("/{userNickname}", app.handleUpdateUser)
 				mux.Delete("/{userNickname}", app.handleDeleteUser)
 			})
@@ -56,6 +57,8 @@ func (app *application) routes() http.Handler {
 				mux.Use(app.requireAuthentication)
 
 				mux.Post("/", app.handleCreateVideo)
+				mux.Put("/{videoId}", app.handleUpdateVideo)
+				mux.Patch("/{videoId}", app.handleUpdateVideo)
 				mux.Delete("/{videoId}", app.handleDeleteVideo)
 			})
 		})

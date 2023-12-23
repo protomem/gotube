@@ -558,6 +558,90 @@ func (app *application) handleCreateVideo(w http.ResponseWriter, r *http.Request
 	app.mustResponseSend(w, r, http.StatusCreated, response.Object{"video": video})
 }
 
+func (app *application) handleUpdateVideo(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Title         *string `json:"title"`
+		Description   *string `json:"description"`
+		ThumbnailPath *string `json:"thumbnailPath"`
+		VideoPath     *string `json:"videoPath"`
+		Public        *bool   `json:"isPublic"`
+
+		validator.Validator `json:"-"`
+	}
+
+	if err := request.DecodeJSONStrict(w, r, &input); err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	if input.Title != nil {
+		input.Validator.CheckField(
+			validator.NotBlank(*input.Title) &&
+				validator.MinRunes(*input.Title, 3) && validator.MaxRunes(*input.Title, 100),
+			"title", "title must be between 3 and 100 characters",
+		)
+	}
+	if input.Description != nil {
+		input.Validator.CheckField(
+			validator.NotBlank(*input.Description) && validator.MaxRunes(*input.Description, 1000),
+			"description", "description must be between 1 and 1000 characters",
+		)
+	}
+	if input.ThumbnailPath != nil {
+		input.Validator.CheckField(
+			validator.NotBlank(*input.ThumbnailPath) && validator.IsURL(*input.ThumbnailPath),
+			"thumbnailPath", "invalid thumbnail path",
+		)
+	}
+	if input.VideoPath != nil {
+		input.Validator.CheckField(
+			validator.NotBlank(*input.VideoPath) && validator.IsURL(*input.VideoPath),
+			"videoPath", "invalid video path",
+		)
+	}
+	if input.Validator.HasErrors() {
+		app.failedValidation(w, r, input.Validator)
+		return
+	}
+
+	videoID, err := getVideoIDFromRequest(r)
+	if err != nil {
+		app.badRequest(w, r, errors.New("invalid video id"))
+		return
+	}
+
+	if _, err := app.db.GetVideo(r.Context(), videoID); err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			app.errorMessage(w, r, http.StatusNotFound, database.ErrVideoNotFound.Error(), nil)
+			return
+		}
+
+		app.serverError(w, r, err)
+		return
+	}
+
+	dto := database.UpdateVideoDTO{
+		Title:         input.Title,
+		Description:   input.Description,
+		ThumbnailPath: input.ThumbnailPath,
+		VideoPath:     input.VideoPath,
+		Public:        input.Public,
+	}
+
+	if err := app.db.UpdateVideo(r.Context(), videoID, dto); err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	newVideo, err := app.db.GetVideo(r.Context(), videoID)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustResponseSend(w, r, http.StatusOK, response.Object{"video": newVideo})
+}
+
 func (app *application) handleDeleteVideo(w http.ResponseWriter, r *http.Request) {
 	videoID, err := getVideoIDFromRequest(r)
 	if err != nil {
