@@ -64,6 +64,10 @@ func (app *application) routes() http.Handler {
 				mux.Delete("/{videoId}", app.handleDeleteVideo)
 			})
 		})
+
+		mux.Route("/profile", func(mux chi.Router) {
+			mux.Get("/{userNickname}/videos", app.handleGetUserVideos)
+		})
 	})
 
 	return mux

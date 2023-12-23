@@ -479,6 +479,35 @@ func (app *application) handleGetPopularVideos(w http.ResponseWriter, r *http.Re
 	app.mustResponseSend(w, r, http.StatusOK, response.Object{"videos": videos})
 }
 
+func (app *application) handleGetUserVideos(w http.ResponseWriter, r *http.Request) {
+	userNickname := getUserNicknameFromRequest(r)
+
+	findOpts, err := getFindOptionsFromRequest(r)
+	if err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	user, isAuth := contextGetUser(r)
+
+	var videos []database.Video
+	if isAuth && user.Nickname == userNickname {
+		videos, err = app.db.FindVideosByAuthorNicknameSortByCreatedAt(r.Context(), userNickname, findOpts)
+		if err != nil {
+			app.serverError(w, r, err)
+			return
+		}
+	} else {
+		videos, err = app.db.FindPublicVideosByAuthorNicknameSortByCreatedAt(r.Context(), userNickname, findOpts)
+		if err != nil {
+			app.serverError(w, r, err)
+			return
+		}
+	}
+
+	app.mustResponseSend(w, r, http.StatusOK, response.Object{"videos": videos})
+}
+
 func (app *application) handleGetVideo(w http.ResponseWriter, r *http.Request) {
 	videoID, err := getVideoIDFromRequest(r)
 	if err != nil {
