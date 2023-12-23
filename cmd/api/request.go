@@ -2,11 +2,18 @@ package main
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/protomem/gotube/internal/cookies"
+	"github.com/protomem/gotube/internal/database"
+)
+
+const (
+	_defaultLimit  = 10
+	_defaultOffset = 0
 )
 
 func getAccessTokenFromRequest(r *http.Request) string {
@@ -45,4 +52,26 @@ func getVideoIDFromRequest(r *http.Request) (uuid.UUID, error) {
 		return uuid.Nil, err
 	}
 	return videoID, nil
+}
+
+func getFindOptionsFromRequest(r *http.Request) (database.FindOptions, error) {
+	opts := database.FindOptions{
+		Limit:  _defaultLimit,
+		Offset: _defaultOffset,
+	}
+	if r.URL.Query().Has("limit") {
+		limit, err := strconv.ParseUint(r.URL.Query().Get("limit"), 10, 64)
+		if err != nil {
+			return database.FindOptions{}, err
+		}
+		opts.Limit = limit
+	}
+	if r.URL.Query().Has("offset") {
+		offset, err := strconv.ParseUint(r.URL.Query().Get("offset"), 10, 64)
+		if err != nil {
+			return database.FindOptions{}, err
+		}
+		opts.Offset = offset
+	}
+	return opts, nil
 }

@@ -57,3 +57,12 @@ func New(dsn string, automigrate bool) (*DB, error) {
 
 	return &DB{db}, nil
 }
+
+type FindOptions struct {
+	Limit  uint64
+	Offset uint64
+}
+
+type Scanner interface {
+	Scan(dest ...any) error
+}

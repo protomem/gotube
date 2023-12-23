@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
 )
 
 var (
@@ -31,6 +30,41 @@ type Video struct {
 
 	AuthorID uuid.UUID `db:"author_id" json:"-"`
 	Author   User      `db:"author" json:"author"`
+}
+
+func (db *DB) FindPublicVideosSortByCreatedAt(ctx context.Context, opts FindOptions) ([]Video, error) {
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	query := `
+        SELECT videos.*, author.* FROM videos 
+        JOIN users AS author ON videos.author_id = author.id
+        ORDER BY videos.created_at DESC
+        LIMIT $1 OFFSET $2
+    `
+	args := []any{opts.Limit, opts.Offset}
+
+	rows, err := db.QueryxContext(ctx, query, args...)
+	if err != nil {
+		if IsNoRows(err) {
+			return []Video{}, nil
+		}
+
+		return []Video{}, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	videos := make([]Video, 0, opts.Limit)
+
+	for rows.Next() {
+		var video Video
+		if err = db.videoScan(rows, &video); err != nil {
+			return []Video{}, err
+		}
+		videos = append(videos, video)
+	}
+
+	return videos, nil
 }
 
 func (db *DB) GetVideo(ctx context.Context, id uuid.UUID) (Video, error) {
@@ -158,8 +192,8 @@ func (db *DB) DeleteVideo(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (db *DB) videoScan(row *sqlx.Row, video *Video) error {
-	return row.Scan(
+func (db *DB) videoScan(s Scanner, video *Video) error {
+	return s.Scan(
 		&video.ID,
 		&video.CreatedAt, &video.UpdatedAt,
 		&video.Title, &video.Description,
