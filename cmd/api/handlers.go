@@ -526,6 +526,36 @@ func (app *application) handleSearchVideo(w http.ResponseWriter, r *http.Request
 	app.mustResponseSend(w, r, http.StatusOK, response.Object{"videos": videos})
 }
 
+func (app *application) handleSearchUserVideo(w http.ResponseWriter, r *http.Request) {
+	findOpts, err := getFindOptionsFromRequest(r)
+	if err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	searchQuery := getSearchQueryFromRequest(r)
+	userNickname := getUserNicknameFromRequest(r)
+
+	user, isAuth := contextGetUser(r)
+
+	var videos []database.Video
+	if isAuth && user.Nickname == userNickname {
+		videos, err = app.db.FindVideosLikeByTitleAndAuthorNickname(r.Context(), userNickname, searchQuery, findOpts)
+		if err != nil {
+			app.serverError(w, r, err)
+			return
+		}
+	} else {
+		videos, err = app.db.FindPublicVideosLikeByTitleAndAuthorNickname(r.Context(), userNickname, searchQuery, findOpts)
+		if err != nil {
+			app.serverError(w, r, err)
+			return
+		}
+	}
+
+	app.mustResponseSend(w, r, http.StatusOK, response.Object{"videos": videos})
+}
+
 func (app *application) handleGetVideo(w http.ResponseWriter, r *http.Request) {
 	videoID, err := getVideoIDFromRequest(r)
 	if err != nil {

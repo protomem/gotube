@@ -220,6 +220,86 @@ func (db *DB) FindPublicVideosLikeByTitle(ctx context.Context, likeTitle string,
 	return videos, nil
 }
 
+func (db *DB) FindPublicVideosLikeByTitleAndAuthorNickname(
+	ctx context.Context,
+	likeTitle, authorNickname string,
+	opts FindOptions,
+) ([]Video, error) {
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	query := `
+        SELECT videos.*, authors.* FROM videos
+        JOIN users AS authors ON videos.author_id = authors.id
+        WHERE videos.title ILIKE $3 AND authors.nickname = $4 AND videos.is_public = true
+        ORDER BY videos.created_at DESC
+        LIMIT $1 OFFSET $2
+    `
+	args := []any{opts.Limit, opts.Offset, likeTitle, authorNickname}
+
+	rows, err := db.QueryxContext(ctx, query, args...)
+	if err != nil {
+		if IsNoRows(err) {
+			return []Video{}, nil
+		}
+
+		return []Video{}, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	videos := make([]Video, 0, opts.Limit)
+
+	for rows.Next() {
+		var video Video
+		if err = db.videoScan(rows, &video); err != nil {
+			return []Video{}, err
+		}
+		videos = append(videos, video)
+	}
+
+	return videos, nil
+}
+
+func (db *DB) FindVideosLikeByTitleAndAuthorNickname(
+	ctx context.Context,
+	likeTitle, authorNickname string,
+	opts FindOptions,
+) ([]Video, error) {
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	query := `
+        SELECT videos.*, authors.* FROM videos
+        JOIN users AS authors ON videos.author_id = authors.id
+        WHERE videos.title ILIKE $3 AND authors.nickname = $4
+        ORDER BY videos.created_at DESC
+        LIMIT $1 OFFSET $2
+    `
+	args := []any{opts.Limit, opts.Offset, likeTitle, authorNickname}
+
+	rows, err := db.QueryxContext(ctx, query, args...)
+	if err != nil {
+		if IsNoRows(err) {
+			return []Video{}, nil
+		}
+
+		return []Video{}, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	videos := make([]Video, 0, opts.Limit)
+
+	for rows.Next() {
+		var video Video
+		if err = db.videoScan(rows, &video); err != nil {
+			return []Video{}, err
+		}
+		videos = append(videos, video)
+	}
+
+	return videos, nil
+}
+
 func (db *DB) GetVideo(ctx context.Context, id uuid.UUID) (Video, error) {
 	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
 	defer cancel()

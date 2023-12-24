@@ -68,6 +68,7 @@ func (app *application) routes() http.Handler {
 
 		mux.Route("/profile", func(mux chi.Router) {
 			mux.Get("/{userNickname}/videos", app.handleGetUserVideos)
+			mux.Get("/{userNickname}/videos/search", app.handleSearchUserVideo)
 		})
 	})
 
