@@ -75,3 +75,7 @@ func getFindOptionsFromRequest(r *http.Request) (database.FindOptions, error) {
 	}
 	return opts, nil
 }
+
+func getSearchQueryFromRequest(r *http.Request) string {
+	return r.URL.Query().Get("q")
+}

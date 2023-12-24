@@ -508,6 +508,24 @@ func (app *application) handleGetUserVideos(w http.ResponseWriter, r *http.Reque
 	app.mustResponseSend(w, r, http.StatusOK, response.Object{"videos": videos})
 }
 
+func (app *application) handleSearchVideo(w http.ResponseWriter, r *http.Request) {
+	findOpts, err := getFindOptionsFromRequest(r)
+	if err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	searchQuery := getSearchQueryFromRequest(r)
+
+	videos, err := app.db.FindPublicVideosLikeByTitle(r.Context(), searchQuery, findOpts)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustResponseSend(w, r, http.StatusOK, response.Object{"videos": videos})
+}
+
 func (app *application) handleGetVideo(w http.ResponseWriter, r *http.Request) {
 	videoID, err := getVideoIDFromRequest(r)
 	if err != nil {
