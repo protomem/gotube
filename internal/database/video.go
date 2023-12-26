@@ -191,7 +191,7 @@ func (db *DB) FindPublicVideosLikeByTitle(ctx context.Context, likeTitle string,
 	query := `
         SELECT videos.*, authors.* FROM videos
         JOIN users AS authors ON videos.author_id = authors.id
-        WHERE videos.title ILIKE $3 AND videos.is_public = true
+        WHERE lower(videos.title) LIKE '%' || lower($3) || '%' AND videos.is_public = true
         ORDER BY videos.created_at DESC
         LIMIT $1 OFFSET $2
     `
@@ -231,7 +231,7 @@ func (db *DB) FindPublicVideosLikeByTitleAndAuthorNickname(
 	query := `
         SELECT videos.*, authors.* FROM videos
         JOIN users AS authors ON videos.author_id = authors.id
-        WHERE videos.title ILIKE $3 AND authors.nickname = $4 AND videos.is_public = true
+        WHERE lower(videos.title) LIKE '%' || lower($3) || '%' AND authors.nickname = $4 AND videos.is_public = true
         ORDER BY videos.created_at DESC
         LIMIT $1 OFFSET $2
     `
@@ -271,7 +271,7 @@ func (db *DB) FindVideosLikeByTitleAndAuthorNickname(
 	query := `
         SELECT videos.*, authors.* FROM videos
         JOIN users AS authors ON videos.author_id = authors.id
-        WHERE videos.title ILIKE $3 AND authors.nickname = $4
+        WHERE lower(videos.title) LIKE '%' || lower($3) || '%' AND authors.nickname = $4
         ORDER BY videos.created_at DESC
         LIMIT $1 OFFSET $2
     `

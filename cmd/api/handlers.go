@@ -540,13 +540,13 @@ func (app *application) handleSearchUserVideo(w http.ResponseWriter, r *http.Req
 
 	var videos []database.Video
 	if isAuth && user.Nickname == userNickname {
-		videos, err = app.db.FindVideosLikeByTitleAndAuthorNickname(r.Context(), userNickname, searchQuery, findOpts)
+		videos, err = app.db.FindVideosLikeByTitleAndAuthorNickname(r.Context(), searchQuery, userNickname, findOpts)
 		if err != nil {
 			app.serverError(w, r, err)
 			return
 		}
 	} else {
-		videos, err = app.db.FindPublicVideosLikeByTitleAndAuthorNickname(r.Context(), userNickname, searchQuery, findOpts)
+		videos, err = app.db.FindPublicVideosLikeByTitleAndAuthorNickname(r.Context(), searchQuery, userNickname, findOpts)
 		if err != nil {
 			app.serverError(w, r, err)
 			return
