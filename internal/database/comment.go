@@ -28,7 +28,7 @@ func (db *DB) FindCommentsByVideoID(ctx context.Context, videoID uuid.UUID, opts
 	defer cancel()
 
 	query := `
-		SELECT commments.*, authors.* FROM comments
+		SELECT comments.*, authors.* FROM comments
 		JOIN users AS authors ON comments.author_id = authors.id
 		WHERE comments.video_id = $3
 		LIMIT $1 OFFSET $2
@@ -63,7 +63,7 @@ func (db *DB) GetComment(ctx context.Context, id uuid.UUID) (Comment, error) {
 	defer cancel()
 
 	query := `
-		SELECT commments.*, authors.* FROM comments
+		SELECT comments.*, authors.* FROM comments
 		JOIN users AS authors ON comments.author_id = authors.id
 		WHERE comments.id = $1
 		LIMIT 1
