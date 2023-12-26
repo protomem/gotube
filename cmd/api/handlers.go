@@ -776,6 +776,28 @@ func (app *application) handleDeleteVideo(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (app *application) handleGetComments(w http.ResponseWriter, r *http.Request) {
+	findOpts, err := getFindOptionsFromRequest(r)
+	if err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	videoID, err := getVideoIDFromRequest(r)
+	if err != nil {
+		app.badRequest(w, r, errors.New("invalid video id"))
+		return
+	}
+
+	comments, err := app.db.FindCommentsByVideoID(r.Context(), videoID, findOpts)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustResponseSend(w, r, http.StatusOK, response.Object{"comments": comments})
+}
+
 func (app *application) handleCreateComment(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		Body string `json:"comment"`

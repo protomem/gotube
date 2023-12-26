@@ -23,6 +23,41 @@ type Comment struct {
 	Author User `db:"author" json:"author"`
 }
 
+func (db *DB) FindCommentsByVideoID(ctx context.Context, videoID uuid.UUID, opts FindOptions) ([]Comment, error) {
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	query := `
+		SELECT commments.*, authors.* FROM comments
+		JOIN users AS authors ON comments.author_id = authors.id
+		WHERE comments.video_id = $3
+		LIMIT $1 OFFSET $2
+	`
+	args := []any{opts.Limit, opts.Offset, videoID}
+
+	rows, err := db.QueryxContext(ctx, query, args...)
+	if err != nil {
+		if IsNoRows(err) {
+			return []Comment{}, nil
+		}
+
+		return []Comment{}, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	comments := make([]Comment, 0, opts.Limit)
+
+	for rows.Next() {
+		var comment Comment
+		if err := db.commmentScan(rows, &comment); err != nil {
+			return []Comment{}, err
+		}
+		comments = append(comments, comment)
+	}
+
+	return comments, nil
+}
+
 func (db *DB) GetComment(ctx context.Context, id uuid.UUID) (Comment, error) {
 	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
 	defer cancel()

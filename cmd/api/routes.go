@@ -66,6 +66,8 @@ func (app *application) routes() http.Handler {
 			})
 
 			mux.Route("/{videoId}/comments", func(mux chi.Router) {
+				mux.Get("/", app.handleGetComments)
+
 				mux.Group(func(mux chi.Router) {
 					mux.Use(app.requireAuthentication)
 
