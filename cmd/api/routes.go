@@ -64,6 +64,14 @@ func (app *application) routes() http.Handler {
 				mux.Patch("/{videoId}", app.handleUpdateVideo)
 				mux.Delete("/{videoId}", app.handleDeleteVideo)
 			})
+
+			mux.Route("/{videoId}/comments", func(mux chi.Router) {
+				mux.Group(func(mux chi.Router) {
+					mux.Use(app.requireAuthentication)
+
+					mux.Post("/", app.handleCreateComment)
+				})
+			})
 		})
 
 		mux.Route("/profile", func(mux chi.Router) {

@@ -775,3 +775,54 @@ func (app *application) handleDeleteVideo(w http.ResponseWriter, r *http.Request
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (app *application) handleCreateComment(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Body string `json:"comment"`
+
+		validator.Validator `json:"-"`
+	}
+
+	if err := request.DecodeJSONStrict(w, r, &input); err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	input.Validator.CheckField(
+		validator.NotBlank(input.Body) && validator.MaxRunes(input.Body, 1000),
+		"comment", "comment must be between 1 and 1000 characters",
+	)
+
+	if input.Validator.HasErrors() {
+		app.failedValidation(w, r, input.Validator)
+		return
+	}
+
+	videoID, err := getVideoIDFromRequest(r)
+	if err != nil {
+		app.badRequest(w, r, errors.New("invalid video id"))
+		return
+	}
+
+	user, _ := contextGetUser(r)
+
+	dto := database.InsertCommentDTO{
+		Body:     input.Body,
+		VideoID:  videoID,
+		AuthorID: user.ID,
+	}
+
+	commentID, err := app.db.InsertComment(r.Context(), dto)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	comment, err := app.db.GetComment(r.Context(), commentID)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustResponseSend(w, r, http.StatusCreated, response.Object{"comment": comment})
+}
