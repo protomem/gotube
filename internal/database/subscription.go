@@ -7,10 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
-var (
-	ErrSubscriptionNotFound      = NewModelError(ErrNotFound, "subscription")
-	ErrSubscriptionAlreadyExists = NewModelError(ErrAlreadyExists, "subscription")
-)
+var ErrSubscriptionAlreadyExists = NewModelError(ErrAlreadyExists, "subscription")
 
 type Subscription struct {
 	ID uuid.UUID `db:"id" json:"id"`
@@ -20,6 +17,51 @@ type Subscription struct {
 
 	FromUserID uuid.UUID `db:"from_user_id" json:"fromUserId"`
 	ToUserID   uuid.UUID `db:"to_user_id" json:"toUserId"`
+}
+
+func (db *DB) CountSubscriptionsByFromUserID(ctx context.Context, fromUserID uuid.UUID) (uint64, error) {
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	query := `SELECT COUNT(*) FROM subscriptions WHERE from_user_id = $1`
+	args := []any{fromUserID}
+
+	var count uint64
+
+	if err := db.
+		QueryRowxContext(ctx, query, args...).
+		Scan(&count); err != nil {
+		if IsNoRows(err) {
+			return 0, nil
+
+		}
+
+		return 0, err
+	}
+
+	return count, nil
+}
+
+func (db *DB) CountSubscriptionsByToUserID(ctx context.Context, toUserID uuid.UUID) (uint64, error) {
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	query := `SELECT COUNT(*) FROM subscriptions WHERE to_user_id = $1`
+	args := []any{toUserID}
+
+	var count uint64
+
+	if err := db.
+		QueryRowxContext(ctx, query, args...).
+		Scan(&count); err != nil {
+		if IsNoRows(err) {
+			return 0, nil
+		}
+
+		return 0, err
+	}
+
+	return count, nil
 }
 
 type CreateSubscriptionDTO struct {

@@ -86,6 +86,7 @@ func (app *application) routes() http.Handler {
 			})
 
 			mux.Route("/subs", func(mux chi.Router) {
+				mux.Get("/", app.handleGetStatSubscriptions)
 
 				mux.Group(func(mux chi.Router) {
 					mux.Use(app.requireAuthentication)

@@ -16,7 +16,6 @@ import (
 	"github.com/protomem/gotube/internal/version"
 )
 
-// TODO: Add subscriptions
 // TODO: Add raitings
 // TODO: Add media
 

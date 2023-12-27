@@ -447,6 +447,37 @@ func (app *application) handleDeleteUser(w http.ResponseWriter, r *http.Request)
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (app *application) handleGetStatSubscriptions(w http.ResponseWriter, r *http.Request) {
+	userNickname := getUserNicknameFromRequest(r)
+	user, err := app.db.GetUserByNickname(r.Context(), userNickname)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			app.errorMessage(w, r, http.StatusNotFound, database.ErrUserNotFound.Error(), nil)
+			return
+		}
+
+		app.serverError(w, r, err)
+		return
+	}
+
+	countSubscriptions, err := app.db.CountSubscriptionsByFromUserID(r.Context(), user.ID)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	countSubscribers, err := app.db.CountSubscriptionsByToUserID(r.Context(), user.ID)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustResponseSend(w, r, http.StatusOK, response.Object{
+		"subscriptions": countSubscriptions,
+		"subscribers":   countSubscribers,
+	})
+}
+
 func (app *application) handleSubscribe(w http.ResponseWriter, r *http.Request) {
 	toUserNickname := getUserNicknameFromRequest(r)
 	toUser, err := app.db.GetUserByNickname(r.Context(), toUserNickname)
