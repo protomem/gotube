@@ -72,6 +72,8 @@ func (app *application) routes() http.Handler {
 					mux.Use(app.requireAuthentication)
 
 					mux.Post("/", app.handleCreateComment)
+					mux.Put("/{commentId}", app.handleUpdateComment)
+					mux.Patch("/{commentId}", app.handleUpdateComment)
 					mux.Delete("/{commentId}", app.handleDeleteComment)
 				})
 			})

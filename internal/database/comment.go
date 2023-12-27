@@ -107,6 +107,24 @@ func (db *DB) InsertComment(ctx context.Context, dto InsertCommentDTO) (uuid.UUI
 	return id, nil
 }
 
+type UpdateCommentDTO struct {
+	Body string
+}
+
+func (db *DB) UpdateComment(ctx context.Context, id uuid.UUID, dto UpdateCommentDTO) error {
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	query := `UPDATE comments SET updated_at = now(), body = $2 WHERE id = $1`
+	args := []any{id, dto.Body}
+
+	if _, err := db.ExecContext(ctx, query, args...); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *DB) DeleteComment(ctx context.Context, id uuid.UUID) error {
 	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
 	defer cancel()

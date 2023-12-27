@@ -849,6 +849,52 @@ func (app *application) handleCreateComment(w http.ResponseWriter, r *http.Reque
 	app.mustResponseSend(w, r, http.StatusCreated, response.Object{"comment": comment})
 }
 
+func (app *application) handleUpdateComment(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Body string `json:"comment"`
+
+		validator.Validator `json:"-"`
+	}
+
+	if err := request.DecodeJSONStrict(w, r, &input); err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	input.Validator.CheckField(
+		validator.NotBlank(input.Body) && validator.MaxRunes(input.Body, 1000),
+		"comment", "comment must be between 1 and 1000 characters",
+	)
+
+	if input.Validator.HasErrors() {
+		app.failedValidation(w, r, input.Validator)
+		return
+	}
+
+	commentID, err := getCommentIDFromRequest(r)
+	if err != nil {
+		app.badRequest(w, r, errors.New("invalid comment id"))
+		return
+	}
+
+	dto := database.UpdateCommentDTO{
+		Body: input.Body,
+	}
+
+	if err := app.db.UpdateComment(r.Context(), commentID, dto); err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	newComment, err := app.db.GetComment(r.Context(), commentID)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustResponseSend(w, r, http.StatusOK, response.Object{"comment": newComment})
+}
+
 func (app *application) handleDeleteComment(w http.ResponseWriter, r *http.Request) {
 	commentID, err := getCommentIDFromRequest(r)
 	if err != nil {
