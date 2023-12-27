@@ -79,3 +79,12 @@ func getFindOptionsFromRequest(r *http.Request) (database.FindOptions, error) {
 func getSearchQueryFromRequest(r *http.Request) string {
 	return r.URL.Query().Get("q")
 }
+
+func getCommentIDFromRequest(r *http.Request) (uuid.UUID, error) {
+	commentIDRaw := chi.URLParam(r, "commentId")
+	commentID, err := uuid.Parse(commentIDRaw)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	return commentID, nil
+}

@@ -107,6 +107,20 @@ func (db *DB) InsertComment(ctx context.Context, dto InsertCommentDTO) (uuid.UUI
 	return id, nil
 }
 
+func (db *DB) DeleteComment(ctx context.Context, id uuid.UUID) error {
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	query := `DELETE FROM comments WHERE id = $1`
+	args := []any{id}
+
+	if _, err := db.ExecContext(ctx, query, args...); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *DB) commmentScan(s Scanner, comment *Comment) error {
 	return s.Scan(
 		&comment.ID,

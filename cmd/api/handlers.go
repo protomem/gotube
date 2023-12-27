@@ -848,3 +848,18 @@ func (app *application) handleCreateComment(w http.ResponseWriter, r *http.Reque
 
 	app.mustResponseSend(w, r, http.StatusCreated, response.Object{"comment": comment})
 }
+
+func (app *application) handleDeleteComment(w http.ResponseWriter, r *http.Request) {
+	commentID, err := getCommentIDFromRequest(r)
+	if err != nil {
+		app.badRequest(w, r, errors.New("invalid comment id"))
+		return
+	}
+
+	if err := app.db.DeleteComment(r.Context(), commentID); err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
