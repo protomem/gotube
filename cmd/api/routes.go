@@ -91,6 +91,7 @@ func (app *application) routes() http.Handler {
 					mux.Use(app.requireAuthentication)
 
 					mux.Post("/", app.handleSubscribe)
+					mux.Delete("/", app.handleUnsubscribe)
 				})
 			})
 		})

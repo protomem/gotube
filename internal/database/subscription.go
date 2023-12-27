@@ -48,3 +48,22 @@ func (db *DB) CreateSubscription(ctx context.Context, dto CreateSubscriptionDTO)
 
 	return id, nil
 }
+
+type DeleteSubscriptionDTO struct {
+	FromUserID uuid.UUID
+	ToUserID   uuid.UUID
+}
+
+func (db *DB) DeleteSubscription(ctx context.Context, dto DeleteSubscriptionDTO) error {
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	query := `DELETE FROM subscriptions WHERE from_user_id = $1 AND to_user_id = $2`
+	args := []any{dto.FromUserID, dto.ToUserID}
+
+	if _, err := db.ExecContext(ctx, query, args...); err != nil {
+		return err
+	}
+
+	return nil
+}

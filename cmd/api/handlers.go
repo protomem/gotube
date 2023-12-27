@@ -475,6 +475,34 @@ func (app *application) handleSubscribe(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (app *application) handleUnsubscribe(w http.ResponseWriter, r *http.Request) {
+	toUserNickname := getUserNicknameFromRequest(r)
+	toUser, err := app.db.GetUserByNickname(r.Context(), toUserNickname)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			app.errorMessage(w, r, http.StatusNotFound, database.ErrUserNotFound.Error(), nil)
+			return
+		}
+
+		app.serverError(w, r, err)
+		return
+	}
+
+	fromUser, _ := contextGetUser(r)
+
+	dto := database.DeleteSubscriptionDTO{
+		FromUserID: fromUser.ID,
+		ToUserID:   toUser.ID,
+	}
+
+	if err := app.db.DeleteSubscription(r.Context(), dto); err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (app *application) handleGetNewVideos(w http.ResponseWriter, r *http.Request) {
 	findOpts, err := getFindOptionsFromRequest(r)
 	if err != nil {
