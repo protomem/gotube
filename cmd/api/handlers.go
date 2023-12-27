@@ -493,12 +493,17 @@ func (app *application) handleSubscribe(w http.ResponseWriter, r *http.Request) 
 
 	fromUser, _ := contextGetUser(r)
 
+	if fromUser.ID == toUser.ID {
+		app.badRequest(w, r, errors.New("you can't subscribe to yourself"))
+		return
+	}
+
 	dto := database.CreateSubscriptionDTO{
 		FromUserID: fromUser.ID,
 		ToUserID:   toUser.ID,
 	}
 
-	if _, err := app.db.CreateSubscription(r.Context(), dto); err != nil {
+	if _, err := app.db.CreateSubscription(r.Context(), dto); err != nil && !errors.Is(err, database.ErrAlreadyExists) {
 		app.serverError(w, r, err)
 		return
 	}
