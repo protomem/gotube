@@ -16,12 +16,8 @@ import (
 	"github.com/protomem/gotube/internal/version"
 )
 
-// TODO: Add Casbin
-
 // TODO: Add subscriptions
-// TODO: Add videos
 // TODO: Add raitings
-// TODO: Add comments
 // TODO: Add media
 
 func main() {
