@@ -79,9 +79,20 @@ func (app *application) routes() http.Handler {
 			})
 		})
 
-		mux.Route("/profile", func(mux chi.Router) {
-			mux.Get("/{userNickname}/videos", app.handleGetUserVideos)
-			mux.Get("/{userNickname}/videos/search", app.handleSearchUserVideo)
+		mux.Route("/profile/{userNickname}", func(mux chi.Router) {
+			mux.Route("/videos", func(mux chi.Router) {
+				mux.Get("/", app.handleGetUserVideos)
+				mux.Get("/search", app.handleSearchUserVideo)
+			})
+
+			mux.Route("/subs", func(mux chi.Router) {
+
+				mux.Group(func(mux chi.Router) {
+					mux.Use(app.requireAuthentication)
+
+					mux.Post("/", app.handleSubscribe)
+				})
+			})
 		})
 	})
 
