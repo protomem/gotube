@@ -300,6 +300,41 @@ func (db *DB) FindVideosLikeByTitleAndAuthorNickname(
 	return videos, nil
 }
 
+func (db *DB) FindPublicVideosByAuthorIDsSortByCreatedAt(ctx context.Context, authorIDs []uuid.UUID, opts FindOptions) ([]Video, error) {
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	query := `
+		SELECT videos.*, authors.* FROM videos
+		JOIN users AS authors ON videos.author_id = authors.id
+		WHERE authors.id = ANY($3::uuid[]) AND videos.is_public = true
+		ORDER BY videos.created_at DESC
+		LIMIT $1 OFFSET $2
+	`
+	args := []any{opts.Limit, opts.Offset, authorIDs}
+
+	rows, err := db.QueryxContext(ctx, query, args...)
+	if err != nil {
+		if IsNoRows(err) {
+			return []Video{}, nil
+		}
+
+		return []Video{}, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	videos := make([]Video, 0, opts.Limit)
+	for rows.Next() {
+		var video Video
+		if err = db.videoScan(rows, &video); err != nil {
+			return []Video{}, err
+		}
+		videos = append(videos, video)
+	}
+
+	return videos, nil
+}
+
 func (db *DB) GetVideo(ctx context.Context, id uuid.UUID) (Video, error) {
 	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
 	defer cancel()

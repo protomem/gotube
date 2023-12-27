@@ -83,6 +83,12 @@ func (app *application) routes() http.Handler {
 			mux.Route("/videos", func(mux chi.Router) {
 				mux.Get("/", app.handleGetUserVideos)
 				mux.Get("/search", app.handleSearchUserVideo)
+
+				mux.Group(func(mux chi.Router) {
+					mux.Use(app.requireAuthentication)
+
+					mux.Get("/subs", app.handleGetVideosBySubscriptions)
+				})
 			})
 
 			mux.Route("/subs", func(mux chi.Router) {

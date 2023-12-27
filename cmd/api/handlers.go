@@ -600,6 +600,45 @@ func (app *application) handleGetUserVideos(w http.ResponseWriter, r *http.Reque
 	app.mustResponseSend(w, r, http.StatusOK, response.Object{"videos": videos})
 }
 
+func (app *application) handleGetVideosBySubscriptions(w http.ResponseWriter, r *http.Request) {
+	findOpts, err := getFindOptionsFromRequest(r)
+	if err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	userNickname := getUserNicknameFromRequest(r)
+	user, err := app.db.GetUserByNickname(r.Context(), userNickname)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			app.errorMessage(w, r, http.StatusNotFound, database.ErrUserNotFound.Error(), nil)
+			return
+		}
+
+		app.serverError(w, r, err)
+		return
+	}
+
+	subs, err := app.db.FindSubscriptionsByFromUserID(r.Context(), user.ID)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	authorIDs := make([]uuid.UUID, 0, len(subs))
+	for _, sub := range subs {
+		authorIDs = append(authorIDs, sub.ToUserID)
+	}
+
+	videos, err := app.db.FindPublicVideosByAuthorIDsSortByCreatedAt(r.Context(), authorIDs, findOpts)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustResponseSend(w, r, http.StatusOK, response.Object{"videos": videos})
+}
+
 func (app *application) handleSearchVideo(w http.ResponseWriter, r *http.Request) {
 	findOpts, err := getFindOptionsFromRequest(r)
 	if err != nil {
