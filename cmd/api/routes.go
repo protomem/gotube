@@ -65,6 +65,16 @@ func (app *application) routes() http.Handler {
 				mux.Delete("/{videoId}", app.handleDeleteVideo)
 			})
 
+			mux.Route("/{videoId}/ratings", func(mux chi.Router) {
+
+				mux.Group(func(mux chi.Router) {
+					mux.Use(app.requireAuthentication)
+
+					mux.Post("/", app.handleLike)
+					mux.Delete("/", app.handleUnlike)
+				})
+			})
+
 			mux.Route("/{videoId}/comments", func(mux chi.Router) {
 				mux.Get("/", app.handleGetComments)
 

@@ -907,6 +907,96 @@ func (app *application) handleDeleteVideo(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (app *application) handleLike(w http.ResponseWriter, r *http.Request) {
+	videoID, err := getVideoIDFromRequest(r)
+	if err != nil {
+		app.badRequest(w, r, errors.New("invalid video id"))
+		return
+	}
+
+	user, _ := contextGetUser(r)
+
+	rating, err := app.db.GetRatingByVideoIDAndUserID(r.Context(), videoID, user.ID)
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
+		app.serverError(w, r, err)
+		return
+	}
+
+	if errors.Is(err, database.ErrNotFound) {
+		dto := database.InsertRatingDTO{
+			VideoID: videoID,
+			UserID:  user.ID,
+			Liked:   true,
+		}
+
+		if _, err := app.db.InsertRating(r.Context(), dto); err != nil {
+			app.serverError(w, r, err)
+			return
+		}
+	} else if !rating.Liked {
+		dto := database.UpdateRatingDTO{
+			Liked: true,
+		}
+
+		if err := app.db.UpdateRating(r.Context(), rating.ID, dto); err != nil {
+			app.serverError(w, r, err)
+			return
+		}
+	} else {
+		if err := app.db.DeleteRating(r.Context(), rating.ID); err != nil {
+			app.serverError(w, r, err)
+			return
+		}
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (app *application) handleUnlike(w http.ResponseWriter, r *http.Request) {
+	videoID, err := getVideoIDFromRequest(r)
+	if err != nil {
+		app.badRequest(w, r, errors.New("invalid video id"))
+		return
+	}
+
+	user, _ := contextGetUser(r)
+
+	rating, err := app.db.GetRatingByVideoIDAndUserID(r.Context(), videoID, user.ID)
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
+		app.serverError(w, r, err)
+		return
+	}
+
+	if errors.Is(err, database.ErrNotFound) {
+		dto := database.InsertRatingDTO{
+			VideoID: videoID,
+			UserID:  user.ID,
+			Liked:   false,
+		}
+
+		if _, err := app.db.InsertRating(r.Context(), dto); err != nil {
+			app.serverError(w, r, err)
+			return
+		}
+	} else if rating.Liked {
+		dto := database.UpdateRatingDTO{
+			Liked: false,
+		}
+
+		if err := app.db.UpdateRating(r.Context(), rating.ID, dto); err != nil {
+			app.serverError(w, r, err)
+			return
+		}
+	} else {
+		if err := app.db.DeleteRating(r.Context(), rating.ID); err != nil {
+			app.serverError(w, r, err)
+			return
+		}
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (app *application) handleGetComments(w http.ResponseWriter, r *http.Request) {
 	findOpts, err := getFindOptionsFromRequest(r)
 	if err != nil {
