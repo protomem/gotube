@@ -78,7 +78,7 @@ func (db *DB) GetRatingByVideoIDAndUserID(ctx context.Context, videoID, userID u
 		QueryRowxContext(ctx, query, args...).
 		StructScan(&rating); err != nil {
 		if IsNoRows(err) {
-			return Rating{}, nil
+			return Rating{}, ErrNotFound
 		}
 
 		return Rating{}, err
