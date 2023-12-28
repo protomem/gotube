@@ -907,6 +907,49 @@ func (app *application) handleDeleteVideo(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (app *application) handleGetStatRatings(w http.ResponseWriter, r *http.Request) {
+	videoID, err := getVideoIDFromRequest(r)
+	if err != nil {
+		app.badRequest(w, r, errors.New("invalid video id"))
+		return
+	}
+
+	countLiked, err := app.db.CountRatingsWithLikedByVideoID(r.Context(), videoID)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	countUnliked, err := app.db.CountRatingsWithNotLikedByVideoID(r.Context(), videoID)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	user, isAuth := contextGetUser(r)
+	if isAuth {
+		rating, err := app.db.GetRatingByVideoIDAndUserID(r.Context(), videoID, user.ID)
+		if err != nil && !errors.Is(err, database.ErrNotFound) {
+			app.serverError(w, r, err)
+			return
+		}
+
+		if !errors.Is(err, database.ErrNotFound) {
+			app.mustResponseSend(w, r, http.StatusOK, response.Object{
+				"likes":   countLiked,
+				"unlikes": countUnliked,
+				"isLiked": rating.Liked,
+			})
+			return
+		}
+	}
+
+	app.mustResponseSend(w, r, http.StatusOK, response.Object{
+		"likes":   countLiked,
+		"unlikes": countUnliked,
+	})
+}
+
 func (app *application) handleLike(w http.ResponseWriter, r *http.Request) {
 	videoID, err := getVideoIDFromRequest(r)
 	if err != nil {

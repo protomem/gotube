@@ -21,6 +21,50 @@ type Rating struct {
 	Liked bool `db:"is_liked" json:"isLiked"`
 }
 
+func (db *DB) CountRatingsWithLikedByVideoID(ctx context.Context, videoID uuid.UUID) (int, error) {
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	query := `SELECT COUNT(*) FROM ratings WHERE video_id = $1 AND is_liked = true`
+	args := []any{videoID}
+
+	var count int
+
+	if err := db.
+		QueryRowxContext(ctx, query, args...).
+		Scan(&count); err != nil {
+		if IsNoRows(err) {
+			return 0, nil
+		}
+
+		return 0, err
+	}
+
+	return count, nil
+}
+
+func (db *DB) CountRatingsWithNotLikedByVideoID(ctx context.Context, videoID uuid.UUID) (int, error) {
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	query := `SELECT COUNT(*) FROM ratings WHERE video_id = $1 AND is_liked = false`
+	args := []any{videoID}
+
+	var count int
+
+	if err := db.
+		QueryRowxContext(ctx, query, args...).
+		Scan(&count); err != nil {
+		if IsNoRows(err) {
+			return 0, nil
+		}
+
+		return 0, err
+	}
+
+	return count, nil
+}
+
 func (db *DB) GetRatingByVideoIDAndUserID(ctx context.Context, videoID, userID uuid.UUID) (Rating, error) {
 	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
 	defer cancel()
