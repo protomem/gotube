@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/protomem/gotube/internal/blobstore"
 	"github.com/protomem/gotube/internal/cookies"
 	"github.com/protomem/gotube/internal/database"
 	"github.com/protomem/gotube/internal/flashstore"
@@ -14,6 +15,8 @@ import (
 	"github.com/protomem/gotube/internal/validator"
 	"golang.org/x/crypto/bcrypt"
 )
+
+const _defaultMaxUploadSize = 100 * 1024 * 1024 // 100 MB
 
 var ErrMissingRefreshToken = errors.New("missing refresh token")
 
@@ -1167,6 +1170,70 @@ func (app *application) handleDeleteComment(w http.ResponseWriter, r *http.Reque
 	}
 
 	if err := app.db.DeleteComment(r.Context(), commentID); err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (app *application) handleGetFile(w http.ResponseWriter, r *http.Request) {
+	parentname := getParentnameFromRequest(r)
+	filename := getFilenameFromRequest(r)
+
+	obj, err := app.bstore.GetFile(r.Context(), parentname, filename)
+	if err != nil {
+		if errors.Is(err, blobstore.ErrObjectNotFound) {
+			app.errorMessage(w, r, http.StatusNotFound, blobstore.ErrObjectNotFound.Error(), nil)
+			return
+		}
+
+		app.serverError(w, r, err)
+		return
+	}
+	defer func() { _ = obj.Body.Close() }()
+
+	app.mustSendObject(w, r, obj)
+}
+
+func (app *application) handleSaveFile(w http.ResponseWriter, r *http.Request) {
+	parentname := getParentnameFromRequest(r)
+	filename := getFilenameFromRequest(r)
+
+	r.Body = http.MaxBytesReader(w, r.Body, _defaultMaxUploadSize)
+	if err := r.ParseMultipartForm(_defaultMaxUploadSize); err != nil {
+		app.reportServerError(r, err)
+		app.badRequest(w, r, errors.New("file too large"))
+		return
+	}
+
+	file, fileHeader, err := r.FormFile("file")
+	if err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+	defer func() { _ = file.Close() }()
+
+	obj := blobstore.Object{
+		Type: resolveContentType(filename),
+		Size: fileHeader.Size,
+		Body: file,
+	}
+
+	if err := app.bstore.SaveFile(r.Context(), parentname, filename, obj); err != nil {
+
+		app.serverError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func (app *application) handleRemoveFile(w http.ResponseWriter, r *http.Request) {
+	parentname := getParentnameFromRequest(r)
+	filename := getFilenameFromRequest(r)
+
+	if err := app.bstore.RemoveFile(r.Context(), parentname, filename); err != nil {
 		app.serverError(w, r, err)
 		return
 	}

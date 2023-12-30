@@ -88,3 +88,31 @@ func getCommentIDFromRequest(r *http.Request) (uuid.UUID, error) {
 	}
 	return commentID, nil
 }
+
+func getParentnameFromRequest(r *http.Request) string {
+	return chi.URLParam(r, "parentname")
+}
+
+func getFilenameFromRequest(r *http.Request) string {
+	return chi.URLParam(r, "filename")
+}
+
+func resolveContentType(filename string) string {
+	parts := strings.Split(filename, ".")
+	if len(parts) < 2 {
+		return "application/octet-stream"
+	}
+
+	ext := parts[len(parts)-1]
+
+	switch ext {
+	case "mp4":
+		return "video/mp4"
+	case "png":
+		return "image/png"
+	case "jpg", "jpeg":
+		return "image/jpeg"
+	default:
+		return "application/octet-stream"
+	}
+}

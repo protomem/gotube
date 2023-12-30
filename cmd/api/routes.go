@@ -113,6 +113,17 @@ func (app *application) routes() http.Handler {
 				})
 			})
 		})
+
+		mux.Route("/media/{parentname}/{filename}", func(mux chi.Router) {
+			mux.Get("/", app.handleGetFile)
+
+			mux.Group(func(mux chi.Router) {
+				mux.Use(app.requireAuthentication)
+
+				mux.Post("/", app.handleSaveFile)
+				mux.Delete("/", app.handleRemoveFile)
+			})
+		})
 	})
 
 	return mux
