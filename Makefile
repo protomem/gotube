@@ -72,8 +72,9 @@ run/docker:
 
 ## stop/docker: stop the cmd/api application in docker
 .PHONY: stop/docker
-stop/docker:
-	${DOCKER_COMPOSE} -p ${PROJECT} -f docker-compose.yml down
+stop/docker: config_file=.debug.env
+stop/docker: 
+	${DOCKER_COMPOSE} -p ${PROJECT} -f docker-compose.yml --env-file ${config_file} down
 
 ## run/docker/infra: run the db, inmemory db and s3 storage 
 .PHONY: run/docker/infra
