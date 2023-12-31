@@ -1,58 +1,128 @@
+# ==================================================================================== #
+# ENVIRONMENT VARIABLES
+# ==================================================================================== #
 
-.DEFAULT_GOAL := all
+DOCKER_COMPOSE := docker compose
 
-PROJECT=gotube
+PROJECT := $(shell basename $(shell pwd))
+
+.DEFAULT_GOAL := help
+
+# ==================================================================================== #
+# HELPERS
+# ==================================================================================== #
+
+## help: print this help message
+.PHONY: help
+help:
+	@echo 'Usage:'
+	@sed -n 's/^##//p' ${MAKEFILE_LIST} | column -t -s ':' |  sed -e 's/^/ /'
 
 
-.PHONY: all
-all: ci run
+# ==================================================================================== #
+# QUALITY CONTROL
+# ==================================================================================== #
 
+## tidy: format code and tidy modfile
+.PHONY: tidy
+tidy:
+	go fmt ./...
+	go mod tidy -v
 
-.PHONY: test
-test:
-	go test -v -race -timeout=5m ./...
+## audit: run quality control checks
+.PHONY: audit
+audit:
+	go mod verify
+	go vet ./...
+	go run honnef.co/go/tools/cmd/staticcheck@latest -checks=all,-ST1000,-U1000 ./...
+	go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+	go test -race -buildvcs -vet=off ./...
 
-
+## lint: run linter
 .PHONY: lint
 lint:
-	golangci-lint run ./...
+	golangci-lint run -E gofumpt ./...
 
 
-.PHONY: ci
-ci: test lint
+# ==================================================================================== #
+# DEVELOPMENT
+# ==================================================================================== #
+
+## test: run all tests
+.PHONY: test
+test:
+	go test -v -race -buildvcs ./...
+
+## test/cover: run all tests and display coverage
+.PHONY: test/cover
+test/cover:
+	go test -v -race -buildvcs -coverprofile=/tmp/coverage.out ./...
+	go tool cover -html=/tmp/coverage.out
 
 
-.PHONY: run
-run:
-	docker compose -p ${PROJECT} -f ./build/docker-compose.yaml up -d --build
+# ==================================================================================== #
+# DOCKER
+# ==================================================================================== #
+
+## run/docker: run the cmd/api application in docker
+.PHONY: run/docker
+run/docker: config_file=.debug.env
+run/docker:
+	${DOCKER_COMPOSE} -p ${PROJECT} -f docker-compose.yml --env-file ${config_file} up --build -d 
+
+## stop/docker: stop the cmd/api application in docker
+.PHONY: stop/docker
+stop/docker: config_file=.debug.env
+stop/docker: 
+	${DOCKER_COMPOSE} -p ${PROJECT} -f docker-compose.yml --env-file ${config_file} down
+
+## run/docker/infra: run the db, inmemory db and s3 storage 
+.PHONY: run/docker/infra
+run/docker/infra:
+	${DOCKER_COMPOSE} -p ${PROJECT} -f infra/docker-compose.yml up -d
+
+## stop/docker/infra: stop the db, inmemory db and s3 storage 
+.PHONY: stop/docker/infra
+stop/docker/infra:
+	${DOCKER_COMPOSE} -p ${PROJECT} -f infra/docker-compose.yml down
 
 
-.PHONY: run-web
-run-web:
-	docker compose -p ${PROJECT} -f ./build/docker-compose.yaml up web -d --build
+# ==================================================================================== #
+# SQL MIGRATIONS
+# ==================================================================================== #
 
+## migrations/new name=$1: create a new database migration
+.PHONY: migrations/new
+migrations/new:
+	go run -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest create -seq -ext=.sql -dir=./assets/migrations ${name}
 
-.PHONY: run-app
-run-app:
-	docker compose -p ${PROJECT} -f ./build/docker-compose.yaml up app -d --build
+## migrations/up: apply all up database migrations
+.PHONY: migrations/up
+migrations/up:
+	go run -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest -path=./assets/migrations -database="postgres://${DB_DSN}" up
 
+## migrations/down: apply all down database migrations
+.PHONY: migrations/down
+migrations/down:
+	go run -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest -path=./assets/migrations -database="postgres://${DB_DSN}" down
 
-.PHONY: run-infra
-run-infra:
-	docker compose -p ${PROJECT} -f ./build/docker-compose.yaml up postgres mongo s3 redis -d --build
+## migrations/drop: drop all database migrations
+.PHONY: migrations/drop
+migrations/drop:
+	go run -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest -path=./assets/migrations -database="postgres://${DB_DSN}" drop
 
+## migrations/goto version=$1: migrate to a specific version number
+.PHONY: migrations/goto
+migrations/goto:
+	go run -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest -path=./assets/migrations -database="postgres://${DB_DSN}" goto ${version}
 
-.PHONY: stop
-stop:
-	docker compose -p ${PROJECT} -f ./build/docker-compose.yaml down
+## migrations/force version=$1: force database migration
+.PHONY: migrations/force
+migrations/force:
+	go run -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest -path=./assets/migrations -database="postgres://${DB_DSN}" force ${version}
 
-
-# TODO: Add script for migrations
-
-.PHONY: migrate
-migrate: MIGRATE_ACTION=up
-migrate: MIGRATE_PATH=./assets/migrations/postgres
-migrate: MIGRATE_DB="postgres://admin:123456789@localhost:5432/gotubedb?sslmode=disable"
-migrate:
-	migrate -path ${MIGRATE_PATH} -database ${MIGRATE_DB} ${MIGRATE_ACTION}
+## migrations/version: print the current in-use migration version
+.PHONY: migrations/version
+migrations/version:
+	go run -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest -path=./assets/migrations -database="postgres://${DB_DSN}" version
 

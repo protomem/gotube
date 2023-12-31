@@ -1,7 +1,7 @@
 package jwt
 
 import (
-	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -9,54 +9,34 @@ import (
 	"github.com/google/uuid"
 )
 
-var ErrInvalidToken = fmt.Errorf("invalid token")
-
-type (
-	ctxKey struct{}
-
-	Payload struct {
-		UserID   uuid.UUID `json:"user_id"`
-		Nickname string    `json:"nickname"`
-		Email    string    `json:"email"`
-		Verified bool      `json:"email_verified"`
-	}
-
-	Claims struct {
-		Payload
-		jwt.RegisteredClaims
-	}
-)
-
-func Inject(ctx context.Context, payload Payload) context.Context {
-	return context.WithValue(ctx, ctxKey{}, payload)
-}
-
-func Extract(ctx context.Context) (Payload, bool) {
-	payload, ok := ctx.Value(ctxKey{}).(Payload)
-	return payload, ok
-}
-
 type GenerateParams struct {
 	SigningKey string
 	TTL        time.Duration
+	Subject    uuid.UUID
+	Issuer     string
 }
 
-func Generate(payload Payload, params GenerateParams) (string, error) {
-	const op = "jwt.Generate"
+func Generate(params GenerateParams) (string, error) {
+	if params.TTL < time.Minute {
+		return "", errors.New("TTL must be at least 1 minute")
+	}
 
-	claims := Claims{
-		Payload: payload,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(params.TTL)),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			Issuer:    "gotube",
-		},
+	now := time.Now()
+
+	claims := jwt.RegisteredClaims{
+		Subject:   params.Subject.String(),
+		IssuedAt:  jwt.NewNumericDate(now),
+		NotBefore: jwt.NewNumericDate(now),
+		ExpiresAt: jwt.NewNumericDate(now.Add(params.TTL)),
+		Issuer:    params.Issuer,
+		Audience:  jwt.ClaimStrings{params.Issuer},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
 	signedToken, err := token.SignedString([]byte(params.SigningKey))
 	if err != nil {
-		return "", fmt.Errorf("%s: %w", op, err)
+		return "", err
 	}
 
 	return signedToken, nil
@@ -64,25 +44,33 @@ func Generate(payload Payload, params GenerateParams) (string, error) {
 
 type ParseParams struct {
 	SigningKey string
+	Issuer     string
 }
 
-func Parse(tokenStr string, params ParseParams) (Payload, error) {
-	const op = "jwt.Parse"
+func Parse(signedToken string, params ParseParams) (uuid.UUID, error) {
+	opts := []jwt.ParserOption{
+		jwt.WithIssuer(params.Issuer), jwt.WithAudience(params.Issuer),
+		jwt.WithLeeway(time.Minute), jwt.WithIssuedAt(), jwt.WithExpirationRequired(),
+	}
 
-	token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(token *jwt.Token) (any, error) {
+	token, err := jwt.ParseWithClaims(signedToken, &jwt.RegisteredClaims{}, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 		return []byte(params.SigningKey), nil
-	})
+	}, opts...)
 	if err != nil {
-		return Payload{}, fmt.Errorf("%s: %w", op, err)
+		return uuid.UUID{}, err
 	}
 
-	claims, ok := token.Claims.(*Claims)
-	if ok && token.Valid {
-		return claims.Payload, nil
+	if claims, ok := token.Claims.(*jwt.RegisteredClaims); ok && token.Valid {
+		sub, err := uuid.Parse(claims.Subject)
+		if err != nil {
+			return uuid.UUID{}, err
+		}
+
+		return sub, nil
 	}
 
-	return Payload{}, fmt.Errorf("%s: %w", op, ErrInvalidToken)
+	return uuid.UUID{}, nil
 }
