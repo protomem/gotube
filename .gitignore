@@ -1,1 +1,4 @@
-/configs/app.prod.env
+/.vscode/
+
+/configs/.env
+

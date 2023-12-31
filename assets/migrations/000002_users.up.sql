@@ -1,18 +1,18 @@
 BEGIN;
 
 CREATE TABLE IF NOT EXISTS users (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-  nickname VARCHAR(255) NOT NULL UNIQUE,
-  password VARCHAR(255) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-  email VARCHAR(255) NOT NULL UNIQUE,
-  is_verified BOOLEAN NOT NULL DEFAULT false,
+    nickname TEXT NOT NULL UNIQUE,
+    password TEXT NOT NULL,
 
-  avatar_path VARCHAR(255) NOT NULL DEFAULT '',
-  description TEXT NOT NULL DEFAULT ''
+    email TEXT NOT NULL UNIQUE,
+
+    avatar_path TEXT NOT NULL DEFAULT '',
+    description TEXT NOT NULL DEFAULT ''
 );
 
 COMMIT;
