@@ -1,8 +1,6 @@
 import React from "react";
-
 import {
   ChakraProvider,
-  ColorModeScript,
   extendTheme,
   type ThemeConfig,
 } from "@chakra-ui/react";
@@ -12,20 +10,14 @@ const config: ThemeConfig = {
   useSystemColorMode: false,
 };
 
-export const theme = extendTheme({
-  config,
-});
+const theme = extendTheme({ config });
 
-type ThemeProviderProps = {
+type Props = {
   children: React.ReactNode;
 };
 
-const ThemeProvider = ({ children }: ThemeProviderProps) => {
+export const ThemeProvider = ({ children }: Props) => {
   return <ChakraProvider theme={theme}>{children}</ChakraProvider>;
-};
-
-export const ThemeScript = () => {
-  return <ColorModeScript initialColorMode={theme.config.initialColorMode} />;
 };
 
 export default ThemeProvider;
