@@ -8,7 +8,7 @@ const routes = createBrowserRouter([
   },
 ]);
 
-export const RouteProvider = () => {
+const RouteProvider = () => {
   return <RouterProvider router={routes} />;
 };
 

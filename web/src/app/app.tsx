@@ -2,7 +2,7 @@ import QueryProvider from "./query-provider";
 import ThemeProvider from "./theme-provider";
 import RouteProvider from "./route-provider";
 
-export const App = () => {
+const App = () => {
   return (
     <QueryProvider>
       <ThemeProvider>

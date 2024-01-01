@@ -16,7 +16,7 @@ type Props = {
   children: React.ReactNode;
 };
 
-export const ThemeProvider = ({ children }: Props) => {
+const ThemeProvider = ({ children }: Props) => {
   return <ChakraProvider theme={theme}>{children}</ChakraProvider>;
 };
 

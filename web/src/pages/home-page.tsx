@@ -1,7 +1,7 @@
 import MainLayout from "../layouts/main-layout";
 import { Heading } from "@chakra-ui/react";
 
-export const HomePage = () => {
+const HomePage = () => {
   return (
     <MainLayout>
       <Heading>Home Page</Heading>
