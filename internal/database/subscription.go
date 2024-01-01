@@ -33,7 +33,6 @@ func (db *DB) CountSubscriptionsByFromUserID(ctx context.Context, fromUserID uui
 		Scan(&count); err != nil {
 		if IsNoRows(err) {
 			return 0, nil
-
 		}
 
 		return 0, err
