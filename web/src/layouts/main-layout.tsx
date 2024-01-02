@@ -1,12 +1,46 @@
 import React from "react";
-import { Center } from "@chakra-ui/react";
+import AppBar from "../components/app-bar";
+import SideBar from "../components/side-bar";
+import {
+  Box,
+  Drawer,
+  DrawerContent,
+  DrawerOverlay,
+  Flex,
+  useDisclosure,
+} from "@chakra-ui/react";
 
 type Props = {
   children: React.ReactNode;
+  hideSideBar?: boolean;
 };
 
-const MainLayout = ({ children }: Props) => {
-  return <Center pt="10">{children}</Center>;
+const MainLayout = ({ children, hideSideBar }: Props) => {
+  hideSideBar = hideSideBar || false;
+
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const handleSwtchSideBar = () => {
+    isOpen ? onClose() : onOpen();
+  };
+
+  return (
+    <Flex direction="column" h="100dvh">
+      <AppBar switchSideBar={handleSwtchSideBar} />
+
+      {!hideSideBar ? (
+        <SideBar type={isOpen ? "minimal" : "expanded"} />
+      ) : (
+        <Drawer isOpen={isOpen} onClose={onClose} placement="left">
+          <DrawerOverlay />
+          <DrawerContent>
+            <SideBar />
+          </DrawerContent>
+        </Drawer>
+      )}
+
+      <Box>{children}</Box>
+    </Flex>
+  );
 };
 
 export default MainLayout;
