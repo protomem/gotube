@@ -2,6 +2,8 @@ import {} from "react";
 import Logo from "./logo";
 import { DragHandleIcon } from "@chakra-ui/icons";
 import { Box, HStack, IconButton, Spacer } from "@chakra-ui/react";
+import Searcher from "./searcher";
+import LoginButton from "./login-button";
 
 type Props = {
   switchSideBar: () => void;
@@ -23,11 +25,15 @@ const AppBar = ({ switchSideBar }: Props) => {
 
       <Spacer />
 
-      <Box>Search</Box>
+      <Box>
+        <Searcher />
+      </Box>
 
       <Spacer />
 
-      <Box>Login Button</Box>
+      <Box>
+        <LoginButton />
+      </Box>
     </HStack>
   );
 };
