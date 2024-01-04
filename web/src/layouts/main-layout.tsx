@@ -27,18 +27,20 @@ const MainLayout = ({ children, hideSideBar }: Props) => {
     <Flex direction="column" h="100dvh">
       <AppBar switchSideBar={handleSwtchSideBar} />
 
-      {!hideSideBar ? (
-        <SideBar type={isOpen ? "minimal" : "expanded"} />
-      ) : (
-        <Drawer isOpen={isOpen} onClose={onClose} placement="left">
-          <DrawerOverlay />
-          <DrawerContent>
-            <SideBar />
-          </DrawerContent>
-        </Drawer>
-      )}
+      <Flex direction="row" h="full">
+        {!hideSideBar ? (
+          <SideBar type={isOpen ? "minimal" : "expanded"} />
+        ) : (
+          <Drawer isOpen={isOpen} onClose={onClose} placement="left">
+            <DrawerOverlay />
+            <DrawerContent>
+              <SideBar />
+            </DrawerContent>
+          </Drawer>
+        )}
 
-      <Box>{children}</Box>
+        <Box flex="1">{children}</Box>
+      </Flex>
     </Flex>
   );
 };

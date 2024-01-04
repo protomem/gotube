@@ -8,7 +8,7 @@ const SideBar = ({ type }: Props) => {
   type = type || "expanded";
 
   return (
-    <Box width={type === "minimal" ? "100px" : "500px"}>
+    <Box width={type === "minimal" ? "6rem" : "16rem"}>
       Side Bar {type === "expanded" && "expanded"}
     </Box>
   );
