@@ -1,10 +1,23 @@
-import { Heading } from "@chakra-ui/react";
+import { FaBars } from "react-icons/fa";
+import { HStack, IconButton } from "@chakra-ui/react";
+import Header from "./header";
 
-const Logo = () => {
+type Props = {
+  switchSideBar?: () => void;
+};
+
+const Logo = ({ switchSideBar }: Props) => {
   return (
-    <Heading as="h1" size="lg">
-      GoTube
-    </Heading>
+    <HStack>
+      <IconButton
+        aria-label="side menu"
+        icon={<FaBars />}
+        variant="ghost"
+        onClick={switchSideBar}
+      />
+
+      <Header />
+    </HStack>
   );
 };
 

@@ -1,9 +1,7 @@
-import {} from "react";
 import Logo from "./logo";
-import { DragHandleIcon } from "@chakra-ui/icons";
-import { Box, HStack, IconButton, Spacer } from "@chakra-ui/react";
 import Searcher from "./searcher";
 import LoginButton from "./login-button";
+import { Box, HStack, Spacer } from "@chakra-ui/react";
 
 type Props = {
   switchSideBar: () => void;
@@ -11,17 +9,8 @@ type Props = {
 
 const AppBar = ({ switchSideBar }: Props) => {
   return (
-    <HStack h="16" px="4">
-      <HStack>
-        <IconButton
-          aria-label="side menu"
-          icon={<DragHandleIcon />}
-          variant="ghost"
-          onClick={switchSideBar}
-        />
-
-        <Logo />
-      </HStack>
+    <HStack h="16" px="6">
+      <Logo switchSideBar={switchSideBar} />
 
       <Spacer />
 
