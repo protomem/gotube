@@ -1,12 +1,26 @@
 import { FaHome, FaMeteor, FaUserFriends } from "react-icons/fa";
 import { Button, Text, VStack } from "@chakra-ui/react";
 
-// eslint-disable-next-line react-refresh/only-export-components
 export enum NavMenuItem {
   Home = "Home",
   Trends = "Trends",
   Subscriptions = "Subscriptions",
 }
+
+export const resolveNavMenuItem = (s: string | null) => {
+  switch (s) {
+    case "popular":
+    case NavMenuItem.Trends.toLowerCase():
+      return NavMenuItem.Trends;
+
+    case "subs":
+    case NavMenuItem.Subscriptions.toLowerCase():
+      return NavMenuItem.Subscriptions;
+
+    default:
+      return NavMenuItem.Home;
+  }
+};
 
 const NavMenuItemIcons = {
   [NavMenuItem.Home]: <FaHome />,
