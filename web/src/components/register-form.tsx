@@ -1,5 +1,6 @@
 import { SubmitHandler, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../app/auth-provider";
 import {
   Button,
   FormControl,
@@ -23,9 +24,23 @@ const RegisterForm = () => {
     formState: { errors, isSubmitting },
     reset,
   } = useForm<FormState>();
+  const { login } = useAuth();
 
   const onSubmit: SubmitHandler<FormState> = (values) => {
-    console.log(values);
+    login(
+      {
+        id: "1",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        nickname: values.nickname,
+        email: values.email,
+        avatarPath: "",
+        description: "",
+      },
+      "access_some_token",
+      "refresh_some_token"
+    );
+
     reset();
     nav("/", { replace: true });
   };

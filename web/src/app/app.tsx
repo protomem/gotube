@@ -2,14 +2,17 @@ import QueryProvider from "./query-provider";
 import ThemeProvider from "./theme-provider";
 import RouteProvider from "./route-provider";
 import SideBarStateProvider from "./side-bar-state-provider";
+import AuthProvider from "./auth-provider";
 
 const App = () => {
   return (
     <QueryProvider>
       <ThemeProvider>
-        <SideBarStateProvider>
-          <RouteProvider />
-        </SideBarStateProvider>
+        <AuthProvider>
+          <SideBarStateProvider>
+            <RouteProvider />
+          </SideBarStateProvider>
+        </AuthProvider>
       </ThemeProvider>
     </QueryProvider>
   );
