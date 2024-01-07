@@ -1,6 +1,8 @@
 import { SubmitHandler, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../app/auth-provider";
+import { authService } from "../domain/auth.service";
+import { useMutation } from "@tanstack/react-query";
 import {
   Button,
   FormControl,
@@ -8,6 +10,7 @@ import {
   FormLabel,
   Input,
   Text,
+  useToast,
 } from "@chakra-ui/react";
 
 type FormState = {
@@ -18,6 +21,8 @@ type FormState = {
 
 const RegisterForm = () => {
   const nav = useNavigate();
+  const toast = useToast();
+
   const {
     handleSubmit,
     register,
@@ -26,23 +31,30 @@ const RegisterForm = () => {
   } = useForm<FormState>();
   const { login } = useAuth();
 
-  const onSubmit: SubmitHandler<FormState> = (values) => {
-    login(
-      {
-        id: "1",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        nickname: values.nickname,
-        email: values.email,
-        avatarPath: "",
-        description: "",
-      },
-      "access_some_token",
-      "refresh_some_token"
-    );
+  const registerMutation = useMutation({
+    mutationFn: authService.register,
+    onSuccess: (res) => {
+      const data = res.data;
+      login(data.user, data.accessToken, data.refreshToken);
 
-    reset();
-    nav("/", { replace: true });
+      reset();
+      nav("/", { replace: true });
+    },
+    onError: (error) => {
+      toast({
+        title: "Registration failed",
+        description: error.message,
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+
+      reset();
+    },
+  });
+
+  const onSubmit: SubmitHandler<FormState> = (values) => {
+    registerMutation.mutate(values);
   };
 
   return (
