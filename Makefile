@@ -2,7 +2,8 @@
 # ENVIRONMENT VARIABLES
 # ==================================================================================== #
 
-DOCKER_COMPOSE := docker compose
+DOCKER=docker
+DOCKER_COMPOSE := ${DOCKER} compose
 
 PROJECT := $(shell basename $(shell pwd))
 
@@ -66,14 +67,16 @@ test/cover:
 
 ## run/docker: run the cmd/api application in docker
 .PHONY: run/docker/app
-run/docker/app: config_file=./configs/.env.prod
+run/docker/app: mode=prod
+run/docker/app: config_file=./configs/.env.$(mode)
 run/docker/app:
 	CONFIG_FILE=${config_file} \
 		${DOCKER_COMPOSE} -p ${PROJECT} -f docker-compose.yml up --build -d 
 
 ## stop/docker: stop the cmd/api application in docker
 .PHONY: stop/docker/app
-stop/docker/app: config_file=./configs/.env.prod
+stop/docker/app: mode=prod
+stop/docker/app: config_file=./configs/.env.$(mode)
 stop/docker/app:
 	CONFIG_FILE=${config_file} \
 		${DOCKER_COMPOSE} -p ${PROJECT} -f docker-compose.yml down
@@ -87,6 +90,11 @@ run/docker/infra:
 .PHONY: stop/docker/infra
 stop/docker/infra:
 	${DOCKER_COMPOSE} -p ${PROJECT} -f infra/docker-compose.yml down
+
+## log/docker/app: show logs the cmd/api application in docker
+.PHONY: log/docker/app
+log/docker/app:
+	${DOCKER} logs --follow ${PROJECT}-app-1
 
 
 # ==================================================================================== #
