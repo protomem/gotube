@@ -1,7 +1,13 @@
+import { useNavigate } from "react-router-dom";
 import { Button } from "@chakra-ui/react";
 
 const LoginButton = () => {
-  return <Button>login</Button>;
+  const nav = useNavigate();
+  const handleClick = () => {
+    nav("/auth", { replace: true });
+  };
+
+  return <Button onClick={handleClick}>login</Button>;
 };
 
 export default LoginButton;
