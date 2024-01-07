@@ -1,4 +1,5 @@
-import React from "react";
+import { ReactNode } from "react";
+import { useSideBarState } from "../app/side-bar-state-provider";
 import AppBar from "../components/app-bar";
 import SideBar from "../components/side-bar";
 import Logo from "../components/logo";
@@ -9,11 +10,10 @@ import {
   DrawerContent,
   DrawerOverlay,
   Flex,
-  useDisclosure,
 } from "@chakra-ui/react";
 
 type Props = {
-  children: React.ReactNode;
+  children: ReactNode;
   hideSideBar?: boolean;
   selectedNavMenuItem?: NavMenuItem;
 };
@@ -21,10 +21,7 @@ type Props = {
 const MainLayout = ({ children, hideSideBar, selectedNavMenuItem }: Props) => {
   hideSideBar = hideSideBar || false;
 
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const handleSwtchSideBar = () => {
-    isOpen ? onClose() : onOpen();
-  };
+  const { isOpen, onClose, onToggle: handleSwtchSideBar } = useSideBarState();
 
   return (
     <Flex direction="column" h="100dvh">
