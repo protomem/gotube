@@ -65,16 +65,18 @@ test/cover:
 # ==================================================================================== #
 
 ## run/docker: run the cmd/api application in docker
-.PHONY: run/docker
-run/docker: config_file=.debug.env
-run/docker:
-	${DOCKER_COMPOSE} -p ${PROJECT} -f docker-compose.yml --env-file ${config_file} up --build -d 
+.PHONY: run/docker/app
+run/docker/app: config_file=./configs/.env.prod
+run/docker/app:
+	CONFIG_FILE=${config_file} \
+		${DOCKER_COMPOSE} -p ${PROJECT} -f docker-compose.yml up --build -d 
 
 ## stop/docker: stop the cmd/api application in docker
-.PHONY: stop/docker
-stop/docker: config_file=.debug.env
-stop/docker: 
-	${DOCKER_COMPOSE} -p ${PROJECT} -f docker-compose.yml --env-file ${config_file} down
+.PHONY: stop/docker/app
+stop/docker/app: config_file=./configs/.env.prod
+stop/docker/app:
+	CONFIG_FILE=${config_file} \
+		${DOCKER_COMPOSE} -p ${PROJECT} -f docker-compose.yml down
 
 ## run/docker/infra: run the db, inmemory db and s3 storage 
 .PHONY: run/docker/infra
