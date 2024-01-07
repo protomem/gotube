@@ -1,8 +1,8 @@
-import QueryProvider from "./query-provider";
-import ThemeProvider from "./theme-provider";
-import RouteProvider from "./route-provider";
-import SideBarStateProvider from "./side-bar-state-provider";
-import AuthProvider from "./auth-provider";
+import QueryProvider from "../providers/query-provider";
+import ThemeProvider from "../providers/theme-provider";
+import RouteProvider from "../providers/route-provider";
+import SideBarStateProvider from "../providers/side-bar-state-provider";
+import AuthProvider from "../providers/auth-provider";
 
 const App = () => {
   return (

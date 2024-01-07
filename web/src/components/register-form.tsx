@@ -1,6 +1,6 @@
 import { SubmitHandler, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../app/auth-provider";
+import { useAuth } from "../providers/auth-provider";
 import { authService } from "../domain/auth.service";
 import { useMutation } from "@tanstack/react-query";
 import {

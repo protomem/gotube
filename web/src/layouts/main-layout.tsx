@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { useSideBarState } from "../app/side-bar-state-provider";
+import { useSideBarState } from "../providers/side-bar-state-provider";
 import AppBar from "../components/app-bar";
 import SideBar from "../components/side-bar";
 import Logo from "../components/logo";
