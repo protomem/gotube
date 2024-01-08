@@ -1,10 +1,11 @@
-import { Heading } from "@chakra-ui/react";
+import { Link as RouterLink } from "react-router-dom";
+import { Heading, Link } from "@chakra-ui/react";
 
 const Header = () => {
   return (
-    <Heading as="h1" size="lg">
-      GoTube
-    </Heading>
+    <Link as={RouterLink} to="/" _hover={{ textDecoration: "none" }}>
+      <Heading size="lg">GoTube</Heading>
+    </Link>
   );
 };
 
