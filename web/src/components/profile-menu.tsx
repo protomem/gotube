@@ -1,7 +1,13 @@
 import { useAuth } from "../providers/auth-provider";
 import { User } from "../domain/entities";
-import { FaUser } from "react-icons/fa";
-import { Button, Menu, MenuButton, MenuItem, MenuList } from "@chakra-ui/react";
+import {
+  Avatar,
+  Button,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuList,
+} from "@chakra-ui/react";
 
 type Props = {
   user: User;
@@ -17,7 +23,7 @@ const ProfileMenu = ({ user }: Props) => {
         variant="ghost"
         size="lg"
         ml={2}
-        rightIcon={<FaUser />}
+        rightIcon={<Avatar name={user.nickname} size="sm" />}
         gap="2"
       >
         {user.nickname}
