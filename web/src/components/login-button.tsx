@@ -7,7 +7,11 @@ const LoginButton = () => {
     nav("/auth", { replace: true });
   };
 
-  return <Button onClick={handleClick}>login</Button>;
+  return (
+    <Button onClick={handleClick} size="lg">
+      login
+    </Button>
+  );
 };
 
 export default LoginButton;

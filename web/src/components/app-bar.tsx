@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { useAuth } from "../providers/auth-provider";
 import Logo from "./logo";
 import Searcher from "./searcher";
@@ -9,11 +10,12 @@ type Props = {
   switchSideBar: () => void;
 };
 
-const AppBar = ({ switchSideBar }: Props) => {
+const AppBar = forwardRef<HTMLDivElement, Props>((props, ref) => {
+  const { switchSideBar } = props;
   const { isAuthenticated, currentUser } = useAuth();
 
   return (
-    <HStack h="16" px="6">
+    <HStack h="16" px="6" ref={ref}>
       <Logo switchSideBar={switchSideBar} />
 
       <Spacer />
@@ -33,6 +35,6 @@ const AppBar = ({ switchSideBar }: Props) => {
       </Box>
     </HStack>
   );
-};
+});
 
 export default AppBar;

@@ -1,6 +1,8 @@
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../providers/auth-provider";
 import NavMenu, { NavMenuItem } from "./nav-menu";
-import { Box } from "@chakra-ui/react";
+import { Box, Divider } from "@chakra-ui/react";
+import SubscriptionList from "./subscriptions-list";
 
 type Props = {
   type?: "minimal" | "expanded";
@@ -15,6 +17,8 @@ const SideBar = ({ type, selectedNavMenuItem }: Props) => {
     nav(`/?nav=${item.toLowerCase()}`, { replace: true });
   };
 
+  const { isAuthenticated, currentUser } = useAuth();
+
   return (
     <Box width={type === "minimal" ? "4rem" : "10rem"} paddingLeft="4">
       <NavMenu
@@ -28,7 +32,13 @@ const SideBar = ({ type, selectedNavMenuItem }: Props) => {
         onItemSelect={handleSelect}
       />
 
-      {/* <Divider my="2" /> */}
+      {isAuthenticated && currentUser && (
+        <>
+          <Divider my="4" />
+
+          <SubscriptionList type={type} user={currentUser} />
+        </>
+      )}
     </Box>
   );
 };

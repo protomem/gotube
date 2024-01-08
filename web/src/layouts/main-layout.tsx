@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useRef } from "react";
 import { useSideBarState } from "../providers/side-bar-state-provider";
 import AppBar from "../components/app-bar";
 import SideBar from "../components/side-bar";
@@ -10,6 +10,7 @@ import {
   DrawerContent,
   DrawerOverlay,
   Flex,
+  useDimensions,
 } from "@chakra-ui/react";
 
 type Props = {
@@ -21,18 +22,26 @@ type Props = {
 const MainLayout = ({ children, hideSideBar, selectedNavMenuItem }: Props) => {
   hideSideBar = hideSideBar || false;
 
+  const appBarElement = useRef(null);
+  const appBarDimensions = useDimensions(appBarElement);
+
   const { isOpen, onClose, onToggle: handleSwtchSideBar } = useSideBarState();
 
   return (
     <Flex direction="column" h="100dvh">
-      <AppBar switchSideBar={handleSwtchSideBar} />
+      <AppBar switchSideBar={handleSwtchSideBar} ref={appBarElement} />
 
-      <Flex direction="row" h="full">
+      <Flex
+        direction="row"
+        h={`calc(100dvh - ${appBarDimensions?.borderBox.height}px)`}
+      >
         {!hideSideBar ? (
-          <SideBar
-            type={isOpen ? "minimal" : "expanded"}
-            selectedNavMenuItem={selectedNavMenuItem}
-          />
+          <Box overflow="auto" pr="2">
+            <SideBar
+              type={isOpen ? "minimal" : "expanded"}
+              selectedNavMenuItem={selectedNavMenuItem}
+            />
+          </Box>
         ) : (
           <Drawer isOpen={isOpen} onClose={onClose} placement="left">
             <DrawerOverlay />
