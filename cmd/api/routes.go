@@ -66,7 +66,7 @@ func (app *application) routes() http.Handler {
 			})
 
 			mux.Route("/{videoId}/ratings", func(mux chi.Router) {
-				mux.Get("/", app.handleGetStatRatings)
+				mux.Get("/stat", app.handleGetStatRatings)
 
 				mux.Group(func(mux chi.Router) {
 					mux.Use(app.requireAuthentication)
@@ -103,7 +103,8 @@ func (app *application) routes() http.Handler {
 			})
 
 			mux.Route("/subs", func(mux chi.Router) {
-				mux.Get("/", app.handleGetStatSubscriptions)
+				mux.Get("/", app.handleGetUserSubscriptions)
+				mux.Get("/stat", app.handleGetStatSubscriptions)
 
 				mux.Group(func(mux chi.Router) {
 					mux.Use(app.requireAuthentication)

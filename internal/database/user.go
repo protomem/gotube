@@ -28,6 +28,37 @@ type User struct {
 	Description string `db:"description" json:"description"`
 }
 
+func (db *DB) FindUsers(ctx context.Context, ids []uuid.UUID) ([]User, error) {
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	query := `SELECT * FROM users WHERE id = ANY($1::uuid[])`
+	args := []any{ids}
+
+	rows, err := db.QueryxContext(ctx, query, args...)
+	if err != nil {
+		if IsNoRows(err) {
+			return []User{}, nil
+		}
+
+		return []User{}, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	users := make([]User, 0, len(ids))
+
+	for rows.Next() {
+		var user User
+		if err := rows.StructScan(&user); err != nil {
+			return []User{}, err
+		}
+
+		users = append(users, user)
+	}
+
+	return users, nil
+}
+
 func (db *DB) GetUser(ctx context.Context, id uuid.UUID) (User, error) {
 	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
 	defer cancel()
