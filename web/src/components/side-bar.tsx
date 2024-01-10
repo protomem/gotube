@@ -17,7 +17,7 @@ const SideBar = ({ type, selectedNavMenuItem }: Props) => {
     nav(`/?nav=${item.toLowerCase()}`, { replace: true });
   };
 
-  const { isAuthenticated, currentUser } = useAuth();
+  const { isAuthenticated } = useAuth();
 
   return (
     <Box width={type === "minimal" ? "4rem" : "10rem"} paddingLeft="4">
@@ -32,11 +32,11 @@ const SideBar = ({ type, selectedNavMenuItem }: Props) => {
         onItemSelect={handleSelect}
       />
 
-      {isAuthenticated && currentUser && (
+      {isAuthenticated && (
         <>
           <Divider my="4" />
 
-          <SubscriptionList type={type} user={currentUser} />
+          <SubscriptionList type={type} />
         </>
       )}
     </Box>

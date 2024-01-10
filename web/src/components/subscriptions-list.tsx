@@ -1,24 +1,29 @@
-import { useState } from "react";
-import { User } from "../domain/entities";
+import { useAuth } from "../providers/auth-provider";
+import { subscriptionService } from "../domain/subscription.service";
+import { useQuery } from "@tanstack/react-query";
 import { Link as RouterLink } from "react-router-dom";
 import { Avatar, Link, List, ListItem, Text } from "@chakra-ui/react";
 
 type Props = {
   type?: "expanded" | "minimal";
-  user: User;
 };
 
 const SubscriptionList = ({ type }: Props) => {
   type = type || "expanded";
-  console.log(type);
 
-  const [subscriptions] = useState<User[]>([]);
+  const { currentUser } = useAuth();
+  const { data: subscriptions } = useQuery({
+    queryKey: ["subscriptions", currentUser?.id],
+    queryFn: async () =>
+      await subscriptionService.getUserSubscriptions({
+        userNickname: currentUser?.nickname || "",
+      }),
+    select: (data) => data.data.subscriptions,
+  });
 
-  // TODO: add tooltip
-  // TODO: add query
   return (
     <List>
-      {subscriptions.map((sub) => (
+      {subscriptions?.map((sub) => (
         <ListItem key={sub.id}>
           <Link
             as={RouterLink}
@@ -30,6 +35,7 @@ const SubscriptionList = ({ type }: Props) => {
             display="flex"
             flexDirection="row"
             alignItems="center"
+            gap="2"
           >
             <Avatar name={sub.nickname} src={sub.avatarPath} size="sm" />
             {type === "expanded" && <Text fontSize="lg">{sub.nickname}</Text>}
