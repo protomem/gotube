@@ -24,6 +24,15 @@ type RegisterResponse = {
   user: User;
 };
 
+type RefreshTokenRequest = {
+  refreshToken: string;
+};
+
+type RefreshTokenResponse = {
+  accessToken: string;
+  refreshToken: string;
+};
+
 export const authService = {
   async login({ email, password }: LoginRequest) {
     return await apiClient.post<LoginResponse>("/auth/login", {
@@ -37,6 +46,14 @@ export const authService = {
       nickname,
       email,
       password,
+    });
+  },
+
+  async refreshToken({ refreshToken }: RefreshTokenRequest) {
+    return await apiClient.get<RefreshTokenResponse>("/auth/refresh", {
+      headers: {
+        "X-Refresh-Token": refreshToken,
+      },
     });
   },
 };
