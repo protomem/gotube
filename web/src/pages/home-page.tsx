@@ -1,39 +1,57 @@
-import { useSearchParams } from "next/navigation";
-import { videoService } from "@/entities/domain/video.service";
-import { repeat } from "@/lib";
+import { useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { NavMenuItem, resolveNavMenuItem } from "../components/nav-menu";
+import { useQuery } from "@tanstack/react-query";
+import { videoService } from "../domain/video.service";
+import MainLayout from "../layouts/main-layout";
+import VideoGrid from "../components/video-grid";
+import { Center, useToast } from "@chakra-ui/react";
 
-import { MainLayout } from "@/widgets/layouts/main-layout";
-import { AppBar } from "@/widgets/app-bar";
-import { SideBar, Navigates } from "@/widgets/side-bar";
-import { VideoPane } from "@/widgets/video-pane";
+const HomePage = () => {
+  const toast = useToast();
 
-export function HomePage() {
-  const searchParams = useSearchParams();
+  const [searchParams] = useSearchParams();
+  const nav = resolveNavMenuItem(searchParams.get("nav"));
 
-  let selectedNav = Navigates.New;
-  if (searchParams && searchParams.has("nav")) {
-    switch (searchParams.get("nav")) {
-      case Navigates.New:
-        selectedNav = Navigates.New;
-        break;
-      case Navigates.Popular:
-        selectedNav = Navigates.Popular;
-        break;
-      default:
-        break;
+  const {
+    data: videos,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ["videos", nav],
+    queryFn: async () => {
+      const offset = 0;
+      const limit = 10;
+
+      return await videoService.getVideos({
+        type: nav === NavMenuItem.Home ? "new" : "popular",
+        offset,
+        limit,
+      });
+    },
+    select: (data) => data.data.videos,
+  });
+
+  useEffect(() => {
+    if (isError && error) {
+      toast({
+        title: "Load Videos Failed",
+        description: error.message,
+        duration: 3000,
+      });
     }
-  }
-
-  const { video } = videoService.getById({ id: "0" });
-  const videos = repeat([video], 19);
+  }, [isError, error]);
 
   return (
-    <MainLayout appbar=<AppBar /> sidebar=<SideBar selectedNav={selectedNav} />>
-      <div className="w-auto h-full overflow-y-auto">
-        <div className="m-8 ml-3 mr-5">
-          <VideoPane videos={videos} composit="grid" />
-        </div>
-      </div>
+    <MainLayout selectedNavMenuItem={nav}>
+      <Center my="6" mx="4">
+        <VideoGrid
+          videos={videos || []}
+          onLastItem={() => console.log("Last Item!!!")}
+        />
+      </Center>
     </MainLayout>
   );
-}
+};
+
+export default HomePage;

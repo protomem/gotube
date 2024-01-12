@@ -2,7 +2,8 @@
 # ENVIRONMENT VARIABLES
 # ==================================================================================== #
 
-DOCKER_COMPOSE := docker compose
+DOCKER=docker
+DOCKER_COMPOSE := ${DOCKER} compose
 
 PROJECT := $(shell basename $(shell pwd))
 
@@ -65,16 +66,20 @@ test/cover:
 # ==================================================================================== #
 
 ## run/docker: run the cmd/api application in docker
-.PHONY: run/docker
-run/docker: config_file=.debug.env
-run/docker:
-	${DOCKER_COMPOSE} -p ${PROJECT} -f docker-compose.yml --env-file ${config_file} up --build -d 
+.PHONY: run/docker/app
+run/docker/app: mode=prod
+run/docker/app: config_file=./configs/.env.$(mode)
+run/docker/app:
+	CONFIG_FILE=${config_file} \
+		${DOCKER_COMPOSE} -p ${PROJECT} -f docker-compose.yml up --build -d 
 
 ## stop/docker: stop the cmd/api application in docker
-.PHONY: stop/docker
-stop/docker: config_file=.debug.env
-stop/docker: 
-	${DOCKER_COMPOSE} -p ${PROJECT} -f docker-compose.yml --env-file ${config_file} down
+.PHONY: stop/docker/app
+stop/docker/app: mode=prod
+stop/docker/app: config_file=./configs/.env.$(mode)
+stop/docker/app:
+	CONFIG_FILE=${config_file} \
+		${DOCKER_COMPOSE} -p ${PROJECT} -f docker-compose.yml down
 
 ## run/docker/infra: run the db, inmemory db and s3 storage 
 .PHONY: run/docker/infra
@@ -85,6 +90,11 @@ run/docker/infra:
 .PHONY: stop/docker/infra
 stop/docker/infra:
 	${DOCKER_COMPOSE} -p ${PROJECT} -f infra/docker-compose.yml down
+
+## log/docker/app: show logs the cmd/api application in docker
+.PHONY: log/docker/app
+log/docker/app:
+	${DOCKER} logs --follow ${PROJECT}-app-1
 
 
 # ==================================================================================== #
