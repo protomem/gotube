@@ -10,3 +10,13 @@ export interface User extends BaseEntity {
   avatarPath: string;
   description: string;
 }
+
+export interface Video extends BaseEntity {
+  title: string;
+  description: string;
+  thumbnailPath: string;
+  videoPath: string;
+  author: User;
+  views: number;
+  isPublic: boolean;
+}

@@ -1,16 +1,15 @@
-import { forwardRef } from "react";
 import { useAuth } from "../providers/auth-provider";
 import Logo from "./logo";
 import Searcher from "./searcher";
 import LoginButton from "./login-button";
-import { Box, HStack, Spacer } from "@chakra-ui/react";
+import { Box, HStack, Spacer, forwardRef } from "@chakra-ui/react";
 import ProfileMenu from "./profile-menu";
 
 type Props = {
   switchSideBar: () => void;
 };
 
-const AppBar = forwardRef<HTMLDivElement, Props>((props, ref) => {
+const AppBar = forwardRef((props: Props, ref) => {
   const { switchSideBar } = props;
   const { isAuthenticated, currentUser } = useAuth();
 

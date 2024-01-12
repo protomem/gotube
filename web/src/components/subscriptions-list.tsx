@@ -1,6 +1,7 @@
 import { useAuth } from "../providers/auth-provider";
 import { subscriptionService } from "../domain/subscription.service";
 import { useQuery } from "@tanstack/react-query";
+import { resolveAddr } from "../domain/api.client";
 import { Link as RouterLink } from "react-router-dom";
 import { Avatar, Link, List, ListItem, Text } from "@chakra-ui/react";
 
@@ -37,7 +38,11 @@ const SubscriptionList = ({ type }: Props) => {
             alignItems="center"
             gap="2"
           >
-            <Avatar name={sub.nickname} src={sub.avatarPath} size="sm" />
+            <Avatar
+              name={sub.nickname}
+              src={resolveAddr(sub.avatarPath)}
+              size="sm"
+            />
             {type === "expanded" && <Text fontSize="lg">{sub.nickname}</Text>}
           </Link>
         </ListItem>

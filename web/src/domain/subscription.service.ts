@@ -11,15 +11,8 @@ type GetUserSubscriptionsResponse = {
 
 export const subscriptionService = {
   async getUserSubscriptions({ userNickname }: GetUserSubscriptionsRequest) {
-    const accessToken = localStorage.getItem("accessToken");
-
     return await apiClient.get<GetUserSubscriptionsResponse>(
       `/profile/${userNickname}/subs`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      },
     );
   },
 };

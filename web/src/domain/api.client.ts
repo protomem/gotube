@@ -2,7 +2,7 @@ import axios from "axios";
 import { authService } from "./auth.service";
 
 export const apiClient = axios.create({
-  baseURL: "http://localhost:8080/api",
+  baseURL: "http://localhost:8080/api", // TODO: from ENV
 });
 
 apiClient.interceptors.request.use(
@@ -43,3 +43,8 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   },
 );
+
+export function resolveAddr(addr: string) {
+  if (addr.startsWith("/")) return `${apiClient.defaults.baseURL}${addr}`;
+  return addr;
+}

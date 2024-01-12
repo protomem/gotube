@@ -22,7 +22,7 @@ type Props = {
 const MainLayout = ({ children, hideSideBar, selectedNavMenuItem }: Props) => {
   hideSideBar = hideSideBar || false;
 
-  const appBarElement = useRef(null);
+  const appBarElement = useRef<HTMLDivElement>(null);
   const appBarDimensions = useDimensions(appBarElement);
 
   const { isOpen, onClose, onToggle: handleSwtchSideBar } = useSideBarState();

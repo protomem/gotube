@@ -1,5 +1,6 @@
 import { useAuth } from "../providers/auth-provider";
 import { User } from "../domain/entities";
+import { resolveAddr } from "../domain/api.client";
 import {
   Avatar,
   Button,
@@ -23,7 +24,13 @@ const ProfileMenu = ({ user }: Props) => {
         variant="ghost"
         size="lg"
         ml={2}
-        rightIcon={<Avatar name={user.nickname} size="sm" />}
+        rightIcon={
+          <Avatar
+            name={user.nickname}
+            src={resolveAddr(user.avatarPath)}
+            size="sm"
+          />
+        }
         gap="2"
       >
         {user.nickname}
