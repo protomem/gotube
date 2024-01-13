@@ -7,7 +7,7 @@ services:
     ports:
       - "5432:5432"
     env_file:
-      - ./configs/postgres.env
+      - ../configs/postgres.env
     volumes:
       - pg_data:/var/lib/postgresql/data
 
@@ -22,10 +22,10 @@ services:
     command: server --console-address :9001 /data
     restart: unless-stopped
     ports:
-      - 9000:9000
-      - 9001:9001
+      - "9000:9000"
+      - "9001:9001"
     env_file:
-      - ./configs/s3.env
+      - ../configs/s3.env
     volumes:
       - obj_data:/data
 

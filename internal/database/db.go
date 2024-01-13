@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/protomem/gotube/assets"
@@ -22,12 +23,14 @@ type DB struct {
 }
 
 func New(dsn string, automigrate bool) (*DB, error) {
+	const op = "database.New"
+
 	ctx, cancel := context.WithTimeout(context.Background(), _defaultTimeout)
 	defer cancel()
 
 	db, err := sqlx.ConnectContext(ctx, "pgx", "postgres://"+dsn)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	db.SetMaxOpenConns(25)
@@ -36,14 +39,16 @@ func New(dsn string, automigrate bool) (*DB, error) {
 	db.SetConnMaxLifetime(2 * time.Hour)
 
 	if automigrate {
-		iofsDriver, err := iofs.New(assets.EmbeddedFiles, "migrations")
+		const subOp = op + ": automigrate"
+
+		iofsDriver, err := iofs.New(assets.Assetss, "migrations")
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%s: %w", subOp, err)
 		}
 
 		migrator, err := migrate.NewWithSourceInstance("iofs", iofsDriver, "postgres://"+dsn)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%s: %w", subOp, err)
 		}
 
 		err = migrator.Up()
@@ -51,18 +56,9 @@ func New(dsn string, automigrate bool) (*DB, error) {
 		case errors.Is(err, migrate.ErrNoChange):
 			break
 		case err != nil:
-			return nil, err
+			return nil, fmt.Errorf("%s: %w", subOp, err)
 		}
 	}
 
 	return &DB{db}, nil
-}
-
-type FindOptions struct {
-	Limit  uint64
-	Offset uint64
-}
-
-type Scanner interface {
-	Scan(dest ...any) error
 }

@@ -2,10 +2,10 @@
 # ENVIRONMENT VARIABLES
 # ==================================================================================== #
 
-DOCKER=docker
-DOCKER_COMPOSE := ${DOCKER} compose
-
 PROJECT := $(shell basename $(shell pwd))
+
+DOCKER := docker
+DOCKER_COMPOSE := ${DOCKER} compose
 
 .DEFAULT_GOAL := help
 
@@ -95,6 +95,18 @@ stop/docker/infra:
 .PHONY: log/docker/app
 log/docker/app:
 	${DOCKER} logs --follow ${PROJECT}-app-1
+
+## build/app: build the cmd/api-server
+.PHONY: build/app
+build/app: path=/tmp/${PROJECT}
+build/app:
+	go build -v -o ${path}/api-server ./cmd/api-server
+
+## run/app: run the cmd/api-server
+.PHONY: run/app
+run/app: path=/tmp/${PROJECT}
+run/app: build/app
+	${path}/api-server
 
 
 # ==================================================================================== #

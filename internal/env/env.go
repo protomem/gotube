@@ -3,7 +3,6 @@ package env
 import (
 	"os"
 	"strconv"
-	"time"
 )
 
 func GetString(key, defaultValue string) string {
@@ -41,18 +40,4 @@ func GetBool(key string, defaultValue bool) bool {
 	}
 
 	return boolValue
-}
-
-func GetDuration(key string, defaultValue time.Duration) time.Duration {
-	value, exists := os.LookupEnv(key)
-	if !exists {
-		return defaultValue
-	}
-
-	durationValue, err := time.ParseDuration(value)
-	if err != nil {
-		panic(err)
-	}
-
-	return durationValue
 }

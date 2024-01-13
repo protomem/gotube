@@ -1,14 +1,9 @@
 package flashstore
 
 import (
-	"time"
+	"fmt"
 
 	"github.com/redis/go-redis/v9"
-)
-
-const (
-	_defaultTimeout = 3 * time.Second
-	_defaultLeeway  = 15 * time.Second
 )
 
 type Storage struct {
@@ -16,9 +11,9 @@ type Storage struct {
 }
 
 func New(dsn string) (*Storage, error) {
-	opts, err := redis.ParseURL("redis://" + dsn)
+	opts, err := redis.ParseURL(dsn)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%s: %w", "flashstore.New", err)
 	}
 
 	client := redis.NewClient(opts)

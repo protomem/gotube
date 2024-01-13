@@ -7,7 +7,6 @@ import (
 	"os"
 	"runtime/debug"
 	"sync"
-	"time"
 
 	"github.com/protomem/gotube/internal/blobstore"
 	"github.com/protomem/gotube/internal/database"
@@ -16,14 +15,10 @@ import (
 	"github.com/protomem/gotube/internal/version"
 )
 
-// TODO: Add raitings
-// TODO: Add media
-
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
 
-	err := run(logger)
-	if err != nil {
+	if err := run(logger); err != nil {
 		trace := string(debug.Stack())
 		logger.Error(err.Error(), "trace", trace)
 		os.Exit(1)
@@ -33,15 +28,7 @@ func main() {
 type config struct {
 	baseURL  string
 	httpPort int
-	auth     struct {
-		secretKey  string
-		tokenTTL   time.Duration
-		sessionTTL time.Duration
-	}
-	cookie struct {
-		secretKey string
-	}
-	db struct {
+	db       struct {
 		dsn         string
 		automigrate bool
 	}
@@ -49,9 +36,9 @@ type config struct {
 		dsn string
 	}
 	blob struct {
-		addr      string
-		accessKey string
-		secretKey string
+		addr   string
+		key    string
+		secret string
 	}
 }
 
@@ -69,16 +56,12 @@ func run(logger *slog.Logger) error {
 
 	cfg.baseURL = env.GetString("BASE_URL", "http://localhost:8080")
 	cfg.httpPort = env.GetInt("HTTP_PORT", 8080)
-	cfg.auth.secretKey = env.GetString("AUTH_SECRET_KEY", "3hpAS1crzYhPYtAekCxyNfcwBffWbvCH")
-	cfg.auth.tokenTTL = env.GetDuration("AUTH_TOKEN_TTL", 6*time.Hour)
-	cfg.auth.sessionTTL = env.GetDuration("AUTH_SESSION_TTL", 6*24*time.Hour)
-	cfg.cookie.secretKey = env.GetString("COOKIE_SECRET_KEY", "34gqafpamolgom4njk6wjcxh2qilxdwd")
 	cfg.db.dsn = env.GetString("DB_DSN", "user:pass@localhost:5432/db")
 	cfg.db.automigrate = env.GetBool("DB_AUTOMIGRATE", true)
 	cfg.flash.dsn = env.GetString("FLASH_DSN", "localhost:6379/0")
 	cfg.blob.addr = env.GetString("BLOB_ADDR", "localhost:9000")
-	cfg.blob.accessKey = env.GetString("BLOB_ACCESS_KEY", "user")
-	cfg.blob.secretKey = env.GetString("BLOB_SECRET_KEY", "pass")
+	cfg.blob.key = env.GetString("BLOB_KEY", "user")
+	cfg.blob.secret = env.GetString("BLOB_SECRET", "pass")
 
 	showVersion := flag.Bool("version", false, "display version and exit")
 
@@ -95,22 +78,22 @@ func run(logger *slog.Logger) error {
 	}
 	defer func() { _ = db.Close() }()
 
-	bstore, err := blobstore.New(cfg.blob.addr, cfg.blob.accessKey, cfg.blob.secretKey, false)
-	if err != nil {
-		return err
-	}
-
 	fstore, err := flashstore.New(cfg.flash.dsn)
 	if err != nil {
 		return err
 	}
 	defer func() { _ = fstore.Close() }()
 
+	bstore, err := blobstore.New(cfg.blob.addr, cfg.blob.key, cfg.blob.secret, false)
+	if err != nil {
+		return err
+	}
+
 	app := &application{
 		config: cfg,
 		db:     db,
-		bstore: bstore,
 		fstore: fstore,
+		bstore: bstore,
 		logger: logger,
 	}
 
