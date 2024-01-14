@@ -1,8 +1,8 @@
 package validator
 
 type Validator struct {
-	Errors      []string          `json:",omitempty"`
-	FieldErrors map[string]string `json:",omitempty"`
+	Errors      []string          `json:"errors,omitempty"`
+	FieldErrors map[string]string `json:"fieldErrors,omitempty"`
 }
 
 func New() *Validator {
@@ -51,8 +51,15 @@ func (v *Validator) Error() string {
 }
 
 func (v *Validator) As(target any) bool {
-	if _, ok := target.(*Validator); ok {
-		return true
+	_, ok := target.(*Validator)
+	return ok
+}
+
+func Validate(fn func(v *Validator)) error {
+	v := New()
+	fn(v)
+	if v.HasErrors() {
+		return v
 	}
-	return false
+	return nil
 }

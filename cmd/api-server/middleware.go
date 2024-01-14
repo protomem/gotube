@@ -41,7 +41,7 @@ func (app *application) logAccess(next http.Handler) http.Handler {
 		next.ServeHTTP(mw, wr)
 
 		userAttrs := slog.Group("user", "ip", ip)
-		requestAttrs := slog.Group("request", "method", method, "url", url, "proto", proto, "requestId", rid)
+		requestAttrs := slog.Group("request", "method", method, "url", url, "proto", proto, "traceId", rid)
 		responseAttrs := slog.Group("repsonse", "status", mw.StatusCode, "size", mw.BytesCount)
 
 		app.logger.Info("access", userAttrs, requestAttrs, responseAttrs)

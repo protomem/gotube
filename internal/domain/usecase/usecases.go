@@ -1,13 +1,145 @@
 package usecase
 
-import "context"
+import (
+	"context"
+	"fmt"
+	"time"
 
-type Usecase[I any, O any] interface {
-	Invoke(ctx context.Context, input I) (output O, err error)
+	"github.com/google/uuid"
+	"github.com/protomem/gotube/internal/database"
+	"github.com/protomem/gotube/internal/domain/jwt"
+	"github.com/protomem/gotube/internal/domain/model"
+	"github.com/protomem/gotube/internal/flashstore"
+	"github.com/protomem/gotube/internal/validator"
+	"golang.org/x/crypto/bcrypt"
+)
+
+const (
+	_defaultAccessTokenTTL  = 6 * time.Hour
+	_defaultRefreshTokenTTL = 3 * 24 * time.Hour
+)
+
+func GetUserByNickname(db *database.DB) Usecase[string, model.User] {
+	return UsecaseFunc[string, model.User](func(ctx context.Context, nickname string) (model.User, error) {
+		const op = "usecase.GetUserByNickname"
+
+		user, err := db.GetUserByNickname(ctx, nickname)
+		if err != nil {
+			return model.User{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		return user, nil
+	})
 }
 
-type UsecaseFunc[I any, O any] func(ctx context.Context, input I) (output O, err error)
+type (
+	CreateUserInput struct {
+		Nickname string `json:"nickname"`
+		Password string `json:"password"`
+		Email    string `json:"email"`
+	}
+)
 
-func (fn UsecaseFunc[I, O]) Invoke(ctx context.Context, input I) (O, error) {
-	return fn(ctx, input)
+func CreateUser(db *database.DB) Usecase[CreateUserInput, model.User] {
+	return UsecaseFunc[CreateUserInput, model.User](func(ctx context.Context, input CreateUserInput) (model.User, error) {
+		const op = "usecase.CreateUser"
+
+		if err := validator.Validate(func(v *validator.Validator) {
+			v.CheckField(validator.MinRunes(input.Nickname, 3), "nickname", "must be at least 3 characters long")
+			v.CheckField(validator.MaxRunes(input.Nickname, 20), "nickname", "must be at most 20 characters long")
+
+			v.CheckField(validator.MinRunes(input.Password, 8), "password", "must be at least 8 characters long")
+			v.CheckField(validator.MaxRunes(input.Password, 32), "password", "must be at most 32 characters long")
+
+			v.CheckField(validator.IsEmail(input.Email), "email", "must be a valid email")
+		}); err != nil {
+			return model.User{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		hashPass, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return model.User{}, fmt.Errorf("%s: %w", op, err)
+		}
+		input.Password = string(hashPass)
+
+		id, err := db.InsertUser(ctx, database.InsertUserDTO(input))
+		if err != nil {
+			return model.User{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		user, err := db.GetUser(ctx, id)
+		if err != nil {
+			return model.User{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		return user, nil
+	})
+}
+
+type (
+	RegisterInput struct {
+		CreateUserInput
+	}
+
+	RegisterOutput struct {
+		User         model.User `json:"user"`
+		AccessToken  string     `json:"accessToken"`
+		RefreshToken string     `json:"refreshToken"`
+	}
+)
+
+func Register(authSecret string, db *database.DB, fstore *flashstore.Storage) Usecase[RegisterInput, RegisterOutput] {
+	return UsecaseFunc[RegisterInput, RegisterOutput](func(ctx context.Context, input RegisterInput) (RegisterOutput, error) {
+		const op = "usecase.Register"
+
+		user, err := CreateUser(db).Invoke(ctx, input.CreateUserInput)
+		if err != nil {
+			return RegisterOutput{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		accessToken, err := generateAccessToken(authSecret, "gotube", user.ID)
+		if err != nil {
+			return RegisterOutput{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		refreshToken, err := generateRefreshToken()
+		if err != nil {
+			return RegisterOutput{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		if err := fstore.PutSession(ctx, model.Session{
+			Token:  refreshToken,
+			Expiry: time.Now().Add(_defaultRefreshTokenTTL),
+			UserID: user.ID,
+		}); err != nil {
+			return RegisterOutput{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		return RegisterOutput{
+			User:         user,
+			AccessToken:  accessToken,
+			RefreshToken: refreshToken,
+		}, nil
+	})
+}
+
+func generateAccessToken(signingKey, issuer string, userID model.ID) (string, error) {
+	accessToken, err := jwt.Generate(jwt.GenerateParams{
+		SigningKey: signingKey,
+		TTL:        _defaultAccessTokenTTL,
+		Subject:    userID,
+		Issuer:     issuer,
+	})
+	if err != nil {
+		return "", err
+	}
+	return accessToken, nil
+}
+
+func generateRefreshToken() (string, error) {
+	token, err := uuid.NewRandom()
+	if err != nil {
+		return "", err
+	}
+	return token.String(), nil
 }

@@ -28,7 +28,10 @@ func main() {
 type config struct {
 	baseURL  string
 	httpPort int
-	db       struct {
+	auth     struct {
+		secret string
+	}
+	db struct {
 		dsn         string
 		automigrate bool
 	}
@@ -56,6 +59,7 @@ func run(logger *slog.Logger) error {
 
 	cfg.baseURL = env.GetString("BASE_URL", "http://localhost:8080")
 	cfg.httpPort = env.GetInt("HTTP_PORT", 8080)
+	cfg.auth.secret = env.GetString("AUTH_SECRET", "secret")
 	cfg.db.dsn = env.GetString("DB_DSN", "user:pass@localhost:5432/db")
 	cfg.db.automigrate = env.GetBool("DB_AUTOMIGRATE", true)
 	cfg.flash.dsn = env.GetString("FLASH_DSN", "localhost:6379/0")
