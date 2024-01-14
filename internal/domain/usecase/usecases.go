@@ -79,6 +79,109 @@ func CreateUser(db *database.DB) Usecase[CreateUserInput, model.User] {
 	})
 }
 
+type (
+	UpdateUserByNicknameInput struct {
+		ByNickname string `json:"-"`
+
+		Nickname    *string `json:"nickname"`
+		Email       *string `json:"email"`
+		AvatarPath  *string `json:"avatarPath"`
+		Description *string `json:"description"`
+
+		Password    *string `json:"password"`
+		NewPassword *string `json:"newPassword"`
+	}
+)
+
+func UpdateUserByNickname(baseURL string, db *database.DB) Usecase[UpdateUserByNicknameInput, model.User] {
+	return UsecaseFunc[UpdateUserByNicknameInput, model.User](func(ctx context.Context, input UpdateUserByNicknameInput) (model.User, error) {
+		const op = "usecase.UpdateUserByNickname"
+
+		if input.AvatarPath != nil {
+			*input.AvatarPath = baseURL + *input.AvatarPath
+		}
+
+		user, err := db.GetUserByNickname(ctx, input.ByNickname)
+		if err != nil {
+			return model.User{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		if err := validator.Validate(func(v *validator.Validator) {
+			if input.Nickname != nil {
+				v.CheckField(validator.MinRunes(*input.Nickname, 3), "nickname", "must be at least 3 characters long")
+				v.CheckField(validator.MaxRunes(*input.Nickname, 20), "nickname", "must be at most 20 characters long")
+			}
+			if input.Email != nil {
+				v.CheckField(validator.IsEmail(*input.Email), "email", "must be a valid email")
+			}
+			if input.AvatarPath != nil {
+				v.CheckField(validator.IsURL(*input.AvatarPath), "avatarPath", "must be a valid URL")
+			}
+			if input.Description != nil {
+				v.CheckField(validator.MaxRunes(*input.Description, 1000), "description", "must be at most 1000 characters long")
+			}
+			if input.Password != nil {
+				v.CheckField(validator.MinRunes(*input.Password, 8), "password", "must be at least 8 characters long")
+				v.CheckField(validator.MaxRunes(*input.Password, 32), "password", "must be at most 32 characters long")
+
+				if input.NewPassword == nil {
+					v.AddFieldError("newPassword", "must be provided if password is provided")
+				}
+			}
+			if input.NewPassword != nil {
+				v.CheckField(validator.MinRunes(*input.NewPassword, 8), "new password", "must be at least 8 characters long")
+				v.CheckField(validator.MaxRunes(*input.NewPassword, 32), "new password", "must be at most 32 characters long")
+
+				if input.Password == nil {
+					v.AddFieldError("password", "must be provided if new password is provided")
+				}
+			}
+
+			if input.Password != nil && input.NewPassword != nil {
+				v.Check(*input.Password != *input.NewPassword, "new password must be different from old password")
+			}
+		}); err != nil {
+			return model.User{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		dto := database.UpdateUserDTO{
+			Nickname:    input.Nickname,
+			Email:       input.Email,
+			AvatarPath:  input.AvatarPath,
+			Description: input.Description,
+		}
+
+		if input.Password != nil && input.NewPassword != nil {
+			if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(*input.Password)); err != nil {
+				if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+					return model.User{}, fmt.Errorf("%s: %w", op, errors.New("password does not match"))
+				}
+
+				return model.User{}, fmt.Errorf("%s: %w", op, err)
+			}
+
+			hashNewPass, err := bcrypt.GenerateFromPassword([]byte(*input.NewPassword), bcrypt.DefaultCost)
+			if err != nil {
+				return model.User{}, fmt.Errorf("%s: %w", op, err)
+			}
+
+			dto.Password = new(string)
+			*dto.Password = string(hashNewPass)
+		}
+
+		if err := db.UpdateUser(ctx, user.ID, dto); err != nil {
+			return model.User{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		newUser, err := db.GetUser(ctx, user.ID)
+		if err != nil {
+			return model.User{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		return newUser, nil
+	})
+}
+
 func DeleteUserByNickname(db *database.DB) Usecase[string, void] {
 	return UsecaseFunc[string, void](func(ctx context.Context, nickname string) (void, error) {
 		const op = "usecase.DeleteUser"

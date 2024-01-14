@@ -32,6 +32,30 @@ func (app *application) handleGetUser(w http.ResponseWriter, r *http.Request) {
 	app.mustSendJSON(w, r, http.StatusOK, response.Data{"user": user})
 }
 
+func (app *application) handleUpdateUser(w http.ResponseWriter, r *http.Request) {
+	var input usecase.UpdateUserByNicknameInput
+	if err := request.DecodeJSONStrict(w, r, &input); err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	input.ByNickname = mustGetUserNicknameFromRequest(r)
+
+	user, err := usecase.UpdateUserByNickname(app.config.baseURL, app.db).Invoke(r.Context(), input)
+	if err != nil {
+		var vErr *validator.Validator
+		if errors.As(err, &vErr) {
+			app.failedValidation(w, r, vErr)
+			return
+		}
+
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustSendJSON(w, r, http.StatusOK, response.Data{"user": user})
+}
+
 func (app *application) handleDeleteUser(w http.ResponseWriter, r *http.Request) {
 	userNickname := mustGetUserNicknameFromRequest(r)
 
