@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -17,6 +18,8 @@ import (
 const (
 	_defaultAccessTokenTTL  = 6 * time.Hour
 	_defaultRefreshTokenTTL = 3 * 24 * time.Hour
+
+	_tokenIssuer = "gotube"
 )
 
 func GetUserByNickname(db *database.DB) Usecase[string, model.User] {
@@ -76,15 +79,19 @@ func CreateUser(db *database.DB) Usecase[CreateUserInput, model.User] {
 	})
 }
 
+type AuthOutput struct {
+	User         model.User `json:"user"`
+	AccessToken  string     `json:"accessToken"`
+	RefreshToken string     `json:"refreshToken"`
+}
+
 type (
 	RegisterInput struct {
 		CreateUserInput
 	}
 
 	RegisterOutput struct {
-		User         model.User `json:"user"`
-		AccessToken  string     `json:"accessToken"`
-		RefreshToken string     `json:"refreshToken"`
+		AuthOutput
 	}
 )
 
@@ -97,7 +104,7 @@ func Register(authSecret string, db *database.DB, fstore *flashstore.Storage) Us
 			return RegisterOutput{}, fmt.Errorf("%s: %w", op, err)
 		}
 
-		accessToken, err := generateAccessToken(authSecret, "gotube", user.ID)
+		accessToken, err := generateAccessToken(authSecret, _tokenIssuer, user.ID)
 		if err != nil {
 			return RegisterOutput{}, fmt.Errorf("%s: %w", op, err)
 		}
@@ -116,9 +123,76 @@ func Register(authSecret string, db *database.DB, fstore *flashstore.Storage) Us
 		}
 
 		return RegisterOutput{
-			User:         user,
-			AccessToken:  accessToken,
-			RefreshToken: refreshToken,
+			AuthOutput{
+				User:         user,
+				AccessToken:  accessToken,
+				RefreshToken: refreshToken,
+			},
+		}, nil
+	})
+}
+
+type (
+	LoginInput struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	LoginOutput struct {
+		AuthOutput
+	}
+)
+
+func Login(authSecret string, db *database.DB, fstore *flashstore.Storage) UsecaseFunc[LoginInput, LoginOutput] {
+	return UsecaseFunc[LoginInput, LoginOutput](func(ctx context.Context, input LoginInput) (LoginOutput, error) {
+		const op = "usecase.Login"
+
+		if err := validator.Validate(func(v *validator.Validator) {
+			v.CheckField(validator.IsEmail(input.Email), "email", "must be a valid email")
+
+			v.CheckField(validator.MinRunes(input.Password, 8), "password", "must be at least 8 characters long")
+			v.CheckField(validator.MaxRunes(input.Password, 32), "password", "must be at most 32 characters long")
+		}); err != nil {
+			return LoginOutput{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		user, err := db.GetUserByEmail(ctx, input.Email)
+		if err != nil {
+			return LoginOutput{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password)); err != nil {
+			if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+				return LoginOutput{}, fmt.Errorf("%s: %w", op, model.ErrUserNotFound)
+			}
+
+			return LoginOutput{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		accessToken, err := generateAccessToken(authSecret, _tokenIssuer, user.ID)
+		if err != nil {
+			return LoginOutput{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		refreshToken, err := generateRefreshToken()
+		if err != nil {
+			return LoginOutput{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		if err := fstore.PutSession(ctx, model.Session{
+			Token:  refreshToken,
+			Expiry: time.Now().Add(_defaultRefreshTokenTTL),
+			UserID: user.ID,
+		}); err != nil {
+			return LoginOutput{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		return LoginOutput{
+			AuthOutput{
+				User:         user,
+				AccessToken:  accessToken,
+				RefreshToken: refreshToken,
+			},
 		}, nil
 	})
 }

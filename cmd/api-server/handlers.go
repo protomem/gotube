@@ -60,3 +60,32 @@ func (app *application) handleRegister(w http.ResponseWriter, r *http.Request) {
 
 	app.mustSendJSON(w, r, http.StatusCreated, output)
 }
+
+func (app *application) handleLogin(w http.ResponseWriter, r *http.Request) {
+	var input usecase.LoginInput
+	if err := request.DecodeJSONStrict(w, r, &input); err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	output, err := usecase.
+		Login(app.config.auth.secret, app.db, app.fstore).
+		Invoke(r.Context(), input)
+	if err != nil {
+		var vErr *validator.Validator
+		if errors.As(err, &vErr) {
+			app.failedValidation(w, r, vErr)
+			return
+		}
+
+		if errors.Is(err, model.ErrNotFound) {
+			app.errorMessage(w, r, http.StatusNotFound, model.ErrUserNotFound.Error(), nil)
+			return
+		}
+
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustSendJSON(w, r, http.StatusOK, output)
+}

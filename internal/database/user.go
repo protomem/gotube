@@ -35,6 +35,20 @@ func (db *DB) GetUserByNickname(ctx context.Context, nickname string) (model.Use
 	return user, nil
 }
 
+func (db *DB) GetUserByEmail(ctx context.Context, email string) (model.User, error) {
+	const op = "database.GetUserByEmail"
+
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	user, err := db.getUserByField(ctx, Field{Name: "email", Value: email})
+	if err != nil {
+		return model.User{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return user, nil
+}
+
 type InsertUserDTO struct {
 	Nickname string
 	Password string

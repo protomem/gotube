@@ -21,6 +21,7 @@ func (app *application) routes() http.Handler {
 	mux.HandleFunc("/users/{userNickname}", app.handleGetUser).Methods(http.MethodGet)
 
 	mux.HandleFunc("/auth/register", app.handleRegister).Methods(http.MethodPost)
+	mux.HandleFunc("/auth/login", app.handleLogin).Methods(http.MethodPost)
 
 	return mux
 }
