@@ -80,9 +80,8 @@ func CreateUser(db *database.DB) Usecase[CreateUserInput, model.User] {
 }
 
 type AuthOutput struct {
-	User         model.User `json:"user"`
-	AccessToken  string     `json:"accessToken"`
-	RefreshToken string     `json:"refreshToken"`
+	AccessToken  string `json:"accessToken"`
+	RefreshToken string `json:"refreshToken"`
 }
 
 type (
@@ -91,6 +90,7 @@ type (
 	}
 
 	RegisterOutput struct {
+		User model.User `json:"user"`
 		AuthOutput
 	}
 )
@@ -123,8 +123,8 @@ func Register(authSecret string, db *database.DB, fstore *flashstore.Storage) Us
 		}
 
 		return RegisterOutput{
+			user,
 			AuthOutput{
-				User:         user,
 				AccessToken:  accessToken,
 				RefreshToken: refreshToken,
 			},
@@ -139,6 +139,7 @@ type (
 	}
 
 	LoginOutput struct {
+		User model.User `json:"user"`
 		AuthOutput
 	}
 )
@@ -188,8 +189,63 @@ func Login(authSecret string, db *database.DB, fstore *flashstore.Storage) Useca
 		}
 
 		return LoginOutput{
+			user,
 			AuthOutput{
-				User:         user,
+				AccessToken:  accessToken,
+				RefreshToken: refreshToken,
+			},
+		}, nil
+	})
+}
+
+type (
+	RefreshTokenInput struct {
+		RefreshToken string
+	}
+
+	RefreshTokenOutput struct {
+		AuthOutput
+	}
+)
+
+func RefreshToken(authSecret string, db *database.DB, fstore *flashstore.Storage) UsecaseFunc[RefreshTokenInput, RefreshTokenOutput] {
+	return UsecaseFunc[RefreshTokenInput, RefreshTokenOutput](func(ctx context.Context, input RefreshTokenInput) (RefreshTokenOutput, error) {
+		const op = "usecase.RefreshToken"
+
+		session, err := fstore.GetSession(ctx, input.RefreshToken)
+		if err != nil {
+			return RefreshTokenOutput{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		user, err := db.GetUser(ctx, session.UserID)
+		if err != nil {
+			return RefreshTokenOutput{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		accessToken, err := generateAccessToken(authSecret, _tokenIssuer, user.ID)
+		if err != nil {
+			return RefreshTokenOutput{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		refreshToken, err := generateRefreshToken()
+		if err != nil {
+			return RefreshTokenOutput{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		if err := fstore.PutSession(ctx, model.Session{
+			Token:  refreshToken,
+			Expiry: time.Now().Add(_defaultRefreshTokenTTL),
+			UserID: user.ID,
+		}); err != nil {
+			return RefreshTokenOutput{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		if err := fstore.DelSession(ctx, input.RefreshToken); err != nil {
+			return RefreshTokenOutput{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		return RefreshTokenOutput{
+			AuthOutput{
 				AccessToken:  accessToken,
 				RefreshToken: refreshToken,
 			},

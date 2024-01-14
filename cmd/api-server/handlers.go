@@ -89,3 +89,26 @@ func (app *application) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	app.mustSendJSON(w, r, http.StatusOK, output)
 }
+
+func (app *application) handleRefreshToken(w http.ResponseWriter, r *http.Request) {
+	refreshToken, ok := getRefreshTokenFromRequest(r)
+	if !ok {
+		app.badRequest(w, r, errors.New("missing refresh token"))
+		return
+	}
+
+	output, err := usecase.
+		RefreshToken(app.config.auth.secret, app.db, app.fstore).
+		Invoke(r.Context(), usecase.RefreshTokenInput{RefreshToken: refreshToken})
+	if err != nil {
+		if errors.Is(err, model.ErrNotFound) {
+			app.errorMessage(w, r, http.StatusNotFound, model.ErrSessionNotFound.Error(), nil)
+			return
+		}
+
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustSendJSON(w, r, http.StatusOK, output)
+}
