@@ -112,3 +112,18 @@ func (app *application) handleRefreshToken(w http.ResponseWriter, r *http.Reques
 
 	app.mustSendJSON(w, r, http.StatusOK, output)
 }
+
+func (app *application) handleLogout(w http.ResponseWriter, r *http.Request) {
+	refreshToken, ok := getRefreshTokenFromRequest(r)
+	if !ok {
+		app.badRequest(w, r, errors.New("missing refresh token"))
+		return
+	}
+
+	if _, err := usecase.Logout(app.fstore).Invoke(r.Context(), refreshToken); err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}

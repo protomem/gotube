@@ -253,6 +253,18 @@ func RefreshToken(authSecret string, db *database.DB, fstore *flashstore.Storage
 	})
 }
 
+func Logout(fstore *flashstore.Storage) UsecaseFunc[string, void] {
+	return UsecaseFunc[string, void](func(ctx context.Context, token string) (void, error) {
+		const op = "usecase.Logout"
+
+		if err := fstore.DelSession(ctx, token); err != nil {
+			return void{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		return void{}, nil
+	})
+}
+
 func generateAccessToken(signingKey, issuer string, userID model.ID) (string, error) {
 	accessToken, err := jwt.Generate(jwt.GenerateParams{
 		SigningKey: signingKey,

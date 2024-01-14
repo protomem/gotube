@@ -11,3 +11,5 @@ type UsecaseFunc[I any, O any] func(ctx context.Context, input I) (output O, err
 func (fn UsecaseFunc[I, O]) Invoke(ctx context.Context, input I) (O, error) {
 	return fn(ctx, input)
 }
+
+type void struct{}

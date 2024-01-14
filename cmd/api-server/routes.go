@@ -23,6 +23,7 @@ func (app *application) routes() http.Handler {
 	mux.HandleFunc("/auth/register", app.handleRegister).Methods(http.MethodPost)
 	mux.HandleFunc("/auth/login", app.handleLogin).Methods(http.MethodPost)
 	mux.HandleFunc("/auth/refresh", app.handleRefreshToken).Methods(http.MethodGet)
+	mux.HandleFunc("/auth/logout", app.handleLogout).Methods(http.MethodDelete)
 
 	return mux
 }
