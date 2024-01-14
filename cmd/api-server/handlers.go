@@ -32,6 +32,17 @@ func (app *application) handleGetUser(w http.ResponseWriter, r *http.Request) {
 	app.mustSendJSON(w, r, http.StatusOK, response.Data{"user": user})
 }
 
+func (app *application) handleDeleteUser(w http.ResponseWriter, r *http.Request) {
+	userNickname := mustGetUserNicknameFromRequest(r)
+
+	if _, err := usecase.DeleteUserByNickname(app.db).Invoke(r.Context(), userNickname); err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (app *application) handleRegister(w http.ResponseWriter, r *http.Request) {
 	var input usecase.RegisterInput
 	if err := request.DecodeJSONStrict(w, r, &input); err != nil {
@@ -39,9 +50,7 @@ func (app *application) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	output, err := usecase.
-		Register(app.config.auth.secret, app.db, app.fstore).
-		Invoke(r.Context(), input)
+	output, err := usecase.Register(app.config.auth.secret, app.db, app.fstore).Invoke(r.Context(), input)
 	if err != nil {
 		var vErr *validator.Validator
 		if errors.As(err, &vErr) {
@@ -68,9 +77,7 @@ func (app *application) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	output, err := usecase.
-		Login(app.config.auth.secret, app.db, app.fstore).
-		Invoke(r.Context(), input)
+	output, err := usecase.Login(app.config.auth.secret, app.db, app.fstore).Invoke(r.Context(), input)
 	if err != nil {
 		var vErr *validator.Validator
 		if errors.As(err, &vErr) {

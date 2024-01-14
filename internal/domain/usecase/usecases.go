@@ -79,6 +79,18 @@ func CreateUser(db *database.DB) Usecase[CreateUserInput, model.User] {
 	})
 }
 
+func DeleteUserByNickname(db *database.DB) Usecase[string, void] {
+	return UsecaseFunc[string, void](func(ctx context.Context, nickname string) (void, error) {
+		const op = "usecase.DeleteUser"
+
+		if err := db.DeleteUserByNickname(ctx, nickname); err != nil {
+			return void{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		return void{}, nil
+	})
+}
+
 type AuthOutput struct {
 	AccessToken  string `json:"accessToken"`
 	RefreshToken string `json:"refreshToken"`

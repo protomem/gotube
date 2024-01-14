@@ -81,6 +81,19 @@ func (db *DB) InsertUser(ctx context.Context, dto InsertUserDTO) (model.ID, erro
 	return id, nil
 }
 
+func (db *DB) DeleteUserByNickname(ctx context.Context, nickname string) error {
+	const op = "database.DeleteUserByNickname"
+
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	if err := db.deleteByField(ctx, Field{Name: "nickname", Value: nickname}); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}
+
 func (db *DB) getUserByField(ctx context.Context, field Field) (model.User, error) {
 	query := fmt.Sprintf(`SELECT * FROM users WHERE %s = $1 LIMIT 1`, field.Name)
 	args := []any{field.Value}
@@ -96,4 +109,15 @@ func (db *DB) getUserByField(ctx context.Context, field Field) (model.User, erro
 	}
 
 	return user, nil
+}
+
+func (db *DB) deleteByField(ctx context.Context, field Field) error {
+	query := fmt.Sprintf(`DELETE FROM users WHERE %s = $1`, field.Name)
+	args := []any{field.Value}
+
+	if _, err := db.ExecContext(ctx, query, args...); err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -19,6 +19,7 @@ func (app *application) routes() http.Handler {
 	mux.HandleFunc("/status", app.handleStatus).Methods(http.MethodGet)
 
 	mux.HandleFunc("/users/{userNickname}", app.handleGetUser).Methods(http.MethodGet)
+	mux.HandleFunc("/users/{userNickname}", app.handleDeleteUser).Methods(http.MethodDelete)
 
 	mux.HandleFunc("/auth/register", app.handleRegister).Methods(http.MethodPost)
 	mux.HandleFunc("/auth/login", app.handleLogin).Methods(http.MethodPost)
