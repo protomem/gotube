@@ -81,15 +81,11 @@ func (db *DB) getVideoByField(ctx context.Context, field Field) (model.Video, er
 	var video model.Video
 
 	row := db.QueryRowxContext(ctx, query, args...)
-	if row.Err() != nil {
-		if IsNoRows(row.Err()) {
+	if err := db.videoScan(row, &video); err != nil {
+		if IsNoRows(err) {
 			return model.Video{}, model.ErrVideoNotFound
 		}
 
-		return model.Video{}, row.Err()
-	}
-
-	if err := db.videoScan(row, &video); err != nil {
 		return model.Video{}, err
 	}
 
