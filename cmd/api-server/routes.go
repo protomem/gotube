@@ -16,16 +16,51 @@ func (app *application) routes() http.Handler {
 	mux.Use(app.logAccess)
 	mux.Use(app.recoverPanic)
 
+	mux.Use(app.authenticate)
+
 	mux.HandleFunc("/status", app.handleStatus).Methods(http.MethodGet)
 
-	mux.HandleFunc("/users/{userNickname}", app.handleGetUser).Methods(http.MethodGet)
-	mux.HandleFunc("/users/{userNickname}", app.handleUpdateUser).Methods(http.MethodPut, http.MethodPatch)
-	mux.HandleFunc("/users/{userNickname}", app.handleDeleteUser).Methods(http.MethodDelete)
+	{
+		mux := mux.PathPrefix("/users").Subrouter()
 
-	mux.HandleFunc("/auth/register", app.handleRegister).Methods(http.MethodPost)
-	mux.HandleFunc("/auth/login", app.handleLogin).Methods(http.MethodPost)
-	mux.HandleFunc("/auth/refresh", app.handleRefreshToken).Methods(http.MethodGet)
-	mux.HandleFunc("/auth/logout", app.handleLogout).Methods(http.MethodDelete)
+		mux.HandleFunc("/{userNickname}", app.handleGetUser).Methods(http.MethodGet)
+
+		{
+			mux := mux.NewRoute().Subrouter()
+			mux.Use(app.requireAuthentication)
+
+			mux.HandleFunc("/{userNickname}", app.handleUpdateUser).Methods(http.MethodPut, http.MethodPatch)
+			mux.HandleFunc("/{userNickname}", app.handleDeleteUser).Methods(http.MethodDelete)
+		}
+	}
+
+	{
+		mux := mux.PathPrefix("/auth").Subrouter()
+
+		mux.HandleFunc("/register", app.handleRegister).Methods(http.MethodPost)
+		mux.HandleFunc("/login", app.handleLogin).Methods(http.MethodPost)
+
+		{
+			mux := mux.NewRoute().Subrouter()
+			mux.Use(app.requireAuthentication)
+
+			mux.HandleFunc("/refresh", app.handleRefreshToken).Methods(http.MethodGet)
+			mux.HandleFunc("/logout", app.handleLogout).Methods(http.MethodDelete)
+		}
+	}
+
+	{
+		mux := mux.PathPrefix("/videos").Subrouter()
+
+		mux.HandleFunc("/{videoID}", app.handleGetVideo).Methods(http.MethodGet)
+
+		{
+			mux := mux.NewRoute().Subrouter()
+			mux.Use(app.requireAuthentication)
+
+			mux.HandleFunc("/", app.handleCreateVideo).Methods(http.MethodPost)
+		}
+	}
 
 	return mux
 }

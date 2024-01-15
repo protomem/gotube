@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/protomem/gotube/internal/ctxstore"
 	"github.com/protomem/gotube/internal/domain/model"
 	"github.com/protomem/gotube/internal/domain/usecase"
 	"github.com/protomem/gotube/internal/request"
@@ -157,4 +158,62 @@ func (app *application) handleLogout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (app *application) handleGetVideo(w http.ResponseWriter, r *http.Request) {
+	videoID, ok := getVideoIDFromRequest(r)
+	if !ok {
+		app.badRequest(w, r, errors.New("missing or invalid video ID"))
+		return
+	}
+
+	requester, isAuth := ctxstore.User(r.Context())
+
+	video, err := usecase.GetVideo(app.db).Invoke(r.Context(), videoID)
+	if err != nil {
+		if errors.Is(err, model.ErrNotFound) {
+			app.errorMessage(w, r, http.StatusNotFound, model.ErrVideoNotFound.Error(), nil)
+			return
+		}
+
+		app.serverError(w, r, err)
+		return
+	}
+
+	if video.Public || (isAuth && requester.ID == video.AuthorID) {
+		app.mustSendJSON(w, r, http.StatusOK, response.Data{"video": video})
+		return
+	}
+
+	app.errorMessage(w, r, http.StatusNotFound, model.ErrVideoNotFound.Error(), nil)
+}
+
+func (app *application) handleCreateVideo(w http.ResponseWriter, r *http.Request) {
+	var input usecase.CreateVideoInput
+	if err := request.DecodeJSONStrict(w, r, &input); err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	requester := ctxstore.MustUser(r.Context())
+	input.AuthorID = requester.ID
+
+	video, err := usecase.CreateVideo(app.db).Invoke(r.Context(), input)
+	if err != nil {
+		var vErr *validator.Validator
+		if errors.As(err, &vErr) {
+			app.failedValidation(w, r, vErr)
+			return
+		}
+
+		if errors.Is(err, model.ErrAlreadyExists) {
+			app.errorMessage(w, r, http.StatusConflict, model.ErrVideoAlreadyExists.Error(), nil)
+			return
+		}
+
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustSendJSON(w, r, http.StatusCreated, response.Data{"video": video})
 }

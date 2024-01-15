@@ -3,7 +3,9 @@ package main
 import (
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"github.com/protomem/gotube/internal/domain/model"
 )
 
 func getURLParamFromRequest(r *http.Request, name string) (string, bool) {
@@ -21,6 +23,18 @@ func mustGetURLParamFromRequest(r *http.Request, name string) string {
 
 func mustGetUserNicknameFromRequest(r *http.Request) string {
 	return mustGetURLParamFromRequest(r, "userNickname")
+}
+
+func getVideoIDFromRequest(r *http.Request) (model.ID, bool) {
+	value, ok := getURLParamFromRequest(r, "videoID")
+	if !ok {
+		return model.ID{}, false
+	}
+	id, err := uuid.Parse(value)
+	if err != nil {
+		return model.ID{}, false
+	}
+	return id, true
 }
 
 func getHeaderValueFromRequest(r *http.Request, name string) (string, bool) {

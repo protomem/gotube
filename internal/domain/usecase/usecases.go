@@ -259,7 +259,7 @@ type (
 	}
 )
 
-func Login(authSecret string, db *database.DB, fstore *flashstore.Storage) UsecaseFunc[LoginInput, LoginOutput] {
+func Login(authSecret string, db *database.DB, fstore *flashstore.Storage) Usecase[LoginInput, LoginOutput] {
 	return UsecaseFunc[LoginInput, LoginOutput](func(ctx context.Context, input LoginInput) (LoginOutput, error) {
 		const op = "usecase.Login"
 
@@ -323,7 +323,7 @@ type (
 	}
 )
 
-func RefreshToken(authSecret string, db *database.DB, fstore *flashstore.Storage) UsecaseFunc[RefreshTokenInput, RefreshTokenOutput] {
+func RefreshToken(authSecret string, db *database.DB, fstore *flashstore.Storage) Usecase[RefreshTokenInput, RefreshTokenOutput] {
 	return UsecaseFunc[RefreshTokenInput, RefreshTokenOutput](func(ctx context.Context, input RefreshTokenInput) (RefreshTokenOutput, error) {
 		const op = "usecase.RefreshToken"
 
@@ -368,7 +368,7 @@ func RefreshToken(authSecret string, db *database.DB, fstore *flashstore.Storage
 	})
 }
 
-func Logout(fstore *flashstore.Storage) UsecaseFunc[string, void] {
+func Logout(fstore *flashstore.Storage) Usecase[string, void] {
 	return UsecaseFunc[string, void](func(ctx context.Context, token string) (void, error) {
 		const op = "usecase.Logout"
 
@@ -377,6 +377,27 @@ func Logout(fstore *flashstore.Storage) UsecaseFunc[string, void] {
 		}
 
 		return void{}, nil
+	})
+}
+
+func VerifyToken(authSecret string, db *database.DB) Usecase[string, model.User] {
+	return UsecaseFunc[string, model.User](func(ctx context.Context, token string) (model.User, error) {
+		const op = "usecase.VerifyToken"
+
+		userID, err := jwt.Parse(token, jwt.ParseParams{
+			SigningKey: authSecret,
+			Issuer:     _tokenIssuer,
+		})
+		if err != nil {
+			return model.User{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		user, err := db.GetUser(ctx, model.ID(userID))
+		if err != nil {
+			return model.User{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		return user, nil
 	})
 }
 
@@ -399,4 +420,77 @@ func generateRefreshToken() (string, error) {
 		return "", err
 	}
 	return token.String(), nil
+}
+
+func GetVideo(db *database.DB) Usecase[model.ID, model.Video] {
+	return UsecaseFunc[model.ID, model.Video](func(ctx context.Context, id model.ID) (model.Video, error) {
+		const op = "usecase.GetVideo"
+
+		video, err := db.GetVideo(ctx, id)
+		if err != nil {
+			return model.Video{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		return video, nil
+	})
+}
+
+type (
+	CreateVideoInput struct {
+		Title         string  `json:"title"`
+		Description   *string `json:"description"`
+		ThumbnailPath *string `json:"thumbnailPath"`
+		VideoPath     *string `json:"videoPath"`
+		Public        *bool   `json:"isPublic"`
+
+		AuthorID model.ID `json:"-"`
+	}
+)
+
+func CreateVideo(db *database.DB) Usecase[CreateVideoInput, model.Video] {
+	return UsecaseFunc[CreateVideoInput, model.Video](func(ctx context.Context, input CreateVideoInput) (model.Video, error) {
+		const op = "usecase.CreateVideo"
+
+		if err := validator.Validate(func(v *validator.Validator) {
+			// some validation...
+		}); err != nil {
+			return model.Video{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		dto := database.InsertVideoDTO{
+			Title:    input.Title,
+			AuthorID: input.AuthorID,
+
+			// Default values
+			Description:   "",
+			ThumbnailPath: "",
+			VideoPath:     "",
+			Public:        false,
+		}
+
+		if input.Description != nil {
+			dto.Description = *input.Description
+		}
+		if input.ThumbnailPath != nil {
+			dto.ThumbnailPath = *input.ThumbnailPath
+		}
+		if input.VideoPath != nil {
+			dto.VideoPath = *input.VideoPath
+		}
+		if input.Public != nil {
+			dto.Public = *input.Public
+		}
+
+		id, err := db.InsertVideo(ctx, dto)
+		if err != nil {
+			return model.Video{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		video, err := db.GetVideo(ctx, id)
+		if err != nil {
+			return model.Video{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		return video, nil
+	})
 }

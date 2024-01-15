@@ -9,6 +9,8 @@ import (
 	"github.com/google/uuid"
 )
 
+var ErrInvalidToken = errors.New("invalid token")
+
 type GenerateParams struct {
 	SigningKey string
 	TTL        time.Duration
@@ -72,5 +74,5 @@ func Parse(signedToken string, params ParseParams) (uuid.UUID, error) {
 		return sub, nil
 	}
 
-	return uuid.UUID{}, nil
+	return uuid.UUID{}, ErrInvalidToken
 }
