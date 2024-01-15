@@ -217,3 +217,18 @@ func (app *application) handleCreateVideo(w http.ResponseWriter, r *http.Request
 
 	app.mustSendJSON(w, r, http.StatusCreated, response.Data{"video": video})
 }
+
+func (app *application) handleDeleteVideo(w http.ResponseWriter, r *http.Request) {
+	videID, ok := getVideoIDFromRequest(r)
+	if !ok {
+		app.badRequest(w, r, errors.New("missing or invalid video ID"))
+		return
+	}
+
+	if _, err := usecase.DeleteVideo(app.db).Invoke(r.Context(), videID); err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}

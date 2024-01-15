@@ -59,6 +59,7 @@ func (app *application) routes() http.Handler {
 			mux.Use(app.requireAuthentication)
 
 			mux.HandleFunc("/", app.handleCreateVideo).Methods(http.MethodPost)
+			mux.HandleFunc("/{videoID}", app.handleDeleteVideo).Methods(http.MethodDelete)
 		}
 	}
 

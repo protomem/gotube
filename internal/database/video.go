@@ -56,6 +56,19 @@ func (db *DB) InsertVideo(ctx context.Context, dto InsertVideoDTO) (model.ID, er
 	return id, nil
 }
 
+func (db *DB) DeleteVideo(ctx context.Context, id model.ID) error {
+	const op = "database.DeleteVideo"
+
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	if err := db.deleteVideoByField(ctx, Field{Name: "id", Value: id}); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}
+
 func (db *DB) getVideoByField(ctx context.Context, field Field) (model.Video, error) {
 	baseQuery := `
 		SELECT videos.*, authors.* FROM videos 
@@ -81,6 +94,17 @@ func (db *DB) getVideoByField(ctx context.Context, field Field) (model.Video, er
 	}
 
 	return video, nil
+}
+
+func (db *DB) deleteVideoByField(ctx context.Context, field Field) error {
+	query := fmt.Sprintf(`DELETE FROM videos WHERE %s = $1`, field.Name)
+	args := []any{field.Value}
+
+	if _, err := db.ExecContext(ctx, query, args...); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (db *DB) videoScan(s Scanner, video *model.Video) error {
