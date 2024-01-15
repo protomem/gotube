@@ -50,6 +50,11 @@ func (app *application) handleUpdateUser(w http.ResponseWriter, r *http.Request)
 			return
 		}
 
+		if errors.Is(err, model.ErrNotFound) {
+			app.errorMessage(w, r, http.StatusNotFound, model.ErrUserNotFound.Error(), nil)
+			return
+		}
+
 		app.serverError(w, r, err)
 		return
 	}
@@ -216,6 +221,40 @@ func (app *application) handleCreateVideo(w http.ResponseWriter, r *http.Request
 	}
 
 	app.mustSendJSON(w, r, http.StatusCreated, response.Data{"video": video})
+}
+
+func (app *application) handleUpdateVideo(w http.ResponseWriter, r *http.Request) {
+	var input usecase.UpdateVideoInput
+	if err := request.DecodeJSONStrict(w, r, &input); err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	videoID, ok := getVideoIDFromRequest(r)
+	if !ok {
+		app.badRequest(w, r, errors.New("missing or invalid video ID"))
+		return
+	}
+	input.ByID = videoID
+
+	video, err := usecase.UpdateVideo(app.config.baseURL, app.db).Invoke(r.Context(), input)
+	if err != nil {
+		var vErr *validator.Validator
+		if errors.As(err, &vErr) {
+			app.failedValidation(w, r, vErr)
+			return
+		}
+
+		if errors.Is(err, model.ErrNotFound) {
+			app.errorMessage(w, r, http.StatusNotFound, model.ErrVideoNotFound.Error(), nil)
+			return
+		}
+
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustSendJSON(w, r, http.StatusOK, response.Data{"video": video})
 }
 
 func (app *application) handleDeleteVideo(w http.ResponseWriter, r *http.Request) {

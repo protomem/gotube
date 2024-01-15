@@ -3,9 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
-	"log/slog"
 
-	"github.com/protomem/gotube/internal/ctxstore"
 	"github.com/protomem/gotube/internal/domain/model"
 )
 
@@ -164,8 +162,6 @@ func (db *DB) updateUserByField(ctx context.Context, byFiled Field, fields []Fie
 	}
 
 	query += fmt.Sprintf(` WHERE %s = $%d`, byFiled.Name, 1)
-
-	ctxstore.MustLogger(ctx).Debug("update user", slog.String("query", query), slog.Any("args", args))
 
 	if _, err := db.ExecContext(ctx, query, args...); err != nil {
 		return err

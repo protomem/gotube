@@ -513,6 +513,72 @@ func CreateVideo(baseURL string, db *database.DB) Usecase[CreateVideoInput, mode
 	})
 }
 
+type (
+	UpdateVideoInput struct {
+		ByID model.ID `json:"-"`
+
+		Title         *string `json:"title"`
+		Description   *string `json:"description"`
+		ThumbnailPath *string `json:"thumbnailPath"`
+		VideoPath     *string `json:"videoPath"`
+		Public        *bool   `json:"isPublic"`
+	}
+)
+
+func UpdateVideo(baseURL string, db *database.DB) Usecase[UpdateVideoInput, model.Video] {
+	return UsecaseFunc[UpdateVideoInput, model.Video](func(ctx context.Context, input UpdateVideoInput) (model.Video, error) {
+		const op = "usecase.UpdateVideo"
+
+		if _, err := db.GetVideo(ctx, input.ByID); err != nil {
+			return model.Video{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		if input.ThumbnailPath != nil {
+			*input.ThumbnailPath = baseURL + *input.ThumbnailPath
+		}
+		if input.VideoPath != nil {
+			*input.VideoPath = baseURL + *input.VideoPath
+		}
+
+		if err := validator.Validate(func(v *validator.Validator) {
+			if input.Title != nil {
+				v.CheckField(validator.MinRunes(*input.Title, 3), "title", "must be at least 3 characters long")
+				v.CheckField(validator.MaxRunes(*input.Title, 100), "title", "must be at most 100 characters long")
+			}
+			if input.Description != nil {
+				v.CheckField(validator.MaxRunes(*input.Description, 1000), "description", "must be at most 1000 characters long")
+			}
+			if input.ThumbnailPath != nil {
+				v.CheckField(validator.IsURL(*input.ThumbnailPath), "thumbnailPath", "must be a valid URL")
+			}
+			if input.VideoPath != nil {
+				v.CheckField(validator.IsURL(*input.VideoPath), "videoPath", "must be a valid URL")
+			}
+		}); err != nil {
+			return model.Video{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		dto := database.UpdateVideoDTO{
+			Title:         input.Title,
+			Description:   input.Description,
+			ThumbnailPath: input.ThumbnailPath,
+			VideoPath:     input.VideoPath,
+			Public:        input.Public,
+		}
+
+		if err := db.UpdateVideo(ctx, input.ByID, dto); err != nil {
+			return model.Video{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		newVideo, err := db.GetVideo(ctx, input.ByID)
+		if err != nil {
+			return model.Video{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		return newVideo, nil
+	})
+}
+
 func DeleteVideo(db *database.DB) Usecase[model.ID, void] {
 	return UsecaseFunc[model.ID, void](func(ctx context.Context, id model.ID) (void, error) {
 		const op = "usecase.DeleteVideo"

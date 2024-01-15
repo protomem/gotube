@@ -56,6 +56,45 @@ func (db *DB) InsertVideo(ctx context.Context, dto InsertVideoDTO) (model.ID, er
 	return id, nil
 }
 
+type UpdateVideoDTO struct {
+	Title         *string
+	Description   *string
+	ThumbnailPath *string
+	VideoPath     *string
+	Public        *bool
+}
+
+func (db *DB) UpdateVideo(ctx context.Context, id model.ID, dto UpdateVideoDTO) error {
+	const op = "database.UpdateVideo"
+
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	fields := make([]Field, 0, 5)
+
+	if dto.Title != nil {
+		fields = append(fields, Field{Name: "title", Value: *dto.Title})
+	}
+	if dto.Description != nil {
+		fields = append(fields, Field{Name: "description", Value: *dto.Description})
+	}
+	if dto.ThumbnailPath != nil {
+		fields = append(fields, Field{Name: "thumbnail_path", Value: *dto.ThumbnailPath})
+	}
+	if dto.VideoPath != nil {
+		fields = append(fields, Field{Name: "video_path", Value: *dto.VideoPath})
+	}
+	if dto.Public != nil {
+		fields = append(fields, Field{Name: "is_public", Value: *dto.Public})
+	}
+
+	if err := db.updateVideoByField(ctx, Field{Name: "id", Value: id}, fields); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}
+
 func (db *DB) DeleteVideo(ctx context.Context, id model.ID) error {
 	const op = "database.DeleteVideo"
 
@@ -90,6 +129,26 @@ func (db *DB) getVideoByField(ctx context.Context, field Field) (model.Video, er
 	}
 
 	return video, nil
+}
+
+func (db *DB) updateVideoByField(ctx context.Context, byFiled Field, fields []Field) error {
+	counter := 1
+	query := `UPDATE videos SET updated_at = now()`
+	args := []any{byFiled.Value}
+
+	for _, f := range fields {
+		counter++
+		query += fmt.Sprintf(`, %s = $%d`, f.Name, counter)
+		args = append(args, f.Value)
+	}
+
+	query += fmt.Sprintf(` WHERE %s = $%d`, byFiled.Name, 1)
+
+	if _, err := db.ExecContext(ctx, query, args...); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (db *DB) deleteVideoByField(ctx context.Context, field Field) error {
