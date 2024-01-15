@@ -447,12 +447,30 @@ type (
 	}
 )
 
-func CreateVideo(db *database.DB) Usecase[CreateVideoInput, model.Video] {
+func CreateVideo(baseURL string, db *database.DB) Usecase[CreateVideoInput, model.Video] {
 	return UsecaseFunc[CreateVideoInput, model.Video](func(ctx context.Context, input CreateVideoInput) (model.Video, error) {
 		const op = "usecase.CreateVideo"
 
+		if input.ThumbnailPath != nil {
+			*input.ThumbnailPath = baseURL + *input.ThumbnailPath
+		}
+		if input.VideoPath != nil {
+			*input.VideoPath = baseURL + *input.VideoPath
+		}
+
 		if err := validator.Validate(func(v *validator.Validator) {
-			// some validation...
+			v.CheckField(validator.MinRunes(input.Title, 3), "title", "must be at least 3 characters long")
+			v.CheckField(validator.MaxRunes(input.Title, 100), "title", "must be at most 100 characters long")
+
+			if input.Description != nil {
+				v.CheckField(validator.MaxRunes(*input.Description, 1000), "description", "must be at most 1000 characters long")
+			}
+			if input.ThumbnailPath != nil {
+				v.CheckField(validator.IsURL(*input.ThumbnailPath), "thumbnailPath", "must be a valid URL")
+			}
+			if input.VideoPath != nil {
+				v.CheckField(validator.IsURL(*input.VideoPath), "videoPath", "must be a valid URL")
+			}
 		}); err != nil {
 			return model.Video{}, fmt.Errorf("%s: %w", op, err)
 		}

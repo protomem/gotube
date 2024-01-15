@@ -198,7 +198,7 @@ func (app *application) handleCreateVideo(w http.ResponseWriter, r *http.Request
 	requester := ctxstore.MustUser(r.Context())
 	input.AuthorID = requester.ID
 
-	video, err := usecase.CreateVideo(app.db).Invoke(r.Context(), input)
+	video, err := usecase.CreateVideo(app.config.baseURL, app.db).Invoke(r.Context(), input)
 	if err != nil {
 		var vErr *validator.Validator
 		if errors.As(err, &vErr) {
