@@ -590,3 +590,43 @@ func DeleteVideo(db *database.DB) Usecase[model.ID, void] {
 		return void{}, nil
 	})
 }
+
+type (
+	CreateCommentInput struct {
+		Content string `json:"content"`
+
+		AuthorID model.ID `json:"-"`
+		VideoID  model.ID `json:"-"`
+	}
+)
+
+func CreateComment(db *database.DB) Usecase[CreateCommentInput, model.Comment] {
+	return UsecaseFunc[CreateCommentInput, model.Comment](func(ctx context.Context, input CreateCommentInput) (model.Comment, error) {
+		const op = "usecase.CreateComment"
+
+		if err := validator.Validate(func(v *validator.Validator) {
+			v.CheckField(validator.MinRunes(input.Content, 1), "comment", "must be at least 1 character long")
+			v.CheckField(validator.MaxRunes(input.Content, 500), "comment", "must be at most 500 characters long")
+		}); err != nil {
+			return model.Comment{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		dto := database.InsertCommentDTO{
+			Content:  input.Content,
+			AuthorID: input.AuthorID,
+			VideoID:  input.VideoID,
+		}
+
+		id, err := db.InsertComment(ctx, dto)
+		if err != nil {
+			return model.Comment{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		video, err := db.GetComment(ctx, id)
+		if err != nil {
+			return model.Comment{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		return video, nil
+	})
+}

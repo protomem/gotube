@@ -60,3 +60,19 @@ type Video struct {
 
 	Public bool `json:"isPublic" db:"is_public"`
 }
+
+var ErrCommentNotFound = NewError("comment", ErrNotFound)
+
+type Comment struct {
+	ID ID `json:"id" db:"id"`
+
+	CreatedAt time.Time `json:"createdAt" db:"created_at"`
+	UpdatedAt time.Time `json:"updatedAt" db:"updated_at"`
+
+	Content string `json:"content" db:"content"`
+
+	AuthorID ID   `json:"-" db:"author_id"`
+	Author   User `json:"author" db:"-"`
+
+	VideoID ID `json:"videoId" db:"video_id"`
+}

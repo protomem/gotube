@@ -271,3 +271,35 @@ func (app *application) handleDeleteVideo(w http.ResponseWriter, r *http.Request
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (app *application) handleCreateComment(w http.ResponseWriter, r *http.Request) {
+	var input usecase.CreateCommentInput
+	if err := request.DecodeJSONStrict(w, r, &input); err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	videoID, ok := getVideoIDFromRequest(r)
+	if !ok {
+		app.badRequest(w, r, errors.New("missing or invalid video ID"))
+		return
+	}
+	input.VideoID = videoID
+
+	requester := ctxstore.MustUser(r.Context())
+	input.AuthorID = requester.ID
+
+	comment, err := usecase.CreateComment(app.db).Invoke(r.Context(), input)
+	if err != nil {
+		var vErr *validator.Validator
+		if errors.As(err, &vErr) {
+			app.failedValidation(w, r, vErr)
+			return
+		}
+
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustSendJSON(w, r, http.StatusCreated, response.Data{"comment": comment})
+}
