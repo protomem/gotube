@@ -7,6 +7,20 @@ import (
 	"github.com/protomem/gotube/internal/domain/model"
 )
 
+func (db *DB) FindCommentsByVideoID(ctx context.Context, videoID model.ID) ([]model.Comment, error) {
+	const op = "database.FindCommentsByVideoID"
+
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	comments, err := db.findCommentsByField(ctx, Field{Name: "video_id", Value: videoID})
+	if err != nil {
+		return []model.Comment{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return comments, nil
+}
+
 func (db *DB) GetComment(ctx context.Context, id model.ID) (model.Comment, error) {
 	const op = "database.GetComment"
 
@@ -49,11 +63,44 @@ func (db *DB) InsertComment(ctx context.Context, dto InsertCommentDTO) (model.ID
 	return id, nil
 }
 
+func (db *DB) findCommentsByField(ctx context.Context, field Field) ([]model.Comment, error) {
+	baseQuery := `
+        SELECT comments.*, authors.* FROM comments
+        JOIN users AS authors ON comments.author_id = authors.id 
+        WHERE comments.%s = $1
+    `
+	query := fmt.Sprintf(baseQuery, field.Name)
+	args := []any{field.Value}
+
+	comments := make([]model.Comment, 0)
+
+	rows, err := db.QueryxContext(ctx, query, args...)
+	if err != nil {
+		if IsNoRows(err) {
+			return []model.Comment{}, nil
+		}
+
+		return []model.Comment{}, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var comment model.Comment
+		if err := db.commentScan(rows, &comment); err != nil {
+			return []model.Comment{}, err
+		}
+
+		comments = append(comments, comment)
+	}
+
+	return comments, nil
+}
+
 func (db *DB) getCommentByField(ctx context.Context, field Field) (model.Comment, error) {
 	baseQuery := `
 		SELECT comments.*, authors.* FROM comments
 		JOIN users AS authors ON comments.author_id = authors.id 
-		WHERE comments.%s = $1 LIMIT 1
+		WHERE comments.%s = $1 ORDER BY comments.created_at DESC LIMIT 1
 	`
 	query := fmt.Sprintf(baseQuery, field.Name)
 	args := []any{field.Value}

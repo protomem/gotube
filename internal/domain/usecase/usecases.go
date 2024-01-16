@@ -591,6 +591,19 @@ func DeleteVideo(db *database.DB) Usecase[model.ID, void] {
 	})
 }
 
+func FindCommentsByVideoID(db *database.DB) Usecase[model.ID, []model.Comment] {
+	return UsecaseFunc[model.ID, []model.Comment](func(ctx context.Context, videoID model.ID) ([]model.Comment, error) {
+		const op = "usecase.GetComments"
+
+		comments, err := db.FindCommentsByVideoID(ctx, videoID)
+		if err != nil {
+			return []model.Comment{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		return comments, nil
+	})
+}
+
 type (
 	CreateCommentInput struct {
 		Content string `json:"content"`

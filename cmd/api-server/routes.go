@@ -67,6 +67,8 @@ func (app *application) routes() http.Handler {
 	{
 		mux := mux.PathPrefix("/comments").Subrouter()
 
+		mux.HandleFunc("/{videoID}", app.handleGetComments).Methods(http.MethodGet)
+
 		{
 			mux := mux.NewRoute().Subrouter()
 			mux.Use(app.requireAuthentication)
