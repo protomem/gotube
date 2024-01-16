@@ -58,7 +58,7 @@ func (app *application) routes() http.Handler {
 			mux := mux.NewRoute().Subrouter()
 			mux.Use(app.requireAuthentication)
 
-			mux.HandleFunc("/", app.handleCreateVideo).Methods(http.MethodPost)
+			mux.NewRoute().HandlerFunc(app.handleCreateVideo).Methods(http.MethodPost)
 			mux.HandleFunc("/{videoID}", app.handleUpdateVideo).Methods(http.MethodPut, http.MethodPatch)
 			mux.HandleFunc("/{videoID}", app.handleDeleteVideo).Methods(http.MethodDelete)
 		}
@@ -74,6 +74,7 @@ func (app *application) routes() http.Handler {
 			mux.Use(app.requireAuthentication)
 
 			mux.HandleFunc("/{videoID}", app.handleCreateComment).Methods(http.MethodPost)
+			mux.HandleFunc("/{commentID}", app.handleDeleteComment).Methods(http.MethodDelete)
 		}
 	}
 

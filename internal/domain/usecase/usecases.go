@@ -643,3 +643,15 @@ func CreateComment(db *database.DB) Usecase[CreateCommentInput, model.Comment] {
 		return video, nil
 	})
 }
+
+func DeleteComment(db *database.DB) Usecase[model.ID, void] {
+	return UsecaseFunc[model.ID, void](func(ctx context.Context, id model.ID) (void, error) {
+		const op = "usecase.DeleteComment"
+
+		if err := db.DeleteComment(ctx, id); err != nil {
+			return void{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		return void{}, nil
+	})
+}

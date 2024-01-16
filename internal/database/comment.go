@@ -63,6 +63,19 @@ func (db *DB) InsertComment(ctx context.Context, dto InsertCommentDTO) (model.ID
 	return id, nil
 }
 
+func (db *DB) DeleteComment(ctx context.Context, id model.ID) error {
+	const op = "database.DeleteComment"
+
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	if err := db.deleteCommentByField(ctx, Field{Name: "id", Value: id}); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}
+
 func (db *DB) findCommentsByField(ctx context.Context, field Field) ([]model.Comment, error) {
 	baseQuery := `
         SELECT comments.*, authors.* FROM comments
@@ -117,6 +130,17 @@ func (db *DB) getCommentByField(ctx context.Context, field Field) (model.Comment
 	}
 
 	return comment, nil
+}
+
+func (db *DB) deleteCommentByField(ctx context.Context, field Field) error {
+	query := fmt.Sprintf(`DELETE FROM comments WHERE %s = $1`, field.Name)
+	args := []any{field.Value}
+
+	if _, err := db.ExecContext(ctx, query, args...); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (db *DB) commentScan(s Scanner, comment *model.Comment) error {

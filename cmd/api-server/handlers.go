@@ -319,3 +319,18 @@ func (app *application) handleCreateComment(w http.ResponseWriter, r *http.Reque
 
 	app.mustSendJSON(w, r, http.StatusCreated, response.Data{"comment": comment})
 }
+
+func (app *application) handleDeleteComment(w http.ResponseWriter, r *http.Request) {
+	commentID, ok := getCommentIDFromRequest(r)
+	if !ok {
+		app.badRequest(w, r, errors.New("missing or invalid comment ID"))
+		return
+	}
+
+	if _, err := usecase.DeleteComment(app.db).Invoke(r.Context(), commentID); err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}

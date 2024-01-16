@@ -37,6 +37,18 @@ func getVideoIDFromRequest(r *http.Request) (model.ID, bool) {
 	return id, true
 }
 
+func getCommentIDFromRequest(r *http.Request) (model.ID, bool) {
+	value, ok := getURLParamFromRequest(r, "commentID")
+	if !ok {
+		return model.ID{}, false
+	}
+	id, err := uuid.Parse(value)
+	if err != nil {
+		return model.ID{}, false
+	}
+	return id, true
+}
+
 func getHeaderValueFromRequest(r *http.Request, name string) (string, bool) {
 	if value := r.Header.Get(name); value != "" {
 		return value, true
