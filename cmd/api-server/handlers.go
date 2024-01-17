@@ -272,7 +272,7 @@ func (app *application) handleDeleteVideo(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (app *application) handleGetComments(w http.ResponseWriter, r *http.Request) {
+func (app *application) handleFindComments(w http.ResponseWriter, r *http.Request) {
 	videoID, ok := getVideoIDFromRequest(r)
 	if !ok {
 		app.badRequest(w, r, errors.New("missing or invalid video ID"))
@@ -281,6 +281,11 @@ func (app *application) handleGetComments(w http.ResponseWriter, r *http.Request
 
 	comments, err := usecase.FindCommentsByVideoID(app.db).Invoke(r.Context(), videoID)
 	if err != nil {
+		if model.IsModelError(err, model.ErrVideoNotFound) {
+			app.errorMessage(w, r, http.StatusNotFound, model.ErrVideoNotFound.Error(), nil)
+			return
+		}
+
 		app.serverError(w, r, err)
 		return
 	}

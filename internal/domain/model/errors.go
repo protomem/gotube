@@ -3,6 +3,7 @@ package model
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
 var (
@@ -36,4 +37,12 @@ func (e Error) As(target any) bool {
 		return errors.As(e.Err, target)
 	}
 	return true
+}
+
+func IsModelError(err error, target Error) bool {
+	var e Error
+	if !errors.As(err, &e) {
+		return false
+	}
+	return strings.EqualFold(e.Model, target.Model) && errors.Is(e.Err, target.Err)
 }

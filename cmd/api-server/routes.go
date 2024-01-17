@@ -67,13 +67,13 @@ func (app *application) routes() http.Handler {
 	{
 		mux := mux.PathPrefix("/comments").Subrouter()
 
-		mux.HandleFunc("/{videoID}", app.handleGetComments).Methods(http.MethodGet)
+		mux.HandleFunc("/video/{videoID}", app.handleFindComments).Methods(http.MethodGet)
 
 		{
 			mux := mux.NewRoute().Subrouter()
 			mux.Use(app.requireAuthentication)
 
-			mux.HandleFunc("/{videoID}", app.handleCreateComment).Methods(http.MethodPost)
+			mux.HandleFunc("/video/{videoID}", app.handleCreateComment).Methods(http.MethodPost)
 			mux.HandleFunc("/{commentID}", app.handleDeleteComment).Methods(http.MethodDelete)
 		}
 	}
