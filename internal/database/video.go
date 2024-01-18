@@ -7,7 +7,7 @@ import (
 	"github.com/protomem/gotube/internal/domain/model"
 )
 
-func (db *DB) FindVideosSortByCreatedAt(ctx context.Context, opts FindOptions) ([]model.Video, error) {
+func (db *DB) FindPublicVideosSortByCreatedAt(ctx context.Context, opts FindOptions) ([]model.Video, error) {
 	const op = "database.FindVideosSortByCreatedAt"
 
 	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
@@ -21,7 +21,7 @@ func (db *DB) FindVideosSortByCreatedAt(ctx context.Context, opts FindOptions) (
 	return videos, nil
 }
 
-func (db *DB) FindVideosSortByViews(ctx context.Context, opts FindOptions) ([]model.Video, error) {
+func (db *DB) FindPublicVideosSortByViews(ctx context.Context, opts FindOptions) ([]model.Video, error) {
 	const op = "database.FindVideosSortByViews"
 
 	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
@@ -35,7 +35,7 @@ func (db *DB) FindVideosSortByViews(ctx context.Context, opts FindOptions) ([]mo
 	return videos, nil
 }
 
-func (db *DB) FindVideosByLikeTitle(ctx context.Context, likeTitle string, opts FindOptions) ([]model.Video, error) {
+func (db *DB) FindPublicVideosByLikeTitle(ctx context.Context, likeTitle string, opts FindOptions) ([]model.Video, error) {
 	const op = "database.FindVideosLikeTitle"
 
 	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)

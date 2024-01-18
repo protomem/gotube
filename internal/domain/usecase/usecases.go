@@ -426,7 +426,7 @@ func FindNewVideos(db *database.DB) Usecase[FindOptions, []model.Video] {
 	return UsecaseFunc[FindOptions, []model.Video](func(ctx context.Context, opts FindOptions) ([]model.Video, error) {
 		const op = "usecase.FindNewVideos"
 
-		videos, err := db.FindVideosSortByCreatedAt(ctx, database.FindOptions(opts))
+		videos, err := db.FindPublicVideosSortByCreatedAt(ctx, database.FindOptions(opts))
 		if err != nil {
 			return []model.Video{}, fmt.Errorf("%s: %w", op, err)
 		}
@@ -439,7 +439,7 @@ func FindPopularVideos(db *database.DB) Usecase[FindOptions, []model.Video] {
 	return UsecaseFunc[FindOptions, []model.Video](func(ctx context.Context, opts FindOptions) ([]model.Video, error) {
 		const op = "usecase.FindPopularVideos"
 
-		videos, err := db.FindVideosSortByViews(ctx, database.FindOptions(opts))
+		videos, err := db.FindPublicVideosSortByViews(ctx, database.FindOptions(opts))
 		if err != nil {
 			return []model.Video{}, fmt.Errorf("%s: %w", op, err)
 		}
@@ -459,7 +459,7 @@ func SearchVideos(db *database.DB) Usecase[SearchVideosInput, []model.Video] {
 	return UsecaseFunc[SearchVideosInput, []model.Video](func(ctx context.Context, input SearchVideosInput) ([]model.Video, error) {
 		const op = "usecase.SearchVideos"
 
-		videos, err := db.FindVideosByLikeTitle(ctx, input.Query, database.FindOptions(input.Opts))
+		videos, err := db.FindPublicVideosByLikeTitle(ctx, input.Query, database.FindOptions(input.Opts))
 		if err != nil {
 			return []model.Video{}, fmt.Errorf("%s: %w", op, err)
 		}
