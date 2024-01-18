@@ -468,6 +468,42 @@ func SearchVideos(db *database.DB) Usecase[SearchVideosInput, []model.Video] {
 	})
 }
 
+func FindVideosByAuthorNickname(db *database.DB) Usecase[string, []model.Video] {
+	return UsecaseFunc[string, []model.Video](func(ctx context.Context, authorNickname string) ([]model.Video, error) {
+		const op = "usecase.FindUserVideos"
+
+		author, err := db.GetUserByNickname(ctx, authorNickname)
+		if err != nil {
+			return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		videos, err := db.FindPublicVideosByAuthorID(ctx, author.ID)
+		if err != nil {
+			return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		return videos, nil
+	})
+}
+
+func FindPrivateVideosByAuthorNickname(db *database.DB) Usecase[string, []model.Video] {
+	return UsecaseFunc[string, []model.Video](func(ctx context.Context, authorNickname string) ([]model.Video, error) {
+		const op = "usecase.FindPublicUserVideos"
+
+		author, err := db.GetUserByNickname(ctx, authorNickname)
+		if err != nil {
+			return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		videos, err := db.FindVideosByAuthorID(ctx, author.ID)
+		if err != nil {
+			return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		return videos, nil
+	})
+}
+
 func GetVideo(db *database.DB) Usecase[model.ID, model.Video] {
 	return UsecaseFunc[model.ID, model.Video](func(ctx context.Context, id model.ID) (model.Video, error) {
 		const op = "usecase.GetVideo"

@@ -53,11 +53,14 @@ func (app *application) routes() http.Handler {
 		mux := mux.PathPrefix("/videos").Subrouter()
 
 		mux.NewRoute().HandlerFunc(app.handleFindVideos).Methods(http.MethodGet)
+		mux.HandleFunc("/user/{userNickname}", app.handleFindUserVideos).Methods(http.MethodGet)
 		mux.HandleFunc("/{videoID}", app.handleGetVideo).Methods(http.MethodGet)
 
 		{
 			mux := mux.NewRoute().Subrouter()
 			mux.Use(app.requireAuthentication)
+
+			mux.HandleFunc("/user/{userNickname}/private", app.handleFindPrivateUserVideos).Methods(http.MethodGet)
 
 			mux.NewRoute().HandlerFunc(app.handleCreateVideo).Methods(http.MethodPost)
 			mux.HandleFunc("/{videoID}", app.handleUpdateVideo).Methods(http.MethodPut, http.MethodPatch)

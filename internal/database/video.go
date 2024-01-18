@@ -74,6 +74,82 @@ func (db *DB) FindPublicVideosByLikeTitle(ctx context.Context, likeTitle string,
 	return videos, nil
 }
 
+func (db *DB) FindPublicVideosByAuthorID(ctx context.Context, authorID model.ID) ([]model.Video, error) {
+	const op = "database.FindPublicUserVideos"
+
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	query := `
+		SELECT videos.*, authors.* FROM videos
+		JOIN users AS authors ON videos.author_id = authors.id
+		WHERE videos.author_id = $1 AND videos.is_public = true
+		ORDER BY videos.created_at DESC
+	`
+	args := []any{authorID}
+
+	videos := make([]model.Video, 0)
+
+	rows, err := db.QueryxContext(ctx, query, args...)
+	if err != nil {
+		if IsNoRows(err) {
+			return []model.Video{}, nil
+		}
+
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	for rows.Next() {
+		var video model.Video
+		if err := db.videoScan(rows, &video); err != nil {
+			return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		videos = append(videos, video)
+	}
+
+	return videos, nil
+}
+
+func (db *DB) FindVideosByAuthorID(ctx context.Context, authorID model.ID) ([]model.Video, error) {
+	const op = "database.FindPublicUserVideos"
+
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	query := `
+		SELECT videos.*, authors.* FROM videos
+		JOIN users AS authors ON videos.author_id = authors.id
+		WHERE videos.author_id = $1
+		ORDER BY videos.created_at DESC
+	`
+	args := []any{authorID}
+
+	videos := make([]model.Video, 0)
+
+	rows, err := db.QueryxContext(ctx, query, args...)
+	if err != nil {
+		if IsNoRows(err) {
+			return []model.Video{}, nil
+		}
+
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	for rows.Next() {
+		var video model.Video
+		if err := db.videoScan(rows, &video); err != nil {
+			return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		videos = append(videos, video)
+	}
+
+	return videos, nil
+}
+
 func (db *DB) GetVideo(ctx context.Context, id model.ID) (model.Video, error) {
 	const op = "database.GetVideo"
 

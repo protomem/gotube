@@ -213,6 +213,41 @@ func (app *application) handleFindVideos(w http.ResponseWriter, r *http.Request)
 	app.mustSendJSON(w, r, http.StatusOK, response.Data{"videos": videos})
 }
 
+func (app *application) handleFindUserVideos(w http.ResponseWriter, r *http.Request) {
+	userNickname := mustGetUserNicknameFromRequest(r)
+
+	videos, err := usecase.FindVideosByAuthorNickname(app.db).Invoke(r.Context(), userNickname)
+	if err != nil {
+		if model.IsModelError(err, model.ErrUserNotFound) {
+			app.errorMessage(w, r, http.StatusNotFound, model.ErrUserNotFound.Error(), nil)
+			return
+		}
+
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustSendJSON(w, r, http.StatusOK, response.Data{"videos": videos})
+}
+
+func (app *application) handleFindPrivateUserVideos(w http.ResponseWriter, r *http.Request) {
+	userNickname := mustGetUserNicknameFromRequest(r)
+	requester, _ := ctxstore.User(r.Context())
+
+	if userNickname != requester.Nickname {
+		app.errorMessage(w, r, http.StatusForbidden, "access denied", nil)
+		return
+	}
+
+	videos, err := usecase.FindPrivateVideosByAuthorNickname(app.db).Invoke(r.Context(), userNickname)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustSendJSON(w, r, http.StatusOK, response.Data{"videos": videos})
+}
+
 func (app *application) handleGetVideo(w http.ResponseWriter, r *http.Request) {
 	videoID, ok := getVideoIDFromRequest(r)
 	if !ok {
