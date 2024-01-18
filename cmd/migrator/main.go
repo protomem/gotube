@@ -25,7 +25,7 @@ func main() {
 
 	flag.Parse()
 
-	iofsDriver, err := iofs.New(assets.Assetss, "migrations")
+	iofsDriver, err := iofs.New(assets.Assets, "migrations")
 	if err != nil {
 		panic(err)
 	}

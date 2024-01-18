@@ -41,7 +41,7 @@ func New(dsn string, automigrate bool) (*DB, error) {
 	if automigrate {
 		const subOp = op + ": automigrate"
 
-		iofsDriver, err := iofs.New(assets.Assetss, "migrations")
+		iofsDriver, err := iofs.New(assets.Assets, "migrations")
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", subOp, err)
 		}
