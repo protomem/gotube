@@ -2,10 +2,16 @@ package main
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/protomem/gotube/internal/domain/model"
+)
+
+const (
+	_defaultOffset = 0
+	_defaultLimit  = 10
 )
 
 func getURLParamFromRequest(r *http.Request, name string) (string, bool) {
@@ -61,6 +67,38 @@ func getQueryValueFromRequest(r *http.Request, name string) (string, bool) {
 		return r.URL.Query().Get(name), true
 	}
 	return "", false
+}
+
+func getOffsetFromRequest(r *http.Request) (uint64, bool) {
+	value, ok := getQueryValueFromRequest(r, "offset")
+	if !ok {
+		return _defaultOffset, true
+	}
+	offset, err := strconv.ParseUint(value, 10, 64)
+	if err != nil {
+		return 0, false
+	}
+	return offset, true
+}
+
+func getLimitFromRequest(r *http.Request) (uint64, bool) {
+	value, ok := getQueryValueFromRequest(r, "limit")
+	if !ok {
+		return _defaultLimit, true
+	}
+	limit, err := strconv.ParseUint(value, 10, 64)
+	if err != nil {
+		return 0, false
+	}
+	return limit, true
+}
+
+func defaultGetSortByFromRequest(r *http.Request, defaultValue string) string {
+	value, ok := getQueryValueFromRequest(r, "sortBy")
+	if !ok {
+		return defaultValue
+	}
+	return value
 }
 
 func getRefreshTokenFromRequest(r *http.Request) (string, bool) {

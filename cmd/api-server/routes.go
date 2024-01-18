@@ -3,11 +3,11 @@ package main
 import (
 	"net/http"
 
-	"github.com/gorilla/mux"
+	gorilla "github.com/gorilla/mux"
 )
 
 func (app *application) routes() http.Handler {
-	mux := mux.NewRouter()
+	mux := gorilla.NewRouter()
 
 	mux.NotFoundHandler = http.HandlerFunc(app.notFound)
 	mux.MethodNotAllowedHandler = http.HandlerFunc(app.methodNotAllowed)
@@ -52,6 +52,7 @@ func (app *application) routes() http.Handler {
 	{
 		mux := mux.PathPrefix("/videos").Subrouter()
 
+		mux.NewRoute().HandlerFunc(app.handleFindVideos).Methods(http.MethodGet)
 		mux.HandleFunc("/{videoID}", app.handleGetVideo).Methods(http.MethodGet)
 
 		{

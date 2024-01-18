@@ -422,6 +422,19 @@ func generateRefreshToken() (string, error) {
 	return token.String(), nil
 }
 
+func FindNewVideos(db *database.DB) Usecase[FindOptions, []model.Video] {
+	return UsecaseFunc[FindOptions, []model.Video](func(ctx context.Context, opts FindOptions) ([]model.Video, error) {
+		const op = "usecase.FindNewVideos"
+
+		videos, err := db.FindVideosSortByCreatedAt(ctx, database.FindOptions(opts))
+		if err != nil {
+			return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		return videos, nil
+	})
+}
+
 func GetVideo(db *database.DB) Usecase[model.ID, model.Video] {
 	return UsecaseFunc[model.ID, model.Video](func(ctx context.Context, id model.ID) (model.Video, error) {
 		const op = "usecase.GetVideo"

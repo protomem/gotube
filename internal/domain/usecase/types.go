@@ -12,4 +12,9 @@ func (fn UsecaseFunc[I, O]) Invoke(ctx context.Context, input I) (O, error) {
 	return fn(ctx, input)
 }
 
+type FindOptions struct {
+	Limit  uint64
+	Offset uint64
+}
+
 type void struct{}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/protomem/gotube/internal/ctxstore"
@@ -163,6 +164,43 @@ func (app *application) handleLogout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (app *application) handleFindVideos(w http.ResponseWriter, r *http.Request) {
+	limit, ok := getLimitFromRequest(r)
+	if !ok {
+		app.badRequest(w, r, errors.New("invalid limit"))
+		return
+	}
+
+	offset, ok := getOffsetFromRequest(r)
+	if !ok {
+		app.badRequest(w, r, errors.New("invalid offset"))
+		return
+	}
+
+	sortBy := defaultGetSortByFromRequest(r, "new")
+
+	var (
+		err    error
+		videos []model.Video
+	)
+	opts := usecase.FindOptions{Limit: limit, Offset: offset}
+
+	switch sortBy {
+	case "new":
+		videos, err = usecase.FindNewVideos(app.db).Invoke(r.Context(), opts)
+	default:
+		app.badRequest(w, r, fmt.Errorf("sortBy doesn't support value: %s", sortBy))
+		return
+	}
+
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustSendJSON(w, r, http.StatusOK, response.Data{"videos": videos})
 }
 
 func (app *application) handleGetVideo(w http.ResponseWriter, r *http.Request) {
