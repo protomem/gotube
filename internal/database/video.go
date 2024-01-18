@@ -138,11 +138,11 @@ func (db *DB) DeleteVideo(ctx context.Context, id model.ID) error {
 
 func (db *DB) findVideosByFieldWithSortBy(ctx context.Context, byField Field, sortBy Field, opts FindOptions) ([]model.Video, error) {
 	baseQuery := `
-    	SELECT videos.*, authors.* FROM videos
-    	JOIN users AS authors ON videos.author_id = authors.id
-    	WHERE videos.%s = $1
-    	ORDER BY videos.%s %s
-    	LIMIT $2 OFFSET $3
+		SELECT videos.*, authors.* FROM videos
+		JOIN users AS authors ON videos.author_id = authors.id
+		WHERE videos.%s = $1
+		ORDER BY videos.%s %s
+		LIMIT $2 OFFSET $3
 	`
 	query := fmt.Sprintf(baseQuery, byField.Name, sortBy.Name, sortBy.Value)
 	args := []any{byField.Value, opts.Limit, opts.Offset}
