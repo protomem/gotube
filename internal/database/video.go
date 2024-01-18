@@ -21,6 +21,20 @@ func (db *DB) FindVideosSortByCreatedAt(ctx context.Context, opts FindOptions) (
 	return videos, nil
 }
 
+func (db *DB) FindVideosSortByViews(ctx context.Context, opts FindOptions) ([]model.Video, error) {
+	const op = "database.FindVideosSortByViews"
+
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	videos, err := db.findVideosByFieldWithSortBy(ctx, Field{Name: "is_public", Value: true}, Field{Name: "views", Value: SortByDesc}, opts)
+	if err != nil {
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return videos, nil
+}
+
 func (db *DB) GetVideo(ctx context.Context, id model.ID) (model.Video, error) {
 	const op = "database.GetVideo"
 
