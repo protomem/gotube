@@ -98,7 +98,14 @@ func defaultGetSortByFromRequest(r *http.Request, defaultValue string) string {
 	if !ok {
 		return defaultValue
 	}
+	if value == "" {
+		return defaultValue
+	}
 	return value
+}
+
+func getSearchQueryFromRequest(r *http.Request) (string, bool) {
+	return getQueryValueFromRequest(r, "q")
 }
 
 func getRefreshTokenFromRequest(r *http.Request) (string, bool) {

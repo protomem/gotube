@@ -180,6 +180,7 @@ func (app *application) handleFindVideos(w http.ResponseWriter, r *http.Request)
 	}
 
 	sortBy := defaultGetSortByFromRequest(r, "new")
+	searchQuery, searchQueryOk := getSearchQueryFromRequest(r)
 
 	var (
 		err    error
@@ -187,14 +188,21 @@ func (app *application) handleFindVideos(w http.ResponseWriter, r *http.Request)
 	)
 	opts := usecase.FindOptions{Limit: limit, Offset: offset}
 
-	switch sortBy {
-	case "new", "createdAt":
-		videos, err = usecase.FindNewVideos(app.db).Invoke(r.Context(), opts)
-	case "popular", "trends", "views":
-		videos, err = usecase.FindPopularVideos(app.db).Invoke(r.Context(), opts)
-	default:
-		app.badRequest(w, r, fmt.Errorf("sortBy doesn't support value: %s", sortBy))
-		return
+	if searchQueryOk {
+		videos, err = usecase.SearchVideos(app.db).Invoke(r.Context(), usecase.SearchVideosInput{
+			Query: searchQuery,
+			Opts:  opts,
+		})
+	} else {
+		switch sortBy {
+		case "new", "createdAt":
+			videos, err = usecase.FindNewVideos(app.db).Invoke(r.Context(), opts)
+		case "popular", "trends", "views":
+			videos, err = usecase.FindPopularVideos(app.db).Invoke(r.Context(), opts)
+		default:
+			app.badRequest(w, r, fmt.Errorf("sortBy doesn't support value: %s", sortBy))
+			return
+		}
 	}
 
 	if err != nil {

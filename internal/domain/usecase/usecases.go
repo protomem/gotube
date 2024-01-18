@@ -448,6 +448,26 @@ func FindPopularVideos(db *database.DB) Usecase[FindOptions, []model.Video] {
 	})
 }
 
+type (
+	SearchVideosInput struct {
+		Query string
+		Opts  FindOptions
+	}
+)
+
+func SearchVideos(db *database.DB) Usecase[SearchVideosInput, []model.Video] {
+	return UsecaseFunc[SearchVideosInput, []model.Video](func(ctx context.Context, input SearchVideosInput) ([]model.Video, error) {
+		const op = "usecase.SearchVideos"
+
+		videos, err := db.FindVideosByLikeTitle(ctx, input.Query, database.FindOptions(input.Opts))
+		if err != nil {
+			return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		return videos, nil
+	})
+}
+
 func GetVideo(db *database.DB) Usecase[model.ID, model.Video] {
 	return UsecaseFunc[model.ID, model.Video](func(ctx context.Context, id model.ID) (model.Video, error) {
 		const op = "usecase.GetVideo"

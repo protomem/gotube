@@ -35,6 +35,45 @@ func (db *DB) FindVideosSortByViews(ctx context.Context, opts FindOptions) ([]mo
 	return videos, nil
 }
 
+func (db *DB) FindVideosByLikeTitle(ctx context.Context, likeTitle string, opts FindOptions) ([]model.Video, error) {
+	const op = "database.FindVideosLikeTitle"
+
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	query := `
+		SELECT videos.*, authors.* FROM videos
+		JOIN users AS authors ON videos.author_id = authors.id
+		WHERE lower(videos.title) LIKE '%' || lower($3) || '%' AND videos.is_public = true
+		ORDER BY videos.created_at DESC
+		LIMIT $1 OFFSET $2
+	`
+	args := []any{opts.Limit, opts.Offset, likeTitle}
+
+	videos := make([]model.Video, 0, opts.Limit)
+
+	rows, err := db.QueryxContext(ctx, query, args...)
+	if err != nil {
+		if IsNoRows(err) {
+			return []model.Video{}, nil
+		}
+
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	for rows.Next() {
+		var video model.Video
+		if err := db.videoScan(rows, &video); err != nil {
+			return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		videos = append(videos, video)
+	}
+
+	return videos, nil
+}
+
 func (db *DB) GetVideo(ctx context.Context, id model.ID) (model.Video, error) {
 	const op = "database.GetVideo"
 
@@ -147,7 +186,7 @@ func (db *DB) findVideosByFieldWithSortBy(ctx context.Context, byField Field, so
 	query := fmt.Sprintf(baseQuery, byField.Name, sortBy.Name, sortBy.Value)
 	args := []any{byField.Value, opts.Limit, opts.Offset}
 
-	videos := make([]model.Video, 0)
+	videos := make([]model.Video, 0, opts.Limit)
 
 	rows, err := db.QueryxContext(ctx, query, args...)
 	if err != nil {
