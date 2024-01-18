@@ -48,10 +48,10 @@ func (db *DB) InsertComment(ctx context.Context, dto InsertCommentDTO) (model.ID
 	defer cancel()
 
 	query := `
-        INSERT INTO comments (content, author_id, video_id) 
-        VALUES ($1, $2, $3) 
-        RETURNING id
-    `
+		INSERT INTO comments (content, author_id, video_id) 
+    	VALUES ($1, $2, $3) 
+    	RETURNING id
+	`
 	args := []any{dto.Content, dto.AuthorID, dto.VideoID}
 
 	var id model.ID
@@ -78,10 +78,10 @@ func (db *DB) DeleteComment(ctx context.Context, id model.ID) error {
 
 func (db *DB) findCommentsByField(ctx context.Context, field Field) ([]model.Comment, error) {
 	baseQuery := `
-        SELECT comments.*, authors.* FROM comments
-        JOIN users AS authors ON comments.author_id = authors.id 
-        WHERE comments.%s = $1
-    `
+    	SELECT comments.*, authors.* FROM comments
+    	JOIN users AS authors ON comments.author_id = authors.id 
+    	WHERE comments.%s = $1
+	`
 	query := fmt.Sprintf(baseQuery, field.Name)
 	args := []any{field.Value}
 
