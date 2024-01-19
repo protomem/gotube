@@ -741,3 +741,80 @@ func DeleteComment(db *database.DB) Usecase[model.ID, void] {
 		return void{}, nil
 	})
 }
+
+type (
+	SubscribeInput struct {
+		FromUserNickname string
+		ToUserNickname   string
+	}
+)
+
+func Subscribe(db *database.DB) Usecase[SubscribeInput, void] {
+	return UsecaseFunc[SubscribeInput, void](func(ctx context.Context, input SubscribeInput) (void, error) {
+		const op = "usecase.Subscribe"
+
+		fromUser, err := db.GetUserByNickname(ctx, input.FromUserNickname)
+		if err != nil {
+			return void{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		toUser, err := db.GetUserByNickname(ctx, input.ToUserNickname)
+		if err != nil {
+			return void{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		_, err = db.GetSubscriptionByFromUserIDAndToUserID(ctx, fromUser.ID, toUser.ID)
+		if err != nil && !errors.Is(err, model.ErrNotFound) {
+			return void{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		if errors.Is(err, model.ErrNotFound) {
+			if _, err := db.InsertSubscription(ctx, database.InsertSubscriptionDTO{
+				FromUserID: fromUser.ID,
+				ToUserID:   toUser.ID,
+			}); err != nil {
+				return void{}, fmt.Errorf("%s: %w", op, err)
+			}
+		}
+
+		return void{}, nil
+	})
+}
+
+type (
+	UnsubscribeInput struct {
+		FromUserNickname string
+		ToUserNickname   string
+	}
+)
+
+func Unsubscribe(db *database.DB) Usecase[UnsubscribeInput, void] {
+	return UsecaseFunc[UnsubscribeInput, void](func(ctx context.Context, input UnsubscribeInput) (void, error) {
+		const op = "usecase.Unsubscribe"
+
+		fromUser, err := db.GetUserByNickname(ctx, input.FromUserNickname)
+		if err != nil {
+			return void{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		toUser, err := db.GetUserByNickname(ctx, input.ToUserNickname)
+		if err != nil {
+			return void{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		sub, err := db.GetSubscriptionByFromUserIDAndToUserID(ctx, fromUser.ID, toUser.ID)
+		if err != nil {
+			if errors.Is(err, model.ErrNotFound) {
+				return void{}, nil
+			}
+
+			return void{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		if err := db.DeleteSubscription(ctx, sub.ID); err != nil {
+			return void{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		return void{}, nil
+	})
+}

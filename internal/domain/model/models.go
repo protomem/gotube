@@ -76,3 +76,18 @@ type Comment struct {
 
 	VideoID ID `json:"videoId" db:"video_id"`
 }
+
+var (
+	ErrSubscriptionNotFound      = NewError("subscription", ErrNotFound)
+	ErrSubscriptionAlreadyExists = NewError("subscription", ErrAlreadyExists)
+)
+
+type Subscription struct {
+	ID ID `json:"id" db:"id"`
+
+	CreatedAt time.Time `json:"createdAt" db:"created_at"`
+	UpdatedAt time.Time `json:"updatedAt" db:"updated_at"`
+
+	FromUserID ID `json:"fromUserId" db:"from_user_id"`
+	ToUserID   ID `json:"toUserId" db:"to_user_id"`
+}

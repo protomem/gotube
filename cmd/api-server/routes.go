@@ -50,6 +50,18 @@ func (app *application) routes() http.Handler {
 	}
 
 	{
+		mux := mux.PathPrefix("/subs").Subrouter()
+
+		{
+			mux := mux.NewRoute().Subrouter()
+			mux.Use(app.requireAuthentication)
+
+			mux.HandleFunc("/{userNickname}", app.handleSubscribe).Methods(http.MethodPost)
+			mux.HandleFunc("/{userNickname}", app.handleUnsubscribe).Methods(http.MethodDelete)
+		}
+	}
+
+	{
 		mux := mux.PathPrefix("/videos").Subrouter()
 
 		mux.NewRoute().HandlerFunc(app.handleFindVideos).Methods(http.MethodGet)

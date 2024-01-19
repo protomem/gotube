@@ -422,3 +422,33 @@ func (app *application) handleDeleteComment(w http.ResponseWriter, r *http.Reque
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (app *application) handleSubscribe(w http.ResponseWriter, r *http.Request) {
+	toUserNickname := mustGetUserNicknameFromRequest(r)
+	requester := ctxstore.MustUser(r.Context())
+
+	if _, err := usecase.Subscribe(app.db).Invoke(r.Context(), usecase.SubscribeInput{
+		FromUserNickname: requester.Nickname,
+		ToUserNickname:   toUserNickname,
+	}); err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (app *application) handleUnsubscribe(w http.ResponseWriter, r *http.Request) {
+	toUserNickname := mustGetUserNicknameFromRequest(r)
+	requester := ctxstore.MustUser(r.Context())
+
+	if _, err := usecase.Unsubscribe(app.db).Invoke(r.Context(), usecase.UnsubscribeInput{
+		FromUserNickname: requester.Nickname,
+		ToUserNickname:   toUserNickname,
+	}); err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
