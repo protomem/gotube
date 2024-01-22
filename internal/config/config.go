@@ -11,6 +11,10 @@ type HTTP struct {
 	Port int    `env:"PORT" envDefault:"8080"`
 }
 
+type Log struct {
+	Level string `env:"LEVEL" envDefault:"debug"`
+}
+
 type Database struct {
 	DSN string `env:"DSN,notEmpty"`
 }
@@ -21,6 +25,7 @@ type Flash struct {
 
 type Config struct {
 	HTTP     `envPrefix:"HTTP_"`
+	Log      `envPrefix:"LOG_"`
 	Database `envPrefix:"DB_"`
 	Flash    `envPrefix:"FLASH_"`
 }
