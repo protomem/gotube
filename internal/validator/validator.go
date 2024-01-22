@@ -1,11 +1,18 @@
 package validator
 
 type Validator struct {
-	Errors      []string          `json:",omitempty"`
-	FieldErrors map[string]string `json:",omitempty"`
+	Errors      []string          `json:"errors,omitempty"`
+	FieldErrors map[string]string `json:"fieldErrors,omitempty"`
 }
 
-func (v Validator) HasErrors() bool {
+func New() *Validator {
+	return &Validator{
+		Errors:      make([]string, 0),
+		FieldErrors: make(map[string]string),
+	}
+}
+
+func (v *Validator) HasErrors() bool {
 	return len(v.Errors) != 0 || len(v.FieldErrors) != 0
 }
 
@@ -37,4 +44,22 @@ func (v *Validator) CheckField(ok bool, key, message string) {
 	if !ok {
 		v.AddFieldError(key, message)
 	}
+}
+
+func (v *Validator) Error() string {
+	return "validation error(s)"
+}
+
+func (v *Validator) As(target any) bool {
+	_, ok := target.(*Validator)
+	return ok
+}
+
+func Validate(fn func(v *Validator)) error {
+	v := New()
+	fn(v)
+	if v.HasErrors() {
+		return v
+	}
+	return nil
 }

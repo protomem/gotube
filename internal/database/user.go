@@ -2,124 +2,48 @@ package database
 
 import (
 	"context"
-	"strconv"
-	"time"
+	"fmt"
 
-	"github.com/google/uuid"
+	"github.com/protomem/gotube/internal/domain/model"
 )
 
-var (
-	ErrUserNotFound      = NewModelError(ErrNotFound, "user")
-	ErrUserAlreadyExists = NewModelError(ErrAlreadyExists, "user")
-)
+func (db *DB) GetUser(ctx context.Context, id model.ID) (model.User, error) {
+	const op = "database.GetUser"
 
-type User struct {
-	ID uuid.UUID `db:"id" json:"id"`
-
-	CreatedAt time.Time `db:"created_at" json:"createdAt"`
-	UpdatedAt time.Time `db:"updated_at" json:"updatedAt"`
-
-	Nickname string `db:"nickname" json:"nickname"`
-	Password string `db:"password" json:"-"`
-
-	Email string `db:"email" json:"email"`
-
-	AvatarPath  string `db:"avatar_path" json:"avatarPath"`
-	Description string `db:"description" json:"description"`
-}
-
-func (db *DB) FindUsers(ctx context.Context, ids []uuid.UUID) ([]User, error) {
 	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
 	defer cancel()
 
-	query := `SELECT * FROM users WHERE id = ANY($1::uuid[])`
-	args := []any{ids}
-
-	rows, err := db.QueryxContext(ctx, query, args...)
+	user, err := db.getUserByField(ctx, Field{Name: "id", Value: id})
 	if err != nil {
-		if IsNoRows(err) {
-			return []User{}, nil
-		}
-
-		return []User{}, err
-	}
-	defer func() { _ = rows.Close() }()
-
-	users := make([]User, 0, len(ids))
-
-	for rows.Next() {
-		var user User
-		if err := rows.StructScan(&user); err != nil {
-			return []User{}, err
-		}
-
-		users = append(users, user)
-	}
-
-	return users, nil
-}
-
-func (db *DB) GetUser(ctx context.Context, id uuid.UUID) (User, error) {
-	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
-	defer cancel()
-
-	query := `SELECT * FROM users WHERE id = $1 LIMIT 1`
-	args := []any{id}
-
-	var user User
-
-	if err := db.
-		QueryRowxContext(ctx, query, args...).
-		StructScan(&user); err != nil {
-		if IsNoRows(err) {
-			return User{}, ErrUserNotFound
-		}
-
-		return User{}, err
+		return model.User{}, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return user, nil
 }
 
-func (db *DB) GetUserByNickname(ctx context.Context, nickname string) (User, error) {
+func (db *DB) GetUserByNickname(ctx context.Context, nickname string) (model.User, error) {
+	const op = "database.GetUserByNickname"
+
 	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
 	defer cancel()
 
-	query := `SELECT * FROM users WHERE nickname = $1 LIMIT 1`
-	args := []any{nickname}
-
-	var user User
-
-	if err := db.
-		QueryRowxContext(ctx, query, args...).
-		StructScan(&user); err != nil {
-		if IsNoRows(err) {
-			return User{}, ErrUserNotFound
-		}
-
-		return User{}, err
+	user, err := db.getUserByField(ctx, Field{Name: "nickname", Value: nickname})
+	if err != nil {
+		return model.User{}, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return user, nil
 }
 
-func (db *DB) GetUserByEmail(ctx context.Context, email string) (User, error) {
+func (db *DB) GetUserByEmail(ctx context.Context, email string) (model.User, error) {
+	const op = "database.GetUserByEmail"
+
 	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
 	defer cancel()
 
-	query := `SELECT * FROM users WHERE email = $1 LIMIT 1`
-	args := []any{email}
-
-	var user User
-
-	if err := db.
-		QueryRowxContext(ctx, query, args...).
-		StructScan(&user); err != nil {
-		if IsNoRows(err) {
-			return User{}, ErrUserNotFound
-		}
-
-		return User{}, err
+	user, err := db.getUserByField(ctx, Field{Name: "email", Value: email})
+	if err != nil {
+		return model.User{}, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return user, nil
@@ -127,27 +51,31 @@ func (db *DB) GetUserByEmail(ctx context.Context, email string) (User, error) {
 
 type InsertUserDTO struct {
 	Nickname string
-	Email    string
 	Password string
+	Email    string
 }
 
-func (db *DB) InsertUser(ctx context.Context, dto InsertUserDTO) (uuid.UUID, error) {
+func (db *DB) InsertUser(ctx context.Context, dto InsertUserDTO) (model.ID, error) {
+	const op = "database.InsertUser"
+
 	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
 	defer cancel()
 
-	query := `INSERT INTO users (nickname, email, password) VALUES ($1, $2, $3) RETURNING id`
-	args := []any{dto.Nickname, dto.Email, dto.Password}
+	query := `
+		INSERT INTO users(nickname, password, email)
+		VALUES ($1, $2, $3)
+		RETURNING id
+	`
+	args := []any{dto.Nickname, dto.Password, dto.Email}
 
-	var id uuid.UUID
+	var id model.ID
 
-	if err := db.
-		QueryRowxContext(ctx, query, args...).
-		Scan(&id); err != nil {
+	if err := db.QueryRowxContext(ctx, query, args...).Scan(&id); err != nil {
 		if IsKeyConflict(err) {
-			return uuid.Nil, ErrUserAlreadyExists
+			return model.ID{}, fmt.Errorf("%s: %w", op, model.ErrUserAlreadyExists)
 		}
 
-		return uuid.Nil, err
+		return model.ID{}, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return id, nil
@@ -161,41 +89,79 @@ type UpdateUserDTO struct {
 	Description *string
 }
 
-func (db *DB) UpdateUser(ctx context.Context, id uuid.UUID, dto UpdateUserDTO) error {
+func (db *DB) UpdateUser(ctx context.Context, id model.ID, dto UpdateUserDTO) error {
+	const op = "database.UpdateUserByNickname"
+
 	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
 	defer cancel()
 
-	counter := 1
-	query := `UPDATE users SET updated_at = now()`
-	args := []any{id}
+	fields := make([]Field, 0, 5)
 
 	if dto.Nickname != nil {
-		counter++
-		query += `, nickname = $` + strconv.Itoa(counter)
-		args = append(args, *dto.Nickname)
+		fields = append(fields, Field{Name: "nickname", Value: *dto.Nickname})
 	}
 	if dto.Password != nil {
-		counter++
-		query += `, password = $` + strconv.Itoa(counter)
-		args = append(args, *dto.Password)
+		fields = append(fields, Field{Name: "password", Value: *dto.Password})
 	}
 	if dto.Email != nil {
-		counter++
-		query += `, email = $` + strconv.Itoa(counter)
-
+		fields = append(fields, Field{Name: "email", Value: *dto.Email})
 	}
 	if dto.AvatarPath != nil {
-		counter++
-		query += `, avatar_path = $` + strconv.Itoa(counter)
-		args = append(args, *dto.AvatarPath)
+		fields = append(fields, Field{Name: "avatar_path", Value: *dto.AvatarPath})
 	}
 	if dto.Description != nil {
-		counter++
-		query += `, description = $` + strconv.Itoa(counter)
-		args = append(args, *dto.Description)
+		fields = append(fields, Field{Name: "description", Value: *dto.Description})
 	}
 
-	query += ` WHERE id = $1`
+	if err := db.updateUserByField(ctx, Field{Name: "id", Value: id}, fields); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}
+
+func (db *DB) DeleteUserByNickname(ctx context.Context, nickname string) error {
+	const op = "database.DeleteUserByNickname"
+
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	if err := db.deleteUserByField(ctx, Field{Name: "nickname", Value: nickname}); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}
+
+func (db *DB) getUserByField(ctx context.Context, field Field) (model.User, error) {
+	query := fmt.Sprintf(`SELECT * FROM users WHERE %s = $1 LIMIT 1`, field.Name)
+	args := []any{field.Value}
+
+	var user model.User
+
+	if err := db.QueryRowxContext(ctx, query, args...).StructScan(&user); err != nil {
+		if IsNoRows(err) {
+			return model.User{}, model.ErrUserNotFound
+		}
+
+		return model.User{}, err
+	}
+
+	return user, nil
+}
+
+func (db *DB) updateUserByField(ctx context.Context, byFiled Field, fields []Field) error {
+	counter := 1
+	query := `UPDATE users SET updated_at = now()`
+	args := []any{byFiled.Value}
+
+	for _, f := range fields {
+		counter++
+		query += fmt.Sprintf(`, %s = $%d`, f.Name, counter)
+		args = append(args, f.Value)
+	}
+
+	query += fmt.Sprintf(` WHERE %s = $%d`, byFiled.Name, 1)
 
 	if _, err := db.ExecContext(ctx, query, args...); err != nil {
 		return err
@@ -204,14 +170,11 @@ func (db *DB) UpdateUser(ctx context.Context, id uuid.UUID, dto UpdateUserDTO) e
 	return nil
 }
 
-func (db *DB) DeleteUser(ctx context.Context, id uuid.UUID) error {
-	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
-	defer cancel()
+func (db *DB) deleteUserByField(ctx context.Context, field Field) error {
+	query := fmt.Sprintf(`DELETE FROM users WHERE %s = $1`, field.Name)
+	args := []any{field.Value}
 
-	qeury := `DELETE FROM users WHERE id = $1`
-	args := []any{id}
-
-	if _, err := db.ExecContext(ctx, qeury, args...); err != nil {
+	if _, err := db.ExecContext(ctx, query, args...); err != nil {
 		return err
 	}
 

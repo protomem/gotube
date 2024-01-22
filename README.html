@@ -123,10 +123,6 @@ Content-Length: 23
 <td>Contains various helper packages used by the application.</td>
 </tr>
 <tr>
-<td><code>↳ internal/cookies</code></td>
-<td>Contains helper functions for reading/writing signed and encrypted cookies.</td>
-</tr>
-<tr>
 <td><code>↳ internal/database/</code></td>
 <td>Contains your database-related code (setup, connection and queries).</td>
 </tr>
@@ -172,17 +168,19 @@ func (app *application) yourHandler(w http.ResponseWriter, r *http.Request) {
 <p>Any dependencies that your handlers have should be initialized in the <code>run()</code> function <code>cmd/api/main.go</code> and added to the <code>application</code> struct. All of your handlers, helpers and middleware that are defined as methods on <code>application</code> will then have access to them.</p>
 <p>You can see an example of this in the <code>cmd/api/main.go</code> file where we initialize a new <code>logger</code> instance and add it to the <code>application</code> struct.</p>
 <h2>Creating new routes</h2>
-<p><a href="https://github.com/go-chi/chi">chi</a> version 5 is used for routing. Routes are defined in the <code>routes()</code> method in the <code>cmd/api/routes.go</code> file. For example:</p>
+<p><a href="https://github.com/gorilla/mux">Gorilla mux</a> is used for routing. Routes are defined in the <code>routes()</code> method in the <code>cmd/api/routes.go</code> file. For example:</p>
 <pre>
 func (app *application) routes() http.Handler {
-    mux := chi.NewRouter()
+    mux := mux.NewRouter()
+
+    mux.HandleFunc("/your/path", app.yourHandler).Methods("GET")
     
     mux.Get("/your/path", app.yourHandler)
     
     return mux
 }
 </pre>
-<p>For more information about chi and example usage, please see the <a href="https://github.com/go-chi/chi">official documentation</a>.</p>
+<p>For more information about Gorilla mux and example usage, please see the <a href="https://github.com/gorilla/mux">official documentation</a>.</p>
 <h2>Adding middleware</h2>
 <p>Middleware is defined as methods on the <code>application</code> struct in the <code>cmd/api/middleware.go</code> file. Feel free to add your own. They take the pattern:</p>
 <pre>
@@ -193,35 +191,6 @@ func (app *application) yourMiddleware(next http.Handler) http.Handler {
     })
 }
 </pre>
-<p>You can then register this middleware with the router using the <code>Use()</code> method:</p>
-<pre>
-func (app *application) routes() http.Handler {
-    mux := chi.NewRouter()
-    mux.Use(app.yourMiddleware)
-    
-    mux.Get("/your/path", app.yourHandler)
-    
-    return mux
-}
-</pre>
-<p>It's possible to use middleware on specific routes only by creating route 'groups':</p>
-<pre>
-func (app *application) routes() http.Handler {
-    mux := chi.NewRouter()
-    mux.Use(app.yourMiddleware)
-    
-    mux.Get("/your/path", app.yourHandler)
-
-    mux.Group(func(mux chi.Router) {
-        mux.Use(app.yourOtherMiddleware)
-    
-        mux.Get("/your/other/path", app.yourOtherHandler)
-    })
-    
-    return mux
-}
-</pre>
-<p>Note: Route 'groups' can also be nested.</p>
 <h2>Sending JSON responses</h2>
 <p>JSON responses and a specific HTTP status code can be sent using the <code>response.JSON()</code> function. The <code>data</code> parameter can be any JSON-marshalable type.</p>
 <pre>
@@ -461,106 +430,6 @@ logger := slog.New(slog.NewJSONHandler(os.Stdout, &amp;slog.HandlerOptions{Level
 </pre>
 <p>Feel free to customize this further as necessary.</p>
 <p>Also note: Any messages that are automatically logged by the Go <code>http.Server</code> are output at the <code>Warn</code> level.</p>
-<h2>Cookies</h2>
-<p>The <code>internal/cookies</code> package provides helper functions for reading and writing cookies.</p>
-<p>The <code>Write()</code> function base64-encodes the cookie value and checks the cookie length is no more than 4096 bytes before writing the cookie. You can use it like this:</p>
-<pre>
-func (app *application) yourHandler(w http.ResponseWriter, r *http.Request) {
-    // Initialize a Go cookie as normal.
-    cookie := http.Cookie{
-        Name:     "exampleCookie",
-        Value:    "Hello Zoë!",
-        Path:     "/",
-        MaxAge:   3600,
-        HttpOnly: true,
-        Secure:   true,
-        SameSite: http.SameSiteLaxMode,
-    }
-
-    // Write the cookie.
-    err := cookies.Write(w, cookie)
-    if err != nil {
-        app.serverError(w, r, err)
-        return
-    }
-
-    ...
-}
-</pre>
-<p>The <code>Read()</code> function reads a named cookie and base64-decodes the value before returning it.</p>
-<pre>
-func (app *application) yourHandler(w http.ResponseWriter, r *http.Request) {
-    // Read the cookie value and handle any errors as necessary for your application.
-    value, err := cookies.Read(r, "exampleCookie")
-    if err != nil {
-        switch {
-        case errors.Is(err, http.ErrNoCookie):
-            app.badRequest(w, r, err)
-        case errors.Is(err, cookies.ErrInvalidValue):
-            app.badRequest(w, r, err)
-        default:
-            app.serverError(w, r, err)
-        }
-        return
-    }
-
-    ...
-}
-</pre>
-<p>The <code>internal/cookies</code> package also provides <code>WriteSigned()</code> and <code>ReadSigned()</code> functions for writing/reading signed cookies, and <code>WriteEncrypted()</code> and <code>ReadEncrypted()</code> functions encrypted cookies. Signed cookies are authenticated using HMAC-256, meaning that you can trust that the contents of the cookie has not been tampered with. Encrypted cookies are encrpyted using AES-GCM, which both authenticates and encrypts the cookie data, meaning that you can trust that the contents of the cookie has not been tampered with <em>and</em> the contents of the cookie cannot be read by the client.</p>
-<p>When using these helper functions, you must set your own (secret) key for signing and encryption. This key should be a random 32-character string generated using a CSRNG which you pass to the application using the <code>COOKIE_SECRET_KEY</code> environment variable. For example:</p>
-<pre>
-$ export COOKIE_SECRET_KEY="heoCDWSgJ430OvzyoLNE9mVV9UJFpOWx"
-$ go run ./cmd/api
-</pre>
-<p>To write a new signed or encrypted cookie:</p>
-<pre>
-func (app *application) yourHandler(w http.ResponseWriter, r *http.Request) {
-    // Initialize a Go cookie as normal.
-    cookie := http.Cookie{
-        Name:     "exampleCookie",
-        Value:    "Hello Zoë!",
-        Path:     "/",
-        MaxAge:   3600,
-        HttpOnly: true,
-        Secure:   true,
-        SameSite: http.SameSiteLaxMode,
-    }
-
-    // Write a signed cookie using WriteSigned() and passing in the secret key
-    // as the final argument. Use WriteEncrypted() if you want an encrpyted
-    // cookie instead.
-    err := cookies.WriteSigned(w, cookie, app.config.cookie.secretKey)
-    if err != nil {
-        app.serverError(w, r, err)
-        return
-    }
-
-    ...
-}
-</pre>
-<p>To read a signed or encrypted cookie:</p>
-<pre>
-func (app *application) yourHandler(w http.ResponseWriter, r *http.Request) {
-    // Read the cookie value using ReadSigned() and passing in the secret key
-    // as the final argument. Use ReadEncrypted() if you want to read an 
-    // encrpyted cookie instead.
-    value, err := cookies.ReadSigned(r, "exampleCookie", app.config.cookie.secretKey)
-    if err != nil {
-        switch {
-        case errors.Is(err, http.ErrNoCookie):
-            app.badRequest(w, r, err)
-        case errors.Is(err, cookies.ErrInvalidValue):
-            app.badRequest(w, r, err)
-        default:
-            app.serverError(w, r, err)
-        }
-        return
-    }
-
-    ...
-}
-</pre>
 <h2>Admin tasks</h2>
 <p>The <code>Makefile</code> in the project root contains commands to easily run common admin tasks:</p>
 <table>

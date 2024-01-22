@@ -2,121 +2,139 @@ package database
 
 import (
 	"context"
-	"time"
+	"fmt"
 
-	"github.com/google/uuid"
+	"github.com/protomem/gotube/internal/domain/model"
 )
 
-var ErrCommentNotFound = NewModelError(ErrNotFound, "comment")
+func (db *DB) FindCommentsByVideoID(ctx context.Context, videoID model.ID) ([]model.Comment, error) {
+	const op = "database.FindCommentsByVideoID"
 
-type Comment struct {
-	ID uuid.UUID `db:"id" json:"id"`
-
-	CreatedAt time.Time `db:"created_at" json:"createdAt"`
-	UpdatedAt time.Time `db:"updated_at" json:"updatedAt"`
-
-	Body string `db:"body" json:"body"`
-
-	VideoID  uuid.UUID `db:"video_id" json:"videoId"`
-	AuthorID uuid.UUID `db:"author_id" json:"-"`
-
-	Author User `db:"author" json:"author"`
-}
-
-func (db *DB) FindCommentsByVideoID(ctx context.Context, videoID uuid.UUID, opts FindOptions) ([]Comment, error) {
 	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
 	defer cancel()
 
-	query := `
-		SELECT comments.*, authors.* FROM comments
-		JOIN users AS authors ON comments.author_id = authors.id
-		WHERE comments.video_id = $3
-		LIMIT $1 OFFSET $2
-	`
-	args := []any{opts.Limit, opts.Offset, videoID}
-
-	rows, err := db.QueryxContext(ctx, query, args...)
+	comments, err := db.findCommentsByField(ctx, Field{Name: "video_id", Value: videoID})
 	if err != nil {
-		if IsNoRows(err) {
-			return []Comment{}, nil
-		}
-
-		return []Comment{}, err
-	}
-	defer func() { _ = rows.Close() }()
-
-	comments := make([]Comment, 0, opts.Limit)
-
-	for rows.Next() {
-		var comment Comment
-		if err := db.commmentScan(rows, &comment); err != nil {
-			return []Comment{}, err
-		}
-		comments = append(comments, comment)
+		return []model.Comment{}, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return comments, nil
 }
 
-func (db *DB) GetComment(ctx context.Context, id uuid.UUID) (Comment, error) {
+func (db *DB) GetComment(ctx context.Context, id model.ID) (model.Comment, error) {
+	const op = "database.GetComment"
+
 	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
 	defer cancel()
 
-	query := `
-		SELECT comments.*, authors.* FROM comments
-		JOIN users AS authors ON comments.author_id = authors.id
-		WHERE comments.id = $1
-		LIMIT 1
-	`
-
-	var comment Comment
-
-	row := db.QueryRowxContext(ctx, query, id)
-	if err := db.commmentScan(row, &comment); err != nil {
-		if IsNoRows(err) {
-			return Comment{}, ErrCommentNotFound
-		}
-
-		return Comment{}, err
+	comment, err := db.getCommentByField(ctx, Field{Name: "id", Value: id})
+	if err != nil {
+		return model.Comment{}, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return comment, nil
 }
 
 type InsertCommentDTO struct {
-	Body     string
-	VideoID  uuid.UUID
-	AuthorID uuid.UUID
+	Content  string
+	AuthorID model.ID
+	VideoID  model.ID
 }
 
-func (db *DB) InsertComment(ctx context.Context, dto InsertCommentDTO) (uuid.UUID, error) {
+func (db *DB) InsertComment(ctx context.Context, dto InsertCommentDTO) (model.ID, error) {
+	const op = "database.InsertComment"
+
 	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
 	defer cancel()
 
-	query := `INSERT INTO comments (body, video_id, author_id) VALUES ($1, $2, $3) RETURNING id`
-	args := []any{dto.Body, dto.VideoID, dto.AuthorID}
+	query := `
+		INSERT INTO comments (content, author_id, video_id) 
+		VALUES ($1, $2, $3) 
+		RETURNING id
+	`
+	args := []any{dto.Content, dto.AuthorID, dto.VideoID}
 
-	var id uuid.UUID
+	var id model.ID
 
-	if err := db.
-		QueryRowxContext(ctx, query, args...).
-		Scan(&id); err != nil {
-		return uuid.Nil, err
+	if err := db.QueryRowxContext(ctx, query, args...).Scan(&id); err != nil {
+		return model.ID{}, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return id, nil
 }
 
-type UpdateCommentDTO struct {
-	Body string
-}
+func (db *DB) DeleteComment(ctx context.Context, id model.ID) error {
+	const op = "database.DeleteComment"
 
-func (db *DB) UpdateComment(ctx context.Context, id uuid.UUID, dto UpdateCommentDTO) error {
 	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
 	defer cancel()
 
-	query := `UPDATE comments SET updated_at = now(), body = $2 WHERE id = $1`
-	args := []any{id, dto.Body}
+	if err := db.deleteCommentByField(ctx, Field{Name: "id", Value: id}); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}
+
+func (db *DB) findCommentsByField(ctx context.Context, field Field) ([]model.Comment, error) {
+	baseQuery := `
+		SELECT comments.*, authors.* FROM comments
+		JOIN users AS authors ON comments.author_id = authors.id 
+		WHERE comments.%s = $1
+	`
+	query := fmt.Sprintf(baseQuery, field.Name)
+	args := []any{field.Value}
+
+	comments := make([]model.Comment, 0)
+
+	rows, err := db.QueryxContext(ctx, query, args...)
+	if err != nil {
+		if IsNoRows(err) {
+			return []model.Comment{}, nil
+		}
+
+		return []model.Comment{}, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var comment model.Comment
+		if err := db.commentScan(rows, &comment); err != nil {
+			return []model.Comment{}, err
+		}
+
+		comments = append(comments, comment)
+	}
+
+	return comments, nil
+}
+
+func (db *DB) getCommentByField(ctx context.Context, field Field) (model.Comment, error) {
+	baseQuery := `
+		SELECT comments.*, authors.* FROM comments
+		JOIN users AS authors ON comments.author_id = authors.id 
+		WHERE comments.%s = $1 ORDER BY comments.created_at DESC LIMIT 1
+	`
+	query := fmt.Sprintf(baseQuery, field.Name)
+	args := []any{field.Value}
+
+	var comment model.Comment
+
+	row := db.QueryRowxContext(ctx, query, args...)
+	if err := db.commentScan(row, &comment); err != nil {
+		if IsNoRows(err) {
+			return model.Comment{}, model.ErrCommentNotFound
+		}
+
+		return model.Comment{}, err
+	}
+
+	return comment, nil
+}
+
+func (db *DB) deleteCommentByField(ctx context.Context, field Field) error {
+	query := fmt.Sprintf(`DELETE FROM comments WHERE %s = $1`, field.Name)
+	args := []any{field.Value}
 
 	if _, err := db.ExecContext(ctx, query, args...); err != nil {
 		return err
@@ -125,26 +143,12 @@ func (db *DB) UpdateComment(ctx context.Context, id uuid.UUID, dto UpdateComment
 	return nil
 }
 
-func (db *DB) DeleteComment(ctx context.Context, id uuid.UUID) error {
-	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
-	defer cancel()
-
-	query := `DELETE FROM comments WHERE id = $1`
-	args := []any{id}
-
-	if _, err := db.ExecContext(ctx, query, args...); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (db *DB) commmentScan(s Scanner, comment *Comment) error {
+func (db *DB) commentScan(s Scanner, comment *model.Comment) error {
 	return s.Scan(
 		&comment.ID,
 		&comment.CreatedAt, &comment.UpdatedAt,
-		&comment.Body,
-		&comment.VideoID, &comment.AuthorID,
+		&comment.Content,
+		&comment.AuthorID, &comment.VideoID,
 
 		&comment.Author.ID,
 		&comment.Author.CreatedAt, &comment.Author.UpdatedAt,

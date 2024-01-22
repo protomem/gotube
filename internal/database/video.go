@@ -2,359 +2,163 @@ package database
 
 import (
 	"context"
-	"strconv"
-	"time"
+	"fmt"
 
-	"github.com/google/uuid"
+	"github.com/protomem/gotube/internal/domain/model"
 )
 
-var (
-	ErrVideoNotFound      = NewModelError(ErrNotFound, "video")
-	ErrVideoAlreadyExists = NewModelError(ErrAlreadyExists, "video")
-)
+func (db *DB) FindPublicVideosSortByCreatedAt(ctx context.Context, opts FindOptions) ([]model.Video, error) {
+	const op = "database.FindVideosSortByCreatedAt"
 
-type Video struct {
-	ID uuid.UUID `db:"id" json:"id"`
-
-	CreatedAt time.Time `db:"created_at" json:"createdAt"`
-	UpdatedAt time.Time `db:"updated_at" json:"updatedAt"`
-
-	Title       string `db:"title" json:"title"`
-	Description string `db:"description" json:"description"`
-
-	ThumbnailPath string `db:"thumbnail_path" json:"thumbnailPath"`
-	VideoPath     string `db:"video_path" json:"videoPath"`
-
-	Public bool   `db:"is_public" json:"isPublic"`
-	Views  uint64 `db:"views" json:"views"`
-
-	AuthorID uuid.UUID `db:"author_id" json:"-"`
-	Author   User      `db:"author" json:"author"`
-}
-
-func (db *DB) FindPublicVideosSortByCreatedAt(ctx context.Context, opts FindOptions) ([]Video, error) {
 	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
 	defer cancel()
 
-	query := `
-        SELECT videos.*, authors.* FROM videos 
-        JOIN users AS authors ON videos.author_id = authors.id
-        WHERE videos.is_public = true
-        ORDER BY videos.created_at DESC
-        LIMIT $1 OFFSET $2
-    `
-	args := []any{opts.Limit, opts.Offset}
-
-	rows, err := db.QueryxContext(ctx, query, args...)
+	videos, err := db.findVideosByFieldWithSortBy(ctx, Field{Name: "is_public", Value: true}, Field{Name: "created_at", Value: SortByDesc}, opts)
 	if err != nil {
-		if IsNoRows(err) {
-			return []Video{}, nil
-		}
-
-		return []Video{}, err
-	}
-	defer func() { _ = rows.Close() }()
-
-	videos := make([]Video, 0, opts.Limit)
-
-	for rows.Next() {
-		var video Video
-		if err = db.videoScan(rows, &video); err != nil {
-			return []Video{}, err
-		}
-		videos = append(videos, video)
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return videos, nil
 }
 
-func (db *DB) FindPublicVideosSortByViews(ctx context.Context, opts FindOptions) ([]Video, error) {
+func (db *DB) FindPublicVideosSortByViews(ctx context.Context, opts FindOptions) ([]model.Video, error) {
+	const op = "database.FindVideosSortByViews"
+
 	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
 	defer cancel()
 
-	query := `
-        SELECT videos.*, authors.* FROM videos
-        JOIN users AS authors ON videos.author_id = authors.id 
-        WHERE videos.is_public = true
-        ORDER BY videos.views DESC
-        LIMIT $1 OFFSET $2
-    `
-	args := []any{opts.Limit, opts.Offset}
-
-	rows, err := db.QueryxContext(ctx, query, args...)
+	videos, err := db.findVideosByFieldWithSortBy(ctx, Field{Name: "is_public", Value: true}, Field{Name: "views", Value: SortByDesc}, opts)
 	if err != nil {
-		if IsNoRows(err) {
-			return []Video{}, nil
-		}
-
-		return []Video{}, err
-	}
-	defer func() { _ = rows.Close() }()
-
-	videos := make([]Video, 0, opts.Limit)
-
-	for rows.Next() {
-		var video Video
-		if err = db.videoScan(rows, &video); err != nil {
-			return []Video{}, err
-		}
-		videos = append(videos, video)
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return videos, nil
 }
 
-func (db *DB) FindPublicVideosByAuthorNicknameSortByCreatedAt(
-	ctx context.Context,
-	authorNickname string,
-	opts FindOptions,
-) ([]Video, error) {
-	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
-	defer cancel()
+func (db *DB) FindPublicVideosByLikeTitle(ctx context.Context, likeTitle string, opts FindOptions) ([]model.Video, error) {
+	const op = "database.FindVideosLikeTitle"
 
-	query := `
-        SELECT videos.*, authors.* FROM videos
-        JOIN users AS authors ON videos.author_id = authors.id
-        WHERE authors.nickname = $3 AND videos.is_public = true
-        ORDER BY videos.created_at DESC
-        LIMIT $1 OFFSET $2
-    `
-	args := []any{opts.Limit, opts.Offset, authorNickname}
-
-	rows, err := db.QueryxContext(ctx, query, args...)
-	if err != nil {
-		if IsNoRows(err) {
-			return []Video{}, nil
-		}
-
-		return []Video{}, err
-	}
-	defer func() { _ = rows.Close() }()
-
-	videos := make([]Video, 0, opts.Limit)
-
-	for rows.Next() {
-		var video Video
-		if err = db.videoScan(rows, &video); err != nil {
-			return []Video{}, err
-		}
-		videos = append(videos, video)
-	}
-
-	return videos, nil
-}
-
-func (db *DB) FindVideosByAuthorNicknameSortByCreatedAt(
-	ctx context.Context,
-	authorNickname string,
-	opts FindOptions,
-) ([]Video, error) {
-	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
-	defer cancel()
-
-	query := `
-        SELECT videos.*, authors.* FROM videos
-        JOIN users AS authors ON videos.author_id = authors.id
-        WHERE authors.nickname = $3
-        ORDER BY videos.created_at DESC
-        LIMIT $1 OFFSET $2
-    `
-	args := []any{opts.Limit, opts.Offset, authorNickname}
-
-	rows, err := db.QueryxContext(ctx, query, args...)
-	if err != nil {
-		if IsNoRows(err) {
-			return []Video{}, nil
-		}
-
-		return []Video{}, err
-	}
-	defer func() { _ = rows.Close() }()
-
-	videos := make([]Video, 0, opts.Limit)
-
-	for rows.Next() {
-		var video Video
-		if err = db.videoScan(rows, &video); err != nil {
-			return []Video{}, err
-		}
-		videos = append(videos, video)
-	}
-
-	return videos, nil
-}
-
-func (db *DB) FindPublicVideosLikeByTitle(ctx context.Context, likeTitle string, opts FindOptions) ([]Video, error) {
-	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
-	defer cancel()
-
-	query := `
-        SELECT videos.*, authors.* FROM videos
-        JOIN users AS authors ON videos.author_id = authors.id
-        WHERE lower(videos.title) LIKE '%' || lower($3) || '%' AND videos.is_public = true
-        ORDER BY videos.created_at DESC
-        LIMIT $1 OFFSET $2
-    `
-	args := []any{opts.Limit, opts.Offset, likeTitle}
-
-	rows, err := db.QueryxContext(ctx, query, args...)
-	if err != nil {
-		if IsNoRows(err) {
-			return []Video{}, nil
-		}
-
-		return []Video{}, err
-	}
-	defer func() { _ = rows.Close() }()
-
-	videos := make([]Video, 0, opts.Limit)
-
-	for rows.Next() {
-		var video Video
-		if err = db.videoScan(rows, &video); err != nil {
-			return []Video{}, err
-		}
-		videos = append(videos, video)
-	}
-
-	return videos, nil
-}
-
-func (db *DB) FindPublicVideosLikeByTitleAndAuthorNickname(
-	ctx context.Context,
-	likeTitle, authorNickname string,
-	opts FindOptions,
-) ([]Video, error) {
-	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
-	defer cancel()
-
-	query := `
-        SELECT videos.*, authors.* FROM videos
-        JOIN users AS authors ON videos.author_id = authors.id
-        WHERE lower(videos.title) LIKE '%' || lower($3) || '%' AND authors.nickname = $4 AND videos.is_public = true
-        ORDER BY videos.created_at DESC
-        LIMIT $1 OFFSET $2
-    `
-	args := []any{opts.Limit, opts.Offset, likeTitle, authorNickname}
-
-	rows, err := db.QueryxContext(ctx, query, args...)
-	if err != nil {
-		if IsNoRows(err) {
-			return []Video{}, nil
-		}
-
-		return []Video{}, err
-	}
-	defer func() { _ = rows.Close() }()
-
-	videos := make([]Video, 0, opts.Limit)
-
-	for rows.Next() {
-		var video Video
-		if err = db.videoScan(rows, &video); err != nil {
-			return []Video{}, err
-		}
-		videos = append(videos, video)
-	}
-
-	return videos, nil
-}
-
-func (db *DB) FindVideosLikeByTitleAndAuthorNickname(
-	ctx context.Context,
-	likeTitle, authorNickname string,
-	opts FindOptions,
-) ([]Video, error) {
-	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
-	defer cancel()
-
-	query := `
-        SELECT videos.*, authors.* FROM videos
-        JOIN users AS authors ON videos.author_id = authors.id
-        WHERE lower(videos.title) LIKE '%' || lower($3) || '%' AND authors.nickname = $4
-        ORDER BY videos.created_at DESC
-        LIMIT $1 OFFSET $2
-    `
-	args := []any{opts.Limit, opts.Offset, likeTitle, authorNickname}
-
-	rows, err := db.QueryxContext(ctx, query, args...)
-	if err != nil {
-		if IsNoRows(err) {
-			return []Video{}, nil
-		}
-
-		return []Video{}, err
-	}
-	defer func() { _ = rows.Close() }()
-
-	videos := make([]Video, 0, opts.Limit)
-
-	for rows.Next() {
-		var video Video
-		if err = db.videoScan(rows, &video); err != nil {
-			return []Video{}, err
-		}
-		videos = append(videos, video)
-	}
-
-	return videos, nil
-}
-
-func (db *DB) FindPublicVideosByAuthorIDsSortByCreatedAt(ctx context.Context, authorIDs []uuid.UUID, opts FindOptions) ([]Video, error) {
 	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
 	defer cancel()
 
 	query := `
 		SELECT videos.*, authors.* FROM videos
 		JOIN users AS authors ON videos.author_id = authors.id
-		WHERE authors.id = ANY($3::uuid[]) AND videos.is_public = true
+		WHERE lower(videos.title) LIKE '%' || lower($3) || '%' AND videos.is_public = true
 		ORDER BY videos.created_at DESC
 		LIMIT $1 OFFSET $2
 	`
-	args := []any{opts.Limit, opts.Offset, authorIDs}
+	args := []any{opts.Limit, opts.Offset, likeTitle}
+
+	videos := make([]model.Video, 0, opts.Limit)
 
 	rows, err := db.QueryxContext(ctx, query, args...)
 	if err != nil {
 		if IsNoRows(err) {
-			return []Video{}, nil
+			return []model.Video{}, nil
 		}
 
-		return []Video{}, err
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
 	}
 	defer func() { _ = rows.Close() }()
 
-	videos := make([]Video, 0, opts.Limit)
 	for rows.Next() {
-		var video Video
-		if err = db.videoScan(rows, &video); err != nil {
-			return []Video{}, err
+		var video model.Video
+		if err := db.videoScan(rows, &video); err != nil {
+			return []model.Video{}, fmt.Errorf("%s: %w", op, err)
 		}
+
 		videos = append(videos, video)
 	}
 
 	return videos, nil
 }
 
-func (db *DB) GetVideo(ctx context.Context, id uuid.UUID) (Video, error) {
+func (db *DB) FindPublicVideosByAuthorID(ctx context.Context, authorID model.ID) ([]model.Video, error) {
+	const op = "database.FindPublicUserVideos"
+
 	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
 	defer cancel()
 
 	query := `
-        SELECT videos.*, author.* FROM videos 
-        JOIN users AS author ON videos.author_id = author.id
-        WHERE videos.id = $1 LIMIT 1
-    `
-	args := []any{id}
+		SELECT videos.*, authors.* FROM videos
+		JOIN users AS authors ON videos.author_id = authors.id
+		WHERE videos.author_id = $1 AND videos.is_public = true
+		ORDER BY videos.created_at DESC
+	`
+	args := []any{authorID}
 
-	var video Video
+	videos := make([]model.Video, 0)
 
-	row := db.QueryRowxContext(ctx, query, args...)
-	if err := db.videoScan(row, &video); err != nil {
+	rows, err := db.QueryxContext(ctx, query, args...)
+	if err != nil {
 		if IsNoRows(err) {
-			return Video{}, ErrVideoNotFound
+			return []model.Video{}, nil
 		}
 
-		return Video{}, err
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	for rows.Next() {
+		var video model.Video
+		if err := db.videoScan(rows, &video); err != nil {
+			return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		videos = append(videos, video)
+	}
+
+	return videos, nil
+}
+
+func (db *DB) FindVideosByAuthorID(ctx context.Context, authorID model.ID) ([]model.Video, error) {
+	const op = "database.FindPublicUserVideos"
+
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	query := `
+		SELECT videos.*, authors.* FROM videos
+		JOIN users AS authors ON videos.author_id = authors.id
+		WHERE videos.author_id = $1
+		ORDER BY videos.created_at DESC
+	`
+	args := []any{authorID}
+
+	videos := make([]model.Video, 0)
+
+	rows, err := db.QueryxContext(ctx, query, args...)
+	if err != nil {
+		if IsNoRows(err) {
+			return []model.Video{}, nil
+		}
+
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	for rows.Next() {
+		var video model.Video
+		if err := db.videoScan(rows, &video); err != nil {
+			return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		videos = append(videos, video)
+	}
+
+	return videos, nil
+}
+
+func (db *DB) GetVideo(ctx context.Context, id model.ID) (model.Video, error) {
+	const op = "database.GetVideo"
+
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	video, err := db.getVideoByField(ctx, Field{Name: "id", Value: id})
+	if err != nil {
+		return model.Video{}, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return video, nil
@@ -366,30 +170,30 @@ type InsertVideoDTO struct {
 	ThumbnailPath string
 	VideoPath     string
 	Public        bool
-	AuthorID      uuid.UUID
+	AuthorID      model.ID
 }
 
-func (db *DB) InsertVideo(ctx context.Context, dto InsertVideoDTO) (uuid.UUID, error) {
+func (db *DB) InsertVideo(ctx context.Context, dto InsertVideoDTO) (model.ID, error) {
+	const op = "database.InsertVideo"
+
 	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
 	defer cancel()
 
 	query := `
-        INSERT INTO videos (title, description, thumbnail_path, video_path, is_public, author_id) 
-        VALUES ($1, $2, $3, $4, $5, $6) 
-        RETURNING id
-    `
+		INSERT INTO videos(title, description, thumbnail_path, video_path, is_public, author_id)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING id
+	`
 	args := []any{dto.Title, dto.Description, dto.ThumbnailPath, dto.VideoPath, dto.Public, dto.AuthorID}
 
-	var id uuid.UUID
+	var id model.ID
 
-	if err := db.
-		QueryRowxContext(ctx, query, args...).
-		Scan(&id); err != nil {
+	if err := db.QueryRowxContext(ctx, query, args...).Scan(&id); err != nil {
 		if IsKeyConflict(err) {
-			return uuid.Nil, ErrVideoAlreadyExists
+			return model.ID{}, fmt.Errorf("%s: %w", op, model.ErrVideoAlreadyExists)
 		}
 
-		return uuid.Nil, err
+		return model.ID{}, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return id, nil
@@ -403,55 +207,120 @@ type UpdateVideoDTO struct {
 	Public        *bool
 }
 
-func (db *DB) UpdateVideo(ctx context.Context, id uuid.UUID, dto UpdateVideoDTO) error {
+func (db *DB) UpdateVideo(ctx context.Context, id model.ID, dto UpdateVideoDTO) error {
+	const op = "database.UpdateVideo"
+
 	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
 	defer cancel()
 
-	counter := 1
-	query := `UPDATE videos SET updated_at = now()`
-	args := []any{id}
+	fields := make([]Field, 0, 5)
 
 	if dto.Title != nil {
-		counter++
-		query += `, title = $` + strconv.Itoa(counter)
-		args = append(args, *dto.Title)
+		fields = append(fields, Field{Name: "title", Value: *dto.Title})
 	}
 	if dto.Description != nil {
-		counter++
-		query += `, description = $` + strconv.Itoa(counter)
-		args = append(args, *dto.Description)
+		fields = append(fields, Field{Name: "description", Value: *dto.Description})
 	}
 	if dto.ThumbnailPath != nil {
-		counter++
-		query += `, thumbnail_path = $` + strconv.Itoa(counter)
-		args = append(args, *dto.ThumbnailPath)
+		fields = append(fields, Field{Name: "thumbnail_path", Value: *dto.ThumbnailPath})
 	}
 	if dto.VideoPath != nil {
-		counter++
-		query += `, video_path = $` + strconv.Itoa(counter)
-		args = append(args, *dto.VideoPath)
+		fields = append(fields, Field{Name: "video_path", Value: *dto.VideoPath})
 	}
 	if dto.Public != nil {
-		counter++
-		query += `, is_public = $` + strconv.Itoa(counter)
-		args = append(args, *dto.Public)
+		fields = append(fields, Field{Name: "is_public", Value: *dto.Public})
 	}
 
-	query += ` WHERE id = $1`
-
-	if _, err := db.ExecContext(ctx, query, args...); err != nil {
-		return err
+	if err := db.updateVideoByField(ctx, Field{Name: "id", Value: id}, fields); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
 	}
 
 	return nil
 }
 
-func (db *DB) DeleteVideo(ctx context.Context, id uuid.UUID) error {
+func (db *DB) DeleteVideo(ctx context.Context, id model.ID) error {
+	const op = "database.DeleteVideo"
+
 	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
 	defer cancel()
 
-	query := "DELETE FROM videos WHERE id = $1"
-	args := []any{id}
+	if err := db.deleteVideoByField(ctx, Field{Name: "id", Value: id}); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}
+
+func (db *DB) findVideosByFieldWithSortBy(ctx context.Context, byField Field, sortBy Field, opts FindOptions) ([]model.Video, error) {
+	baseQuery := `
+		SELECT videos.*, authors.* FROM videos
+		JOIN users AS authors ON videos.author_id = authors.id
+		WHERE videos.%s = $1
+		ORDER BY videos.%s %s
+		LIMIT $2 OFFSET $3
+	`
+	query := fmt.Sprintf(baseQuery, byField.Name, sortBy.Name, sortBy.Value)
+	args := []any{byField.Value, opts.Limit, opts.Offset}
+
+	videos := make([]model.Video, 0, opts.Limit)
+
+	rows, err := db.QueryxContext(ctx, query, args...)
+	if err != nil {
+		if IsNoRows(err) {
+			return []model.Video{}, nil
+		}
+
+		return []model.Video{}, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var video model.Video
+		if err := db.videoScan(rows, &video); err != nil {
+			return []model.Video{}, err
+		}
+
+		videos = append(videos, video)
+	}
+
+	return videos, nil
+}
+
+func (db *DB) getVideoByField(ctx context.Context, field Field) (model.Video, error) {
+	baseQuery := `
+		SELECT videos.*, authors.* FROM videos 
+		JOIN users AS authors ON videos.author_id = authors.id 
+		WHERE videos.%s = $1 LIMIT 1
+	`
+	query := fmt.Sprintf(baseQuery, field.Name)
+	args := []any{field.Value}
+
+	var video model.Video
+
+	row := db.QueryRowxContext(ctx, query, args...)
+	if err := db.videoScan(row, &video); err != nil {
+		if IsNoRows(err) {
+			return model.Video{}, model.ErrVideoNotFound
+		}
+
+		return model.Video{}, err
+	}
+
+	return video, nil
+}
+
+func (db *DB) updateVideoByField(ctx context.Context, byFiled Field, fields []Field) error {
+	counter := 1
+	query := `UPDATE videos SET updated_at = now()`
+	args := []any{byFiled.Value}
+
+	for _, f := range fields {
+		counter++
+		query += fmt.Sprintf(`, %s = $%d`, f.Name, counter)
+		args = append(args, f.Value)
+	}
+
+	query += fmt.Sprintf(` WHERE %s = $%d`, byFiled.Name, 1)
 
 	if _, err := db.ExecContext(ctx, query, args...); err != nil {
 		return err
@@ -460,14 +329,25 @@ func (db *DB) DeleteVideo(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (db *DB) videoScan(s Scanner, video *Video) error {
+func (db *DB) deleteVideoByField(ctx context.Context, field Field) error {
+	query := fmt.Sprintf(`DELETE FROM videos WHERE %s = $1`, field.Name)
+	args := []any{field.Value}
+
+	if _, err := db.ExecContext(ctx, query, args...); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *DB) videoScan(s Scanner, video *model.Video) error {
 	return s.Scan(
 		&video.ID,
 		&video.CreatedAt, &video.UpdatedAt,
 		&video.Title, &video.Description,
 		&video.ThumbnailPath, &video.VideoPath,
-		&video.Public, &video.Views,
 		&video.AuthorID,
+		&video.Views, &video.Public,
 
 		&video.Author.ID,
 		&video.Author.CreatedAt, &video.Author.UpdatedAt,

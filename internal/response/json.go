@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-type Object map[string]any
+type Data map[string]any
 
 func JSON(w http.ResponseWriter, status int, data any) error {
 	return JSONWithHeaders(w, status, data, nil)
@@ -25,10 +25,7 @@ func JSONWithHeaders(w http.ResponseWriter, status int, data any, headers http.H
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-
-	if _, err := w.Write(js); err != nil {
-		return err
-	}
+	w.Write(js)
 
 	return nil
 }

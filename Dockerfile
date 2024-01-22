@@ -1,18 +1,19 @@
 FROM golang:alpine AS builder
 
+RUN apk add --no-cache make
+
 WORKDIR /app
 
 COPY go.* .
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -o ./build/ ./cmd/api
-
+RUN make build/app path=/app/build
 
 
 FROM alpine:latest
 
 WORKDIR /app
-COPY --from=builder /app/build/ ./build/
+COPY --from=builder /app /app
 
-CMD [ "./build/api" ]
+CMD [ "/app/build/api-server" ]

@@ -1,0 +1,454 @@
+package main
+
+import (
+	"errors"
+	"fmt"
+	"net/http"
+
+	"github.com/protomem/gotube/internal/ctxstore"
+	"github.com/protomem/gotube/internal/domain/model"
+	"github.com/protomem/gotube/internal/domain/usecase"
+	"github.com/protomem/gotube/internal/request"
+	"github.com/protomem/gotube/internal/response"
+	"github.com/protomem/gotube/internal/validator"
+)
+
+func (app *application) handleStatus(w http.ResponseWriter, r *http.Request) {
+	app.mustSendJSON(w, r, http.StatusOK, response.Data{"status": "OK"})
+}
+
+func (app *application) handleGetUser(w http.ResponseWriter, r *http.Request) {
+	userNickname := mustGetUserNicknameFromRequest(r)
+
+	user, err := usecase.GetUserByNickname(app.db).Invoke(r.Context(), userNickname)
+	if err != nil {
+		if errors.Is(err, model.ErrNotFound) {
+			app.errorMessage(w, r, http.StatusNotFound, model.ErrUserNotFound.Error(), nil)
+			return
+		}
+
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustSendJSON(w, r, http.StatusOK, response.Data{"user": user})
+}
+
+func (app *application) handleUpdateUser(w http.ResponseWriter, r *http.Request) {
+	var input usecase.UpdateUserByNicknameInput
+	if err := request.DecodeJSONStrict(w, r, &input); err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	input.ByNickname = mustGetUserNicknameFromRequest(r)
+
+	user, err := usecase.UpdateUserByNickname(app.config.baseURL, app.db).Invoke(r.Context(), input)
+	if err != nil {
+		var vErr *validator.Validator
+		if errors.As(err, &vErr) {
+			app.failedValidation(w, r, vErr)
+			return
+		}
+
+		if errors.Is(err, model.ErrNotFound) {
+			app.errorMessage(w, r, http.StatusNotFound, model.ErrUserNotFound.Error(), nil)
+			return
+		}
+
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustSendJSON(w, r, http.StatusOK, response.Data{"user": user})
+}
+
+func (app *application) handleDeleteUser(w http.ResponseWriter, r *http.Request) {
+	userNickname := mustGetUserNicknameFromRequest(r)
+
+	if _, err := usecase.DeleteUserByNickname(app.db).Invoke(r.Context(), userNickname); err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (app *application) handleRegister(w http.ResponseWriter, r *http.Request) {
+	var input usecase.RegisterInput
+	if err := request.DecodeJSONStrict(w, r, &input); err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	output, err := usecase.Register(app.config.auth.secret, app.db, app.fstore).Invoke(r.Context(), input)
+	if err != nil {
+		var vErr *validator.Validator
+		if errors.As(err, &vErr) {
+			app.failedValidation(w, r, vErr)
+			return
+		}
+
+		if errors.Is(err, model.ErrAlreadyExists) {
+			app.errorMessage(w, r, http.StatusConflict, model.ErrUserAlreadyExists.Error(), nil)
+			return
+		}
+
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustSendJSON(w, r, http.StatusCreated, output)
+}
+
+func (app *application) handleLogin(w http.ResponseWriter, r *http.Request) {
+	var input usecase.LoginInput
+	if err := request.DecodeJSONStrict(w, r, &input); err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	output, err := usecase.Login(app.config.auth.secret, app.db, app.fstore).Invoke(r.Context(), input)
+	if err != nil {
+		var vErr *validator.Validator
+		if errors.As(err, &vErr) {
+			app.failedValidation(w, r, vErr)
+			return
+		}
+
+		if errors.Is(err, model.ErrNotFound) {
+			app.errorMessage(w, r, http.StatusNotFound, model.ErrUserNotFound.Error(), nil)
+			return
+		}
+
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustSendJSON(w, r, http.StatusOK, output)
+}
+
+func (app *application) handleRefreshToken(w http.ResponseWriter, r *http.Request) {
+	refreshToken, ok := getRefreshTokenFromRequest(r)
+	if !ok {
+		app.badRequest(w, r, errors.New("missing refresh token"))
+		return
+	}
+
+	output, err := usecase.
+		RefreshToken(app.config.auth.secret, app.db, app.fstore).
+		Invoke(r.Context(), usecase.RefreshTokenInput{RefreshToken: refreshToken})
+	if err != nil {
+		if errors.Is(err, model.ErrNotFound) {
+			app.errorMessage(w, r, http.StatusNotFound, model.ErrSessionNotFound.Error(), nil)
+			return
+		}
+
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustSendJSON(w, r, http.StatusOK, output)
+}
+
+func (app *application) handleLogout(w http.ResponseWriter, r *http.Request) {
+	refreshToken, ok := getRefreshTokenFromRequest(r)
+	if !ok {
+		app.badRequest(w, r, errors.New("missing refresh token"))
+		return
+	}
+
+	if _, err := usecase.Logout(app.fstore).Invoke(r.Context(), refreshToken); err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (app *application) handleFindVideos(w http.ResponseWriter, r *http.Request) {
+	limit, ok := getLimitFromRequest(r)
+	if !ok {
+		app.badRequest(w, r, errors.New("invalid limit"))
+		return
+	}
+
+	offset, ok := getOffsetFromRequest(r)
+	if !ok {
+		app.badRequest(w, r, errors.New("invalid offset"))
+		return
+	}
+
+	sortBy := defaultGetSortByFromRequest(r, "new")
+	searchQuery, searchQueryOk := getSearchQueryFromRequest(r)
+
+	var (
+		err    error
+		videos []model.Video
+	)
+	opts := usecase.FindOptions{Limit: limit, Offset: offset}
+
+	if searchQueryOk {
+		videos, err = usecase.SearchVideos(app.db).Invoke(r.Context(), usecase.SearchVideosInput{
+			Query: searchQuery,
+			Opts:  opts,
+		})
+	} else {
+		switch sortBy {
+		case "new", "createdAt":
+			videos, err = usecase.FindNewVideos(app.db).Invoke(r.Context(), opts)
+		case "popular", "trends", "views":
+			videos, err = usecase.FindPopularVideos(app.db).Invoke(r.Context(), opts)
+		default:
+			app.badRequest(w, r, fmt.Errorf("sortBy doesn't support value: %s", sortBy))
+			return
+		}
+	}
+
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustSendJSON(w, r, http.StatusOK, response.Data{"videos": videos})
+}
+
+func (app *application) handleFindUserVideos(w http.ResponseWriter, r *http.Request) {
+	userNickname := mustGetUserNicknameFromRequest(r)
+
+	videos, err := usecase.FindVideosByAuthorNickname(app.db).Invoke(r.Context(), userNickname)
+	if err != nil {
+		if model.IsModelError(err, model.ErrUserNotFound) {
+			app.errorMessage(w, r, http.StatusNotFound, model.ErrUserNotFound.Error(), nil)
+			return
+		}
+
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustSendJSON(w, r, http.StatusOK, response.Data{"videos": videos})
+}
+
+func (app *application) handleFindPrivateUserVideos(w http.ResponseWriter, r *http.Request) {
+	userNickname := mustGetUserNicknameFromRequest(r)
+	requester, _ := ctxstore.User(r.Context())
+
+	if userNickname != requester.Nickname {
+		app.errorMessage(w, r, http.StatusForbidden, "access denied", nil)
+		return
+	}
+
+	videos, err := usecase.FindPrivateVideosByAuthorNickname(app.db).Invoke(r.Context(), userNickname)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustSendJSON(w, r, http.StatusOK, response.Data{"videos": videos})
+}
+
+func (app *application) handleGetVideo(w http.ResponseWriter, r *http.Request) {
+	videoID, ok := getVideoIDFromRequest(r)
+	if !ok {
+		app.badRequest(w, r, errors.New("missing or invalid video ID"))
+		return
+	}
+
+	requester, isAuth := ctxstore.User(r.Context())
+
+	video, err := usecase.GetVideo(app.db).Invoke(r.Context(), videoID)
+	if err != nil {
+		if errors.Is(err, model.ErrNotFound) {
+			app.errorMessage(w, r, http.StatusNotFound, model.ErrVideoNotFound.Error(), nil)
+			return
+		}
+
+		app.serverError(w, r, err)
+		return
+	}
+
+	if video.Public || (isAuth && requester.ID == video.AuthorID) {
+		app.mustSendJSON(w, r, http.StatusOK, response.Data{"video": video})
+		return
+	}
+
+	app.errorMessage(w, r, http.StatusNotFound, model.ErrVideoNotFound.Error(), nil)
+}
+
+func (app *application) handleCreateVideo(w http.ResponseWriter, r *http.Request) {
+	var input usecase.CreateVideoInput
+	if err := request.DecodeJSONStrict(w, r, &input); err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	requester := ctxstore.MustUser(r.Context())
+	input.AuthorID = requester.ID
+
+	video, err := usecase.CreateVideo(app.config.baseURL, app.db).Invoke(r.Context(), input)
+	if err != nil {
+		var vErr *validator.Validator
+		if errors.As(err, &vErr) {
+			app.failedValidation(w, r, vErr)
+			return
+		}
+
+		if errors.Is(err, model.ErrAlreadyExists) {
+			app.errorMessage(w, r, http.StatusConflict, model.ErrVideoAlreadyExists.Error(), nil)
+			return
+		}
+
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustSendJSON(w, r, http.StatusCreated, response.Data{"video": video})
+}
+
+func (app *application) handleUpdateVideo(w http.ResponseWriter, r *http.Request) {
+	var input usecase.UpdateVideoInput
+	if err := request.DecodeJSONStrict(w, r, &input); err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	videoID, ok := getVideoIDFromRequest(r)
+	if !ok {
+		app.badRequest(w, r, errors.New("missing or invalid video ID"))
+		return
+	}
+	input.ByID = videoID
+
+	video, err := usecase.UpdateVideo(app.config.baseURL, app.db).Invoke(r.Context(), input)
+	if err != nil {
+		var vErr *validator.Validator
+		if errors.As(err, &vErr) {
+			app.failedValidation(w, r, vErr)
+			return
+		}
+
+		if errors.Is(err, model.ErrNotFound) {
+			app.errorMessage(w, r, http.StatusNotFound, model.ErrVideoNotFound.Error(), nil)
+			return
+		}
+
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustSendJSON(w, r, http.StatusOK, response.Data{"video": video})
+}
+
+func (app *application) handleDeleteVideo(w http.ResponseWriter, r *http.Request) {
+	videID, ok := getVideoIDFromRequest(r)
+	if !ok {
+		app.badRequest(w, r, errors.New("missing or invalid video ID"))
+		return
+	}
+
+	if _, err := usecase.DeleteVideo(app.db).Invoke(r.Context(), videID); err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (app *application) handleFindComments(w http.ResponseWriter, r *http.Request) {
+	videoID, ok := getVideoIDFromRequest(r)
+	if !ok {
+		app.badRequest(w, r, errors.New("missing or invalid video ID"))
+		return
+	}
+
+	comments, err := usecase.FindCommentsByVideoID(app.db).Invoke(r.Context(), videoID)
+	if err != nil {
+		if model.IsModelError(err, model.ErrVideoNotFound) {
+			app.errorMessage(w, r, http.StatusNotFound, model.ErrVideoNotFound.Error(), nil)
+			return
+		}
+
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustSendJSON(w, r, http.StatusOK, response.Data{"comments": comments})
+}
+
+func (app *application) handleCreateComment(w http.ResponseWriter, r *http.Request) {
+	var input usecase.CreateCommentInput
+	if err := request.DecodeJSONStrict(w, r, &input); err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	videoID, ok := getVideoIDFromRequest(r)
+	if !ok {
+		app.badRequest(w, r, errors.New("missing or invalid video ID"))
+		return
+	}
+	input.VideoID = videoID
+
+	requester := ctxstore.MustUser(r.Context())
+	input.AuthorID = requester.ID
+
+	comment, err := usecase.CreateComment(app.db).Invoke(r.Context(), input)
+	if err != nil {
+		var vErr *validator.Validator
+		if errors.As(err, &vErr) {
+			app.failedValidation(w, r, vErr)
+			return
+		}
+
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.mustSendJSON(w, r, http.StatusCreated, response.Data{"comment": comment})
+}
+
+func (app *application) handleDeleteComment(w http.ResponseWriter, r *http.Request) {
+	commentID, ok := getCommentIDFromRequest(r)
+	if !ok {
+		app.badRequest(w, r, errors.New("missing or invalid comment ID"))
+		return
+	}
+
+	if _, err := usecase.DeleteComment(app.db).Invoke(r.Context(), commentID); err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (app *application) handleSubscribe(w http.ResponseWriter, r *http.Request) {
+	toUserNickname := mustGetUserNicknameFromRequest(r)
+	requester := ctxstore.MustUser(r.Context())
+
+	if _, err := usecase.Subscribe(app.db).Invoke(r.Context(), usecase.SubscribeInput{
+		FromUserNickname: requester.Nickname,
+		ToUserNickname:   toUserNickname,
+	}); err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (app *application) handleUnsubscribe(w http.ResponseWriter, r *http.Request) {
+	toUserNickname := mustGetUserNicknameFromRequest(r)
+	requester := ctxstore.MustUser(r.Context())
+
+	if _, err := usecase.Unsubscribe(app.db).Invoke(r.Context(), usecase.UnsubscribeInput{
+		FromUserNickname: requester.Nickname,
+		ToUserNickname:   toUserNickname,
+	}); err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}

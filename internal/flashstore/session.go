@@ -6,66 +6,75 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
+	"github.com/protomem/gotube/internal/domain/model"
+	"github.com/redis/go-redis/v9"
 )
 
-type Session struct {
-	Token  string        `json:"token"`
-	TTL    time.Duration `json:"ttl"`
-	UserID uuid.UUID     `json:"userId"`
-}
+func (s *Storage) GetSession(ctx context.Context, token string) (model.Session, error) {
+	const op = "flashstore.GetSession"
 
-func (s *Storage) GetSession(ctx context.Context, token string) (Session, error) {
 	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
 	defer cancel()
 
-	sessKey := fmt.Sprintf("session:%s", token)
+	sessionKey := s.buildSessionKey(token)
 
-	status := s.Get(ctx, sessKey)
-	if status.Err() != nil {
-		return Session{}, status.Err()
+	res := s.Get(ctx, sessionKey)
+	if res.Err() != nil {
+		if res.Err() == redis.Nil {
+			return model.Session{}, fmt.Errorf("%s: %w", op, model.ErrSessionNotFound)
+		}
+
+		return model.Session{}, fmt.Errorf("%s: %w", op, res.Err())
 	}
 
-	sessBody, err := status.Bytes()
+	resData, err := res.Bytes()
 	if err != nil {
-		return Session{}, err
+		return model.Session{}, fmt.Errorf("%s: %w", op, err)
 	}
 
-	var session Session
-	if err := json.Unmarshal(sessBody, &session); err != nil {
-		return Session{}, err
+	var session model.Session
+	if err := json.Unmarshal(resData, &session); err != nil {
+		return model.Session{}, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return session, nil
 }
 
-func (s *Storage) PutSession(ctx context.Context, session Session) error {
+func (s *Storage) PutSession(ctx context.Context, session model.Session) error {
+	const op = "flashstore.PutSession"
+
 	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
 	defer cancel()
 
-	sessBody, err := json.Marshal(session)
+	sessionKey := s.buildSessionKey(session.Token)
+
+	sessionJSON, err := json.Marshal(session)
 	if err != nil {
-		return err
+		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	sessKey := fmt.Sprintf("session:%s", session.Token)
-
-	if status := s.Set(ctx, sessKey, sessBody, session.TTL+_defaultLeeway); status.Err() != nil {
-		return status.Err()
+	if res := s.Set(ctx, sessionKey, sessionJSON, time.Until(session.Expiry)); res.Err() != nil {
+		return fmt.Errorf("%s: %w", op, res.Err())
 	}
 
 	return nil
 }
 
 func (s *Storage) DelSession(ctx context.Context, token string) error {
+	const op = "flashstore.DelSession"
+
 	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
 	defer cancel()
 
-	sessKey := fmt.Sprintf("session:%s", token)
+	sessionKey := s.buildSessionKey(token)
 
-	if status := s.Del(ctx, sessKey); status.Err() != nil {
-		return status.Err()
+	if res := s.Del(ctx, sessionKey); res.Err() != nil {
+		return fmt.Errorf("%s: %w", op, res.Err())
 	}
 
 	return nil
+}
+
+func (s *Storage) buildSessionKey(token string) string {
+	return fmt.Sprintf("session:%s", token)
 }
