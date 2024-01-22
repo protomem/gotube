@@ -11,6 +11,7 @@ require (
 	github.com/redis/go-redis/v9 v9.4.0
 	github.com/stretchr/testify v1.8.4
 	go.uber.org/fx v1.20.1
+	golang.org/x/exp v0.0.0-20240119083558-1b970713d09a
 )
 
 require (
