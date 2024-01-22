@@ -42,3 +42,27 @@ tasks:
     deps: [build/local]
     cmds:
       - /tmp/{{.PROJECT}}/api-server -conf .local.env
+
+  migrate/new:
+    cmds:
+      - migrate create -ext sql -dir ./assets/migrations -seq {{.name}}
+
+  migrate/up:
+    cmds:
+      - migrate -path ./assets/migrations -database "postgres://{{.db_dsn}}" up
+  
+  migrate/down:
+    cmds:
+      - migrate -path ./assets/migrations -database "postgres://{{.db_dsn}}" down
+
+  migrate/goto:
+    cmds:
+      - migrate -path ./assets/migrations -database "postgres://{{.db_dsn}}" goto {{.version}}
+
+  migrate/force:
+    cmds:
+      - migrate -path ./assets/migrations -database "postgres://{{.db_dsn}}" force {{.version}}
+
+  migrate/version:
+    cmds:
+      - migrate -path ./assets/migrations -database "postgres://{{.db_dsn}}" version
