@@ -15,9 +15,14 @@ type Database struct {
 	DSN string `env:"DSN,notEmpty"`
 }
 
+type Flash struct {
+	DSN string `env:"DSN" envDefault:"localhost:6379/0"`
+}
+
 type Config struct {
 	HTTP     `envPrefix:"HTTP_"`
 	Database `envPrefix:"DB_"`
+	Flash    `envPrefix:"FLASH_"`
 }
 
 func New() (Config, error) {
