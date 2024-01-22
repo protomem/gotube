@@ -21,6 +21,10 @@ func New(out io.Writer, lvlStr string) (*Logger, error) {
 	return &Logger{slog.New(slog.NewJSONHandler(out, &slog.HandlerOptions{Level: lvl}))}, nil
 }
 
+func (l *Logger) With(args ...any) *Logger {
+	return &Logger{l.Logger.With(args...)}
+}
+
 func ParseLevel(lvlStr string) (slog.Level, error) {
 	switch strings.ToUpper(lvlStr) {
 	case slog.LevelDebug.String():

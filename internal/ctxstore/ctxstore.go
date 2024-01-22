@@ -11,6 +11,7 @@ type Key string
 
 const (
 	_loggerKey = Key("logger")
+	_traceID   = Key("traceID")
 )
 
 func WithLogger(ctx context.Context, l *logging.Logger) context.Context {
@@ -32,4 +33,25 @@ func Logger(ctx context.Context) (*logging.Logger, bool) {
 func MustLogger(ctx context.Context) *logging.Logger {
 	l, _ := ctx.Value(_loggerKey).(*logging.Logger)
 	return l
+}
+
+func WithTraceID(ctx context.Context, tid string) context.Context {
+	return context.WithValue(ctx, _traceID, tid)
+}
+
+func RequestWithTraceID(r *http.Request, tid string) *http.Request {
+	return r.WithContext(WithTraceID(r.Context(), tid))
+}
+
+func TraceID(ctx context.Context) (string, bool) {
+	tid, ok := ctx.Value(_traceID).(string)
+	if !ok {
+		return "", false
+	}
+	return tid, true
+}
+
+func MustTraceID(ctx context.Context) string {
+	tid, _ := ctx.Value(_traceID).(string)
+	return tid
 }

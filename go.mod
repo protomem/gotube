@@ -5,11 +5,13 @@ go 1.21.5
 require (
 	github.com/caarlos0/env/v10 v10.0.0
 	github.com/go-chi/chi/v5 v5.0.11
+	github.com/google/uuid v1.5.0
 	github.com/jackc/pgx/v5 v5.5.2
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/joho/godotenv v1.5.1
 	github.com/redis/go-redis/v9 v9.4.0
 	github.com/stretchr/testify v1.8.4
+	github.com/tomasen/realip v0.0.0-20180522021738-f0c99a92ddce
 	go.uber.org/fx v1.20.1
 	golang.org/x/exp v0.0.0-20240119083558-1b970713d09a
 )

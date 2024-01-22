@@ -6,6 +6,7 @@ import (
 	"github.com/protomem/gotube/internal/config"
 	"github.com/protomem/gotube/internal/infra/database"
 	"github.com/protomem/gotube/internal/infra/flashstore"
+	"github.com/protomem/gotube/internal/infra/handler"
 	"github.com/protomem/gotube/internal/infra/routes"
 	"github.com/protomem/gotube/internal/infra/server"
 	"github.com/protomem/gotube/pkg/logging"
@@ -23,6 +24,7 @@ func Create() fx.Option {
 			ProvideLogger,
 			database.New,
 			flashstore.New,
+			handler.NewCommon,
 			routes.Setup,
 			server.New,
 		),
