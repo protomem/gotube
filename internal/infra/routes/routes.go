@@ -1,12 +1,12 @@
 package routes
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/protomem/gotube/internal/ctxstore"
 	"github.com/protomem/gotube/pkg/logging"
+	"github.com/protomem/gotube/pkg/response"
 )
 
 func Setup(logger *logging.Logger) http.Handler {
@@ -21,7 +21,7 @@ func Setup(logger *logging.Logger) http.Handler {
 
 	mux.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		ctxstore.MustLogger(r.Context()).Debug("incomig request")
-		fmt.Fprintln(w, "GoTube API Server v5.0")
+		_ = response.JSON(w, http.StatusOK, response.Data{"status": "OK"})
 	})
 
 	return mux
