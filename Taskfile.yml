@@ -1,0 +1,44 @@
+# https://taskfile.dev
+
+version: '3'
+
+vars:
+  PROJECT: gotube
+
+tasks:
+  tidy:
+    cmds:
+      - go fmt ./...
+      - go mod tidy
+
+  audit:
+    cmds:
+      - go mod verify
+      - go vet ./...
+      - golangci-lint run ./...
+      - govulncheck ./...
+      - go test -race -buildvcs -vet=off ./...
+
+  test:
+    cmds:
+      - go test -v -race -buildvcs ./...
+
+  test/cover:
+    cmds:
+      - go test -v -race -buildvcs -coverprofile=/tmp/coverage.out ./... 
+      - go tool cover -html=/tmp/coverage.out
+
+  ci:
+    cmds:
+      - task: tidy
+      - task: audit
+      - task: test
+
+  build/local:
+    cmds:
+      - go build -o /tmp/{{.PROJECT}}/api-server ./cmd/api-server
+
+  run/local:
+    deps: [build/local]
+    cmds:
+      - /tmp/{{.PROJECT}}/api-server -conf .local.env
