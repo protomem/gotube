@@ -1,19 +1,24 @@
 package config
 
+import (
+	"fmt"
+
+	"github.com/protomem/gotube/pkg/env"
+)
+
 type HTTP struct {
-	Host string
-	Port int
+	Host string `env:"HOST" envDefault:"0.0.0.0"`
+	Port int    `env:"PORT" envDefault:"8080"`
 }
 
 type Config struct {
-	HTTP
+	HTTP `envPrefix:"HTTP_"`
 }
 
-func New() Config {
-	return Config{
-		HTTP: HTTP{
-			Host: "0.0.0.0",
-			Port: 8080,
-		},
+func New() (Config, error) {
+	var conf Config
+	if err := env.Parse(&conf); err != nil {
+		return Config{}, fmt.Errorf("env.Parse: %w", err)
 	}
+	return conf, nil
 }
