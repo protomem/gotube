@@ -1,9 +1,8 @@
 package application
 
 import (
-	"net/http"
-
 	"github.com/protomem/gotube/internal/config"
+	"github.com/protomem/gotube/internal/infra/database"
 	"github.com/protomem/gotube/internal/infra/routes"
 	"github.com/protomem/gotube/internal/infra/server"
 	"go.uber.org/fx"
@@ -13,7 +12,8 @@ func Create() fx.Option {
 	return fx.Options(
 		fx.Provide(
 			config.New,
-			fx.Annotate(routes.Setup, fx.As(new(http.Handler))),
+			database.New,
+			routes.Setup,
 			server.New,
 		),
 		fx.Invoke(
@@ -22,7 +22,12 @@ func Create() fx.Option {
 	)
 }
 
-func registerRunners(lc fx.Lifecycle, srv *server.Server) {
+func registerRunners(lc fx.Lifecycle, db *database.DB, srv *server.Server) {
+	lc.Append(fx.Hook{
+		OnStart: db.Connect,
+		OnStop:  db.Disconnect,
+	})
+
 	lc.Append(fx.Hook{
 		OnStart: srv.Start,
 		OnStop:  srv.Stop,

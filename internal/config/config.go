@@ -11,8 +11,13 @@ type HTTP struct {
 	Port int    `env:"PORT" envDefault:"8080"`
 }
 
+type Database struct {
+	DSN string `env:"DSN,notEmpty"`
+}
+
 type Config struct {
-	HTTP `envPrefix:"HTTP_"`
+	HTTP     `envPrefix:"HTTP_"`
+	Database `envPrefix:"DB_"`
 }
 
 func New() (Config, error) {
