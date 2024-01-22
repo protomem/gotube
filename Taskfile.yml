@@ -36,12 +36,21 @@ tasks:
 
   build/local:
     cmds:
-      - go build -o /tmp/{{.PROJECT}}/api-server ./cmd/api-server
+      - go build -o -v /tmp/{{.PROJECT}}/api-server ./cmd/api-server
 
   run/local:
     deps: [build/local]
     cmds:
       - /tmp/{{.PROJECT}}/api-server -conf .local.env
+
+  run/docker:
+    deps: [ci]
+    cmds:
+      - docker compose up --build -d
+
+  stop/docker:
+    cmds:
+      - docker compose down
 
   migrate/new:
     cmds:
