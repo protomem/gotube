@@ -11,6 +11,7 @@ import (
 func Setup(
 	logger *logging.Logger,
 	common *handler.Common,
+	user *handler.User,
 ) http.Handler {
 	mux := chi.NewRouter()
 
@@ -22,6 +23,8 @@ func Setup(
 	mux.MethodNotAllowed(common.MethodNotAllowed)
 
 	mux.Get("/status", common.HandleStatus)
+
+	mux.Route("/users", func(mux chi.Router) {})
 
 	return mux
 }

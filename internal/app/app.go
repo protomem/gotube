@@ -25,6 +25,7 @@ func Create() fx.Option {
 			database.New,
 			flashstore.New,
 			handler.NewCommon,
+			handler.NewUser,
 			routes.Setup,
 			server.New,
 		),
