@@ -1,9 +1,12 @@
 package application
 
 import (
+	"net/http"
 	"os"
 
 	"github.com/protomem/gotube/internal/config"
+	"github.com/protomem/gotube/internal/domain/adapter"
+	"github.com/protomem/gotube/internal/domain/port"
 	"github.com/protomem/gotube/internal/infra/database"
 	"github.com/protomem/gotube/internal/infra/flashstore"
 	"github.com/protomem/gotube/internal/infra/handler"
@@ -22,11 +25,17 @@ func Create() fx.Option {
 		fx.Provide(
 			config.New,
 			ProvideLogger,
+
 			database.New,
 			flashstore.New,
+
+			as(adapter.NewUserAccessor, new(port.UserAccessor)),
+			as(adapter.NewUserMutator, new(port.UserMutator)),
+
 			handler.NewCommon,
 			handler.NewUser,
-			routes.Setup,
+
+			as(routes.Setup, new(http.Handler)),
 			server.New,
 		),
 		fx.Invoke(
@@ -50,4 +59,8 @@ func registerRunners(lc fx.Lifecycle, db *database.DB, fstore *flashstore.Storag
 		OnStart: srv.Start,
 		OnStop:  srv.Stop,
 	})
+}
+
+func as(v any, i any) any {
+	return fx.Annotate(v, fx.As(i))
 }

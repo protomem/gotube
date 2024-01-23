@@ -8,6 +8,11 @@ import (
 
 type ID = uuid.UUID
 
+var (
+	ErrUserNotFound      = NewError("user", ErrNotFound)
+	ErrUserAlreadyExists = NewError("user", ErrAlreadyExists)
+)
+
 type User struct {
 	ID ID `json:"id"`
 

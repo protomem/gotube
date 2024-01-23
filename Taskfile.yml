@@ -36,7 +36,7 @@ tasks:
 
   build/local:
     cmds:
-      - go build -o -v /tmp/{{.PROJECT}}/api-server ./cmd/api-server
+      - go build -v -o /tmp/{{.PROJECT}}/api-server ./cmd/api-server
 
   run/local:
     deps: [build/local]
