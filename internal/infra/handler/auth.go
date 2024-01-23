@@ -69,3 +69,36 @@ func (h *Auth) HandleRegister(w http.ResponseWriter, r *http.Request) {
 
 	h.MustSendJSON(w, r, http.StatusCreated, output)
 }
+
+func (h *Auth) HandleLogin(w http.ResponseWriter, r *http.Request) {
+	var input port.LoginInput
+	if err := request.DecodeJSONStrict(w, r, &input); err != nil {
+		h.BadRequest(w, r, err)
+		return
+	}
+
+	deps := usecase.LoginDeps{
+		Conf:     h.conf,
+		Accessor: h.accessor,
+		Mutator:  h.mutator,
+		SessMng:  h.sessMng,
+	}
+	output, err := usecase.Login(deps).Invoke(r.Context(), input)
+	if err != nil {
+		var v *validation.Validator
+		if errors.As(err, &v) {
+			h.FailedValidation(w, r, v)
+			return
+		}
+
+		if entity.IsError(err, entity.ErrUserNotFound) {
+			h.ErrorMessage(w, r, http.StatusNotFound, entity.ErrUserNotFound.Error(), nil)
+			return
+		}
+
+		h.ServerError(w, r, err)
+		return
+	}
+
+	h.MustSendJSON(w, r, http.StatusOK, output)
+}

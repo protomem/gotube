@@ -62,6 +62,21 @@ func (dao *UserDAO) GetByNickname(ctx context.Context, nickname string) (UserEnt
 	return user, nil
 }
 
+func (dao *UserDAO) GetByEmail(ctx context.Context, email string) (UserEntry, error) {
+	const op = "database.UserDAO.GetByEmail"
+
+	query := `SELECT * FROM users WHERE email = $1 LIMIT 1`
+	args := []any{email}
+
+	var user UserEntry
+
+	if err := dao.db.QueryRowxContext(ctx, query, args...).StructScan(&user); err != nil {
+		return UserEntry{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return user, nil
+}
+
 type InsertUserDTO struct {
 	Nickname string
 	Password string

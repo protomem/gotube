@@ -23,3 +23,18 @@ type (
 )
 
 type Register = Usecase[RegisterInput, RegisterOutput]
+
+type (
+	LoginInput struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	LoginOutput struct {
+		User         entity.User `json:"user"`
+		RefreshToken string      `json:"refreshToken"`
+		AccessToken  string      `json:"accessToken"`
+	}
+)
+
+type Login = Usecase[LoginInput, LoginOutput]
