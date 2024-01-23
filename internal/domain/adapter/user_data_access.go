@@ -31,6 +31,19 @@ func (acc *UserAccessor) ByID(ctx context.Context, id entity.ID) (entity.User, e
 	return entity.User(user), nil
 }
 
+func (acc *UserAccessor) ByNickname(ctx context.Context, nickname string) (entity.User, error) {
+	user, err := acc.dao.GetByNickname(ctx, nickname)
+	if err != nil {
+		if database.IsNoRows(err) {
+			return entity.User{}, entity.ErrUserNotFound
+		}
+
+		return entity.User{}, err
+	}
+
+	return entity.User(user), nil
+}
+
 var _ port.UserMutator = (*UserMutator)(nil)
 
 type UserMutator struct {

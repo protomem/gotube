@@ -15,6 +15,7 @@ type InsertUserDTO struct {
 type (
 	UserAccessor interface {
 		ByID(ctx context.Context, id entity.ID) (entity.User, error)
+		ByNickname(ctx context.Context, nickname string) (entity.User, error)
 	}
 
 	UserMutator interface {

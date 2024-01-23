@@ -1,15 +1,15 @@
 package database
 
 import (
+	"database/sql"
 	"errors"
 
 	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
 func IsNoRows(err error) bool {
-	return errors.Is(err, pgx.ErrNoRows)
+	return errors.Is(err, sql.ErrNoRows)
 }
 
 func IsKeyConflict(err error) bool {

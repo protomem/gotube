@@ -25,6 +25,7 @@ func Setup(
 	mux.Get("/status", common.HandleStatus)
 
 	mux.Route("/users", func(mux chi.Router) {
+		mux.Get("/{nickname}", user.HandleGet)
 		mux.Post("/", user.HandleCreate)
 	})
 

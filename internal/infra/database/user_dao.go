@@ -47,6 +47,21 @@ func (dao *UserDAO) GetByID(ctx context.Context, id uuid.UUID) (UserEntry, error
 	return user, nil
 }
 
+func (dao *UserDAO) GetByNickname(ctx context.Context, nickname string) (UserEntry, error) {
+	const op = "database.UserDAO.GetByNickname"
+
+	query := `SELECT * FROM users WHERE nickname = $1 LIMIT 1`
+	args := []any{nickname}
+
+	var user UserEntry
+
+	if err := dao.db.QueryRowxContext(ctx, query, args...).StructScan(&user); err != nil {
+		return UserEntry{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return user, nil
+}
+
 type InsertUserDTO struct {
 	Nickname string
 	Password string
