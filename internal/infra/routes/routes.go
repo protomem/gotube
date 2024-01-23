@@ -12,6 +12,7 @@ func Setup(
 	logger *logging.Logger,
 	common *handler.Common,
 	user *handler.User,
+	auth *handler.Auth,
 ) http.Handler {
 	mux := chi.NewRouter()
 
@@ -26,7 +27,10 @@ func Setup(
 
 	mux.Route("/users", func(mux chi.Router) {
 		mux.Get("/{nickname}", user.HandleGet)
-		mux.Post("/", user.HandleCreate)
+	})
+
+	mux.Route("/auth", func(mux chi.Router) {
+		mux.Post("/register", auth.HandleRegister)
 	})
 
 	return mux

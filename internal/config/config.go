@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/protomem/gotube/pkg/env"
 )
@@ -15,6 +16,12 @@ type Log struct {
 	Level string `env:"LEVEL" envDefault:"debug"`
 }
 
+type Auth struct {
+	Secret          string        `env:"SECRET,notEmpty"`
+	AccessTokenTTL  time.Duration `env:"ACCESS_TOKEN_TTL" envDefault:"3h"`
+	RefreshTokenTTL time.Duration `env:"REFRESH_TOKEN_TTL" envDefault:"24h"`
+}
+
 type Database struct {
 	DSN string `env:"DSN,notEmpty"`
 }
@@ -26,6 +33,7 @@ type Flash struct {
 type Config struct {
 	HTTP     `envPrefix:"HTTP_"`
 	Log      `envPrefix:"LOG_"`
+	Auth     `envPrefix:"AUTH_"`
 	Database `envPrefix:"DB_"`
 	Flash    `envPrefix:"FLASH_"`
 }

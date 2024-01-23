@@ -28,3 +28,9 @@ type User struct {
 	AvatarPath  string `json:"avatarPath"`
 	Description string `json:"description"`
 }
+
+type Session struct {
+	Token  string    `json:"token"`
+	Expiry time.Time `json:"expiry"`
+	UserID ID        `json:"userId"`
+}

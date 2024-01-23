@@ -31,9 +31,11 @@ func Create() fx.Option {
 
 			as(adapter.NewUserAccessor, new(port.UserAccessor)),
 			as(adapter.NewUserMutator, new(port.UserMutator)),
+			as(adapter.NewSessionManager, new(port.SessionManager)),
 
 			handler.NewCommon,
 			handler.NewUser,
+			handler.NewAuth,
 
 			as(routes.Setup, new(http.Handler)),
 			server.New,

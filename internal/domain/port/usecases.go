@@ -11,3 +11,15 @@ type (
 )
 
 type CreateUser = Usecase[CreateUserInput, entity.User]
+
+type (
+	RegisterInput = CreateUserInput
+
+	RegisterOutput struct {
+		User         entity.User `json:"user"`
+		RefreshToken string      `json:"refreshToken"`
+		AccessToken  string      `json:"accessToken"`
+	}
+)
+
+type Register = Usecase[RegisterInput, RegisterOutput]
