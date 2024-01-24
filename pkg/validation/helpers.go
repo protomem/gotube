@@ -84,3 +84,8 @@ func IsURL(value string) bool {
 
 	return u.Scheme != "" && u.Host != ""
 }
+
+// TODO: ...
+func IsPath(value string) bool {
+	return strings.HasPrefix(value, "/")
+}

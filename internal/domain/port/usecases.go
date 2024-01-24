@@ -17,6 +17,24 @@ type (
 type CreateUser = Usecase[CreateUserInput, entity.User]
 
 type (
+	UpdateUserInput struct {
+		Nickname string
+		Data     UpdateUserData
+	}
+
+	UpdateUserData struct {
+		Nickname    *string `json:"nickname"`
+		Email       *string `json:"email"`
+		NewPassword *string `json:"newPassword"`
+		OldPassword *string `json:"oldPassword"`
+		AvatarPath  *string `json:"avatarPath"`
+		Description *string `json:"description"`
+	}
+)
+
+type UpdateUser = Usecase[UpdateUserInput, entity.User]
+
+type (
 	RegisterInput = CreateUserInput
 
 	RegisterOutput struct {

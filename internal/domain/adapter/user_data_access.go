@@ -80,6 +80,10 @@ func (mut *UserMutator) Insert(ctx context.Context, dto port.InsertUserDTO) (ent
 	return id, nil
 }
 
+func (mut *UserMutator) Update(ctx context.Context, id entity.ID, dto port.UpdateUserDTO) error {
+	return mut.dao.Update(ctx, id, database.UpdateUserDTO(dto))
+}
+
 func (mut *UserMutator) Delete(ctx context.Context, id entity.ID) error {
 	return mut.dao.Delete(ctx, id)
 }

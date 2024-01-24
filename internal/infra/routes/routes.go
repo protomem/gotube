@@ -30,6 +30,7 @@ func Setup(
 	mux.Route("/users", func(mux chi.Router) {
 		mux.Get("/{nickname}", user.HandleGet)
 
+		mux.With(auth.Require).Patch("/{nickname}", user.HandleUpdate)
 		mux.With(auth.Require).Delete("/{nickname}", user.HandleDelete)
 	})
 

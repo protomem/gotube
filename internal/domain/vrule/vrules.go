@@ -15,3 +15,11 @@ func Password(v *validation.Validator, password string) {
 func Email(v *validation.Validator, email string) {
 	v.CheckField(validation.IsEmail(email), "email", "must be a valid email address")
 }
+
+func AvatarPath(v *validation.Validator, avatarPath string) {
+	v.CheckField(validation.IsPath(avatarPath), "avatarPath", "must be a valid path")
+}
+
+func Description(v *validation.Validator, description string) {
+	v.CheckField(validation.MaxRunes(description, 500), "description", "must be at most 500 characters long")
+}

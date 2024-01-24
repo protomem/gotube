@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -96,6 +97,62 @@ func (dao *UserDAO) Insert(ctx context.Context, dto InsertUserDTO) (uuid.UUID, e
 	}
 
 	return id, nil
+}
+
+type UpdateUserDTO struct {
+	Nickname       *string
+	HashedPassword *string
+	Email          *string
+	Verified       *bool
+	AvatarPath     *string
+	Description    *string
+}
+
+func (dao *UserDAO) Update(ctx context.Context, id uuid.UUID, dto UpdateUserDTO) error {
+	const op = "database.UserDAO.Update"
+
+	counter := 1
+	query := `UPDATE users SET updated_at = now()`
+	args := []any{id}
+
+	if dto.Nickname != nil {
+		counter++
+		query += `, nickname = $` + strconv.Itoa(counter)
+		args = append(args, *dto.Nickname)
+	}
+	if dto.HashedPassword != nil {
+		counter++
+		query += `, hashed_password = $` + strconv.Itoa(counter)
+		args = append(args, *dto.HashedPassword)
+	}
+	if dto.Email != nil {
+		counter++
+		query += `, email = $` + strconv.Itoa(counter)
+		args = append(args, *dto.Email)
+	}
+	if dto.Verified != nil {
+		counter++
+		query += `, is_verified = $` + strconv.Itoa(counter)
+		args = append(args, *dto.Verified)
+	}
+	if dto.AvatarPath != nil {
+		counter++
+		query += `, avatar_path = $` + strconv.Itoa(counter)
+		args = append(args, *dto.AvatarPath)
+	}
+	if dto.Description != nil {
+		counter++
+		query += `, description = $` + strconv.Itoa(counter)
+		args = append(args, *dto.Description)
+	}
+
+	query += ` WHERE id = $1`
+
+	if _, err := dao.db.ExecContext(ctx, query, args...); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
 }
 
 func (dao *UserDAO) Delete(ctx context.Context, id uuid.UUID) error {
