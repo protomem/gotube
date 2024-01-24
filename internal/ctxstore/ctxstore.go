@@ -4,14 +4,16 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/protomem/gotube/internal/domain/entity"
 	"github.com/protomem/gotube/pkg/logging"
 )
 
 type Key string
 
 const (
-	_loggerKey = Key("logger")
-	_traceID   = Key("traceID")
+	_loggerKey  = Key("logger")
+	_traceIDKey = Key("traceID")
+	_userKey    = Key("user")
 )
 
 func WithLogger(ctx context.Context, l *logging.Logger) context.Context {
@@ -36,7 +38,7 @@ func MustLogger(ctx context.Context) *logging.Logger {
 }
 
 func WithTraceID(ctx context.Context, tid string) context.Context {
-	return context.WithValue(ctx, _traceID, tid)
+	return context.WithValue(ctx, _traceIDKey, tid)
 }
 
 func RequestWithTraceID(r *http.Request, tid string) *http.Request {
@@ -44,7 +46,7 @@ func RequestWithTraceID(r *http.Request, tid string) *http.Request {
 }
 
 func TraceID(ctx context.Context) (string, bool) {
-	tid, ok := ctx.Value(_traceID).(string)
+	tid, ok := ctx.Value(_traceIDKey).(string)
 	if !ok {
 		return "", false
 	}
@@ -52,6 +54,27 @@ func TraceID(ctx context.Context) (string, bool) {
 }
 
 func MustTraceID(ctx context.Context) string {
-	tid, _ := ctx.Value(_traceID).(string)
+	tid, _ := ctx.Value(_traceIDKey).(string)
 	return tid
+}
+
+func WithUser(ctx context.Context, user entity.User) context.Context {
+	return context.WithValue(ctx, _userKey, user)
+}
+
+func RequestWithUser(r *http.Request, user entity.User) *http.Request {
+	return r.WithContext(WithUser(r.Context(), user))
+}
+
+func User(ctx context.Context) (entity.User, bool) {
+	u, ok := ctx.Value(_userKey).(entity.User)
+	if !ok {
+		return entity.User{}, false
+	}
+	return u, true
+}
+
+func MustUser(ctx context.Context) entity.User {
+	u, _ := ctx.Value(_userKey).(entity.User)
+	return u
 }

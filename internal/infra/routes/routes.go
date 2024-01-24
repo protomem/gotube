@@ -20,6 +20,8 @@ func Setup(
 	mux.Use(common.LogAccess(logger))
 	mux.Use(common.RecoverPanic)
 
+	mux.Use(auth.Authenticate)
+
 	mux.NotFound(common.NotFound)
 	mux.MethodNotAllowed(common.MethodNotAllowed)
 
@@ -32,8 +34,9 @@ func Setup(
 	mux.Route("/auth", func(mux chi.Router) {
 		mux.Post("/register", auth.HandleRegister)
 		mux.Post("/login", auth.HandleLogin)
-		mux.Get("/refresh", auth.HandleRefreshTokens)
-		mux.Delete("/logout", auth.HandleLogout)
+
+		mux.With(auth.Require).Get("/refresh", auth.HandleRefreshTokens)
+		mux.With(auth.Require).Delete("/logout", auth.HandleLogout)
 	})
 
 	return mux

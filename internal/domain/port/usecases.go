@@ -1,6 +1,10 @@
 package port
 
-import "github.com/protomem/gotube/internal/domain/entity"
+import (
+	"errors"
+
+	"github.com/protomem/gotube/internal/domain/entity"
+)
 
 type (
 	CreateUserInput struct {
@@ -59,3 +63,13 @@ type (
 )
 
 type Logout = Usecase[LogoutInput, Void]
+
+type (
+	VerifyTokenInput struct {
+		AccessToken string
+	}
+)
+
+var ErrInvalidToken = errors.New("invalid token")
+
+type VerifyToken = Usecase[VerifyTokenInput, entity.User]

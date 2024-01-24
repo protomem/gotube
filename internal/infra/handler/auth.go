@@ -3,8 +3,10 @@ package handler
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/protomem/gotube/internal/config"
+	"github.com/protomem/gotube/internal/ctxstore"
 	"github.com/protomem/gotube/internal/domain/entity"
 	"github.com/protomem/gotube/internal/domain/port"
 	"github.com/protomem/gotube/internal/domain/usecase"
@@ -141,6 +143,60 @@ func (h *Auth) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Auth) Authenticate(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		headerParts := strings.Split(authHeader, " ")
+		if len(headerParts) != 2 || headerParts[0] != "Bearer" {
+			h.BadRequest(w, r, errors.New("invalid authorization header"))
+			return
+		}
+
+		accessToken := headerParts[1]
+
+		deps := usecase.VerifyTokenDeps{
+			Conf:     h.conf,
+			Accessor: h.accessor,
+		}
+		user, err := usecase.VerifyToken(deps).
+			Invoke(r.Context(), port.VerifyTokenInput{AccessToken: accessToken})
+		if err != nil {
+			if errors.Is(err, port.ErrInvalidToken) {
+				h.ErrorMessage(w, r, http.StatusUnauthorized, port.ErrInvalidToken.Error(), nil)
+				return
+			}
+
+			if entity.IsError(err, entity.ErrUserNotFound) {
+				h.ErrorMessage(w, r, http.StatusUnauthorized, entity.ErrUserNotFound.Error(), nil)
+				return
+			}
+
+			h.ServerError(w, r, err)
+			return
+		}
+
+		wr := ctxstore.RequestWithUser(r, user)
+		next.ServeHTTP(w, wr)
+	})
+}
+
+func (h *Auth) Require(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, ok := ctxstore.User(r.Context())
+		if !ok {
+			h.ErrorMessage(w, r, http.StatusForbidden, "access denied", nil)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (h *Auth) getRefreshTokenFromRequest(r *http.Request) (string, bool) {
