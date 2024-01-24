@@ -102,3 +102,36 @@ func (h *Auth) HandleLogin(w http.ResponseWriter, r *http.Request) {
 
 	h.MustSendJSON(w, r, http.StatusOK, output)
 }
+
+func (h *Auth) HandleRefreshTokens(w http.ResponseWriter, r *http.Request) {
+	refreshToken, exists := h.getRefreshTokenFromRequest(r)
+	if !exists {
+		h.BadRequest(w, r, errors.New("missing refresh token"))
+		return
+	}
+
+	deps := usecase.RefreshTokensDeps{
+		Conf:     h.conf,
+		Accessor: h.accessor,
+		SessMng:  h.sessMng,
+	}
+	output, err := usecase.RefreshTokens(deps).
+		Invoke(r.Context(), port.RefreshTokensInput{RefreshToken: refreshToken})
+	if err != nil {
+		// TODO: check other errors
+		h.ServerError(w, r, err)
+		return
+	}
+
+	h.MustSendJSON(w, r, http.StatusOK, output)
+}
+
+func (h *Auth) getRefreshTokenFromRequest(r *http.Request) (string, bool) {
+	if r.URL.Query().Has("refresh_token") {
+		return r.URL.Query().Get("refresh_token"), true
+	} else if r.Header.Get("X-Refresh-Token") != "" {
+		return r.Header.Get("X-Refresh-Token"), true
+	} else {
+		return "", false
+	}
+}

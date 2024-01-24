@@ -38,7 +38,7 @@ func Register(deps RegisterDeps) port.Register {
 			SigningKey: deps.Conf.Secret,
 			TTL:        deps.Conf.AccessTokenTTL,
 			Subject:    user.ID,
-			Issuer:     user.Nickname,
+			Issuer:     deps.Conf.Issuer,
 		})
 		if err != nil {
 			return port.RegisterOutput{}, fmt.Errorf("%s: %w", op, err)

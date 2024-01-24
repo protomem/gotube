@@ -32,6 +32,7 @@ func Setup(
 	mux.Route("/auth", func(mux chi.Router) {
 		mux.Post("/register", auth.HandleRegister)
 		mux.Post("/login", auth.HandleLogin)
+		mux.Get("/refresh", auth.HandleRefreshTokens)
 	})
 
 	return mux

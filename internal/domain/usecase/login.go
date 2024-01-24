@@ -54,7 +54,7 @@ func Login(deps LoginDeps) port.Login {
 			SigningKey: deps.Conf.Secret,
 			TTL:        deps.Conf.AccessTokenTTL,
 			Subject:    user.ID,
-			Issuer:     user.Nickname,
+			Issuer:     deps.Conf.Issuer,
 		})
 		if err != nil {
 			return port.LoginOutput{}, fmt.Errorf("%s: %w", op, err)

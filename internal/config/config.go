@@ -20,6 +20,7 @@ type Auth struct {
 	Secret          string        `env:"SECRET,notEmpty"`
 	AccessTokenTTL  time.Duration `env:"ACCESS_TOKEN_TTL" envDefault:"3h"`
 	RefreshTokenTTL time.Duration `env:"REFRESH_TOKEN_TTL" envDefault:"24h"`
+	Issuer          string        `env:"ISSUER" envDefault:"gotube"`
 }
 
 type Database struct {

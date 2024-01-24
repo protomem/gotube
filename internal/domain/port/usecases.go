@@ -38,3 +38,16 @@ type (
 )
 
 type Login = Usecase[LoginInput, LoginOutput]
+
+type (
+	RefreshTokensInput struct {
+		RefreshToken string
+	}
+
+	RefreshTokensOutput struct {
+		AccessToken  string `json:"accessToken"`
+		RefreshToken string `json:"refreshToken"`
+	}
+)
+
+type RefreshTokens = Usecase[RefreshTokensInput, RefreshTokensOutput]
