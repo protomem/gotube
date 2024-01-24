@@ -6,9 +6,10 @@ WORKDIR /app
 
 COPY go.* .
 RUN go mod download
+RUN go install std
 
 COPY . .
-RUN go build -o -v /app/build/api-server ./cmd/api-server
+RUN go build -v -o /app/build/api-server ./cmd/api-server
 
 
 FROM alpine:latest
