@@ -126,6 +126,23 @@ func (h *Auth) HandleRefreshTokens(w http.ResponseWriter, r *http.Request) {
 	h.MustSendJSON(w, r, http.StatusOK, output)
 }
 
+func (h *Auth) HandleLogout(w http.ResponseWriter, r *http.Request) {
+	refreshToken, exists := h.getRefreshTokenFromRequest(r)
+	if !exists {
+		h.BadRequest(w, r, errors.New("missing refresh token"))
+		return
+	}
+
+	deps := usecase.LogoutDeps{SessMng: h.sessMng}
+	if _, err := usecase.Logout(deps).
+		Invoke(r.Context(), port.LogoutInput{RefreshToken: refreshToken}); err != nil {
+		h.ServerError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (h *Auth) getRefreshTokenFromRequest(r *http.Request) (string, bool) {
 	if r.URL.Query().Has("refresh_token") {
 		return r.URL.Query().Get("refresh_token"), true

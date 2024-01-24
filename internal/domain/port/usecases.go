@@ -51,3 +51,11 @@ type (
 )
 
 type RefreshTokens = Usecase[RefreshTokensInput, RefreshTokensOutput]
+
+type (
+	LogoutInput struct {
+		RefreshToken string
+	}
+)
+
+type Logout = Usecase[LogoutInput, Void]

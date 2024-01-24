@@ -33,6 +33,7 @@ func Setup(
 		mux.Post("/register", auth.HandleRegister)
 		mux.Post("/login", auth.HandleLogin)
 		mux.Get("/refresh", auth.HandleRefreshTokens)
+		mux.Delete("/logout", auth.HandleLogout)
 	})
 
 	return mux
