@@ -29,6 +29,8 @@ type User struct {
 	Description string `json:"description"`
 }
 
+var ErrSessionNotFound = NewError("session", ErrNotFound)
+
 type Session struct {
 	Token  string    `json:"token"`
 	Expiry time.Time `json:"expiry"`

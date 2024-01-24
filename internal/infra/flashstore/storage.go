@@ -3,12 +3,15 @@ package flashstore
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/protomem/gotube/internal/config"
 	"github.com/redis/go-redis/v9"
 )
+
+var ErrKeyNotFound = errors.New("key not found")
 
 type Storage struct {
 	*redis.Client
@@ -46,6 +49,10 @@ func (s *Storage) ScanJSON(ctx context.Context, key string, value any) error {
 	}
 
 	if err := json.Unmarshal(valueJSON, value); err != nil {
+		if err == redis.Nil {
+			return fmt.Errorf("%s: %w", op, ErrKeyNotFound)
+		}
+
 		return fmt.Errorf("%s: %w", op, err)
 	}
 

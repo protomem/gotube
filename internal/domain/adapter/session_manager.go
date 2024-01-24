@@ -2,6 +2,7 @@ package adapter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -24,6 +25,10 @@ func (sm *SessionManager) Get(ctx context.Context, token string) (entity.Session
 	var session entity.Session
 
 	if err := sm.fstore.ScanJSON(ctx, sm.buildKey(token), &session); err != nil {
+		if errors.Is(err, flashstore.ErrKeyNotFound) {
+			return entity.Session{}, entity.ErrSessionNotFound
+		}
+
 		return entity.Session{}, err
 	}
 
