@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"net/http"
-	"strconv"
 
 	"github.com/protomem/gotube/internal/config"
 )
@@ -15,7 +14,7 @@ type Server struct {
 func New(conf config.Config, handler http.Handler) *Server {
 	return &Server{
 		httpSrv: &http.Server{
-			Addr:    conf.HTTP.Host + ":" + strconv.Itoa(conf.HTTP.Port),
+			Addr:    conf.HTTP.Addr(),
 			Handler: handler,
 		},
 	}

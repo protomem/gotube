@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/protomem/gotube/pkg/env"
@@ -11,6 +12,8 @@ type HTTP struct {
 	Host string `env:"HOST" envDefault:"0.0.0.0"`
 	Port int    `env:"PORT" envDefault:"8080"`
 }
+
+func (c HTTP) Addr() string { return fmt.Sprintf("%s:%s", c.Host, strconv.Itoa(c.Port)) }
 
 type Log struct {
 	Level string `env:"LEVEL" envDefault:"debug"`
