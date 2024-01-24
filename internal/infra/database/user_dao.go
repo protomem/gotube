@@ -97,3 +97,16 @@ func (dao *UserDAO) Insert(ctx context.Context, dto InsertUserDTO) (uuid.UUID, e
 
 	return id, nil
 }
+
+func (dao *UserDAO) Delete(ctx context.Context, id uuid.UUID) error {
+	const op = "database.UserDAO.Delete"
+
+	query := `DELETE FROM users WHERE id = $1`
+	args := []any{id}
+
+	if _, err := dao.db.ExecContext(ctx, query, args...); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}

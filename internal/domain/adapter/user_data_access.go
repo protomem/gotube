@@ -79,3 +79,7 @@ func (mut *UserMutator) Insert(ctx context.Context, dto port.InsertUserDTO) (ent
 
 	return id, nil
 }
+
+func (mut *UserMutator) Delete(ctx context.Context, id entity.ID) error {
+	return mut.dao.Delete(ctx, id)
+}

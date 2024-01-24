@@ -29,6 +29,8 @@ func Setup(
 
 	mux.Route("/users", func(mux chi.Router) {
 		mux.Get("/{nickname}", user.HandleGet)
+
+		mux.With(auth.Require).Delete("/{nickname}", user.HandleDelete)
 	})
 
 	mux.Route("/auth", func(mux chi.Router) {

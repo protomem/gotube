@@ -21,5 +21,6 @@ type (
 
 	UserMutator interface {
 		Insert(ctx context.Context, dto InsertUserDTO) (entity.ID, error)
+		Delete(ctx context.Context, id entity.ID) error
 	}
 )

@@ -42,6 +42,28 @@ func (h *User) HandleGet(w http.ResponseWriter, r *http.Request) {
 	h.MustSendJSON(w, r, http.StatusOK, response.Data{"user": user})
 }
 
+func (h *User) HandleDelete(w http.ResponseWriter, r *http.Request) {
+	nickname := h.mustGetNicknameFromRequest(r)
+
+	user, err := h.accessor.ByNickname(r.Context(), nickname)
+	if err != nil {
+		if entity.IsError(err, entity.ErrUserNotFound) {
+			h.ErrorMessage(w, r, http.StatusNotFound, entity.ErrUserNotFound.Error(), nil)
+			return
+		}
+
+		h.ServerError(w, r, err)
+		return
+	}
+
+	if err := h.mutator.Delete(r.Context(), user.ID); err != nil {
+		h.ServerError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (h *User) mustGetNicknameFromRequest(r *http.Request) string {
 	return chi.URLParam(r, "nickname")
 }
