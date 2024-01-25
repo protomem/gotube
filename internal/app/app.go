@@ -36,6 +36,7 @@ func Create() fx.Option {
 			handler.NewCommon,
 			handler.NewUser,
 			handler.NewAuth,
+			handler.NewVideo,
 
 			as(routes.Setup, new(http.Handler)),
 			server.New,

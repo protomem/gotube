@@ -13,6 +13,7 @@ func Setup(
 	common *handler.Common,
 	user *handler.User,
 	auth *handler.Auth,
+	video *handler.Video,
 ) http.Handler {
 	mux := chi.NewRouter()
 
