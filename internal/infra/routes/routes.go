@@ -47,6 +47,8 @@ func Setup(
 	})
 
 	mux.Route("/videos", func(mux chi.Router) {
+		mux.Get("/{videoId}", video.HandleGet)
+
 		mux.With(auth.Require).Post("/", video.HandleCreate)
 	})
 

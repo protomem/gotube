@@ -4,6 +4,8 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/protomem/gotube/internal/ctxstore"
 	"github.com/protomem/gotube/internal/domain/entity"
 	"github.com/protomem/gotube/internal/domain/port"
@@ -27,6 +29,33 @@ func NewVideo(accessor port.VideoAccessor, mutator port.VideoMutator) *Video {
 		accessor: accessor,
 		mutator:  mutator,
 	}
+}
+
+func (h *Video) HandleGet(w http.ResponseWriter, r *http.Request) {
+	videoID, ok := h.getVideoIDFromRequest(r)
+	if !ok {
+		h.BadRequest(w, r, errors.New("missing or invalid video id"))
+		return
+	}
+
+	video, err := h.accessor.ByID(r.Context(), videoID)
+	if err != nil {
+		if entity.IsError(err, entity.ErrVideoNotFound) {
+			h.ErrorMessage(w, r, http.StatusNotFound, entity.ErrVideoNotFound.Error(), nil)
+			return
+		}
+
+		h.ServerError(w, r, err)
+		return
+	}
+
+	requester, isAuth := ctxstore.User(r.Context())
+	if !video.Public && (!isAuth || requester.ID != video.Author.ID) {
+		h.ErrorMessage(w, r, http.StatusForbidden, "access denied", nil)
+		return
+	}
+
+	h.MustSendJSON(w, r, http.StatusOK, response.Data{"video": video})
 }
 
 func (h *Video) HandleCreate(w http.ResponseWriter, r *http.Request) {
@@ -61,4 +90,15 @@ func (h *Video) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.MustSendJSON(w, r, http.StatusCreated, response.Data{"video": video})
+}
+
+func (h *Video) getVideoIDFromRequest(r *http.Request) (uuid.UUID, bool) {
+	videoIDRaw := chi.URLParam(r, "videoId")
+
+	videoID, err := uuid.Parse(videoIDRaw)
+	if err != nil {
+		return uuid.UUID{}, false
+	}
+
+	return videoID, true
 }
