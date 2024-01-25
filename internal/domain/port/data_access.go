@@ -30,7 +30,26 @@ type (
 
 	UserMutator interface {
 		Insert(ctx context.Context, dto InsertUserDTO) (entity.ID, error)
-		Delete(ctx context.Context, id entity.ID) error
 		Update(ctx context.Context, id entity.ID, dto UpdateUserDTO) error
+		Delete(ctx context.Context, id entity.ID) error
+	}
+)
+
+type InsertVideoDTO struct {
+	Title         string
+	Description   string
+	ThumbnailPath string
+	VideoPath     string
+	AuthorID      entity.ID
+	Public        bool
+}
+
+type (
+	VideoAccessor interface {
+		ByID(ctx context.Context, id entity.ID) (entity.Video, error)
+	}
+
+	VideoMutator interface {
+		Insert(ctx context.Context, dto InsertVideoDTO) (entity.ID, error)
 	}
 )

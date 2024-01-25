@@ -91,3 +91,16 @@ type (
 var ErrInvalidToken = errors.New("invalid token")
 
 type VerifyToken = Usecase[VerifyTokenInput, entity.User]
+
+type (
+	CreateVideoInput struct {
+		Title         string    `json:"title"`
+		Description   *string   `json:"description"`
+		ThumbnailPath *string   `json:"thumbnailPath"`
+		VideoPath     *string   `json:"videoPath"`
+		AuthorID      entity.ID `json:"-"`
+		Public        *bool     `json:"isPublic"`
+	}
+)
+
+type CreateVideo = Usecase[CreateVideoInput, entity.Video]

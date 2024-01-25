@@ -17,6 +17,9 @@ func Setup(
 ) http.Handler {
 	mux := chi.NewRouter()
 
+	mux.Use(common.CleanPath)
+	mux.Use(common.StripSlashes)
+
 	mux.Use(common.TraceID)
 	mux.Use(common.LogAccess(logger))
 	mux.Use(common.RecoverPanic)
@@ -41,6 +44,10 @@ func Setup(
 
 		mux.With(auth.Require).Get("/refresh", auth.HandleRefreshTokens)
 		mux.With(auth.Require).Delete("/logout", auth.HandleLogout)
+	})
+
+	mux.Route("/videos", func(mux chi.Router) {
+		mux.With(auth.Require).Post("/", video.HandleCreate)
 	})
 
 	return mux

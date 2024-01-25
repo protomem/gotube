@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/google/uuid"
 	"github.com/protomem/gotube/internal/ctxstore"
 	"github.com/protomem/gotube/pkg/logging"
@@ -67,4 +68,12 @@ func (h *Common) RecoverPanic(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+func (h *Common) CleanPath(next http.Handler) http.Handler {
+	return middleware.CleanPath(next)
+}
+
+func (h *Common) StripSlashes(next http.Handler) http.Handler {
+	return middleware.StripSlashes(next)
 }

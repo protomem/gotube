@@ -37,6 +37,11 @@ type Session struct {
 	UserID ID        `json:"userId"`
 }
 
+var (
+	ErrVideoNotFound      = NewError("video", ErrNotFound)
+	ErrVideoAlreadyExists = NewError("video", ErrAlreadyExists)
+)
+
 type Video struct {
 	ID ID `json:"id"`
 

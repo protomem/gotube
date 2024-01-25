@@ -32,6 +32,8 @@ func Create() fx.Option {
 			as(adapter.NewUserAccessor, new(port.UserAccessor)),
 			as(adapter.NewUserMutator, new(port.UserMutator)),
 			as(adapter.NewSessionManager, new(port.SessionManager)),
+			as(adapter.NewVideoAccessor, new(port.VideoAccessor)),
+			as(adapter.NewVideoMutator, new(port.VideoMutator)),
 
 			handler.NewCommon,
 			handler.NewUser,

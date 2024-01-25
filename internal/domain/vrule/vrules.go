@@ -23,3 +23,16 @@ func AvatarPath(v *validation.Validator, avatarPath string) {
 func Description(v *validation.Validator, description string) {
 	v.CheckField(validation.MaxRunes(description, 500), "description", "must be at most 500 characters long")
 }
+
+func Title(v *validation.Validator, title string) {
+	v.CheckField(validation.MinRunes(title, 4), "title", "must be at least 4 characters long")
+	v.CheckField(validation.MaxRunes(title, 64), "title", "must be at most 64 characters long")
+}
+
+func ThumbnailPath(v *validation.Validator, thumbnailPath string) {
+	v.CheckField(validation.IsPath(thumbnailPath), "thumbnailPath", "must be a valid path")
+}
+
+func VideoPath(v *validation.Validator, videoPath string) {
+	v.CheckField(validation.IsPath(videoPath), "videoPath", "must be a valid path")
+}
