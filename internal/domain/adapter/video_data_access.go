@@ -65,6 +65,10 @@ func (mut *VideoMutator) Insert(ctx context.Context, dto port.InsertVideoDTO) (e
 	return id, nil
 }
 
+func (mut *VideoMutator) Update(ctx context.Context, id entity.ID, dto port.UpdateVideoDTO) error {
+	return mut.dao.Update(ctx, id, database.UpdateVideoDTO(dto))
+}
+
 func (mut *VideoMutator) Delete(ctx context.Context, id entity.ID) error {
 	return mut.dao.Delete(ctx, id)
 }

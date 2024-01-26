@@ -104,3 +104,20 @@ type (
 )
 
 type CreateVideo = Usecase[CreateVideoInput, entity.Video]
+
+type (
+	UpdateVideoInput struct {
+		ID   entity.ID
+		Data UpdateVideoData
+	}
+
+	UpdateVideoData struct {
+		Title         *string `json:"title"`
+		Description   *string `json:"description"`
+		ThumbnailPath *string `json:"thumbnailPath"`
+		VideoPath     *string `json:"videoPath"`
+		Public        *bool   `json:"isPublic"`
+	}
+)
+
+type UpdateVideo = Usecase[UpdateVideoInput, entity.Video]

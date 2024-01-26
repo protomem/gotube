@@ -9,15 +9,6 @@ type FindOptions struct {
 	Offset uint64
 }
 
-type Tuple[A, B any] struct {
-	A A
-	B B
-}
-
-func NewTuple[A, B any](a A, b B) Tuple[A, B] {
-	return Tuple[A, B]{A: a, B: b}
-}
-
 type Usecase[I, O any] interface {
 	Invoke(ctx context.Context, input I) (output O, err error)
 }

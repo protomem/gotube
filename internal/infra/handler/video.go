@@ -92,6 +92,40 @@ func (h *Video) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	h.MustSendJSON(w, r, http.StatusCreated, response.Data{"video": video})
 }
 
+func (h *Video) HandleUpdate(w http.ResponseWriter, r *http.Request) {
+	videoID, ok := h.getVideoIDFromRequest(r)
+	if !ok {
+		h.BadRequest(w, r, errors.New("missing or invalid video id"))
+		return
+	}
+
+	var input port.UpdateVideoData
+	if err := request.DecodeJSONStrict(w, r, &input); err != nil {
+		h.BadRequest(w, r, err)
+		return
+	}
+
+	deps := usecase.UpdateVideoDeps{
+		Accessor: h.accessor,
+		Mutator:  h.mutator,
+	}
+	video, err := usecase.UpdateVideo(deps).Invoke(r.Context(), port.UpdateVideoInput{
+		ID:   videoID,
+		Data: input,
+	})
+	if err != nil {
+		if entity.IsError(err, entity.ErrVideoNotFound) {
+			h.ErrorMessage(w, r, http.StatusNotFound, entity.ErrVideoNotFound.Error(), nil)
+			return
+		}
+
+		h.ServerError(w, r, err)
+		return
+	}
+
+	h.MustSendJSON(w, r, http.StatusOK, response.Data{"video": video})
+}
+
 func (h *Video) HandleDelete(w http.ResponseWriter, r *http.Request) {
 	videoID, ok := h.getVideoIDFromRequest(r)
 	if !ok {
@@ -100,8 +134,8 @@ func (h *Video) HandleDelete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, err := h.accessor.ByID(r.Context(), videoID); err != nil {
-		if entity.IsError(err, entity.ErrUserNotFound) {
-			h.ErrorMessage(w, r, http.StatusNotFound, entity.ErrUserNotFound.Error(), nil)
+		if entity.IsError(err, entity.ErrVideoNotFound) {
+			h.ErrorMessage(w, r, http.StatusNotFound, entity.ErrVideoNotFound.Error(), nil)
 			return
 		}
 
