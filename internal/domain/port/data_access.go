@@ -51,5 +51,6 @@ type (
 
 	VideoMutator interface {
 		Insert(ctx context.Context, dto InsertVideoDTO) (entity.ID, error)
+		Delete(ctx context.Context, id entity.ID) error
 	}
 )

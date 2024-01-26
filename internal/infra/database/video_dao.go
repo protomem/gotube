@@ -83,3 +83,19 @@ func (dao *VideoDAO) Insert(ctx context.Context, dto InsertVideoDTO) (uuid.UUID,
 
 	return id, nil
 }
+
+func (dao *VideoDAO) Delete(ctx context.Context, id uuid.UUID) error {
+	const op = "database.VideoDAO.Delete"
+
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	query := `DELETE FROM videos WHERE id = $1`
+	args := []any{id}
+
+	if _, err := dao.db.ExecContext(ctx, query, args...); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}

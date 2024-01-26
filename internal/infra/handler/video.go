@@ -92,6 +92,31 @@ func (h *Video) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	h.MustSendJSON(w, r, http.StatusCreated, response.Data{"video": video})
 }
 
+func (h *Video) HandleDelete(w http.ResponseWriter, r *http.Request) {
+	videoID, ok := h.getVideoIDFromRequest(r)
+	if !ok {
+		h.BadRequest(w, r, errors.New("missing or invalid video id"))
+		return
+	}
+
+	if _, err := h.accessor.ByID(r.Context(), videoID); err != nil {
+		if entity.IsError(err, entity.ErrUserNotFound) {
+			h.ErrorMessage(w, r, http.StatusNotFound, entity.ErrUserNotFound.Error(), nil)
+			return
+		}
+
+		h.ServerError(w, r, err)
+		return
+	}
+
+	if err := h.mutator.Delete(r.Context(), videoID); err != nil {
+		h.ServerError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (h *Video) getVideoIDFromRequest(r *http.Request) (uuid.UUID, bool) {
 	videoIDRaw := chi.URLParam(r, "videoId")
 
