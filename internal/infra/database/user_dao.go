@@ -33,6 +33,24 @@ func (db *DB) UserDAO() *UserDAO {
 	return &UserDAO{db}
 }
 
+func (dao *UserDAO) SelectByIDs(ctx context.Context, ids []uuid.UUID) ([]UserEntry, error) {
+	const op = "database.UserDAO.SelectByIDs"
+
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	query := `SELECT * FROM users WHERE id = ANY($1::UUID[])`
+	args := []any{ids}
+
+	var users []UserEntry
+
+	if err := dao.db.SelectContext(ctx, &users, query, args...); err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return users, nil
+}
+
 func (dao *UserDAO) GetByID(ctx context.Context, id uuid.UUID) (UserEntry, error) {
 	const op = "database.UserDAO.GetByID"
 

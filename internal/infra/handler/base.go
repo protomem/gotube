@@ -76,3 +76,18 @@ func (h *Base) MustSendJSON(w http.ResponseWriter, r *http.Request, status int, 
 		h.ServerError(w, r, err)
 	}
 }
+
+func (h *Base) DefaultQueryValue(r *http.Request, key string, defaultValue string) string {
+	value := defaultValue
+	if r.URL.Query().Has(key) {
+		value = r.URL.Query().Get(key)
+	}
+	return value
+}
+
+func (h *Base) GetQueryValue(r *http.Request, key string) (string, bool) {
+	if r.URL.Query().Has(key) {
+		return r.URL.Query().Get(key), true
+	}
+	return "", false
+}

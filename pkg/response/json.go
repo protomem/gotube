@@ -3,6 +3,7 @@ package response
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 )
 
 type Data map[string]any
@@ -24,6 +25,8 @@ func JSONWithHeaders(w http.ResponseWriter, status int, data any, headers http.H
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Length", strconv.Itoa(len(js)))
+
 	w.WriteHeader(status)
 
 	if _, err := w.Write(js); err != nil {

@@ -22,6 +22,166 @@ func NewVideoAccessor(db *database.DB) *VideoAccessor {
 	}
 }
 
+func (acc *VideoAccessor) AllWherePublic(ctx context.Context, opts port.FindOptions) ([]entity.Video, error) {
+	videos, err := acc.videoDao.SelectWherePublic(ctx, database.SelectOptions(opts))
+	if err != nil {
+		if database.IsNoRows(err) {
+			return []entity.Video{}, nil
+		}
+
+		return []entity.Video{}, err
+	}
+
+	authorIDs := make([]entity.ID, 0, len(videos))
+	for _, video := range videos {
+		authorIDs = append(authorIDs, video.AuthorID)
+	}
+
+	authors, err := acc.userDao.SelectByIDs(ctx, authorIDs)
+	if err != nil {
+		if database.IsNoRows(err) {
+			return []entity.Video{}, nil
+		}
+
+		return []entity.Video{}, err
+	}
+
+	return mapVideoEntriesAndUserEntriesToVideoEntities(videos, authors), nil
+}
+
+func (acc *VideoAccessor) AllWherePublicAndSortByViews(ctx context.Context, opts port.FindOptions) ([]entity.Video, error) {
+	videos, err := acc.videoDao.SelectWherePublicAndSortByViews(ctx, database.SelectOptions(opts))
+	if err != nil {
+		if database.IsNoRows(err) {
+			return []entity.Video{}, nil
+		}
+
+		return []entity.Video{}, err
+	}
+
+	authorIDs := make([]entity.ID, 0, len(videos))
+	for _, video := range videos {
+		authorIDs = append(authorIDs, video.AuthorID)
+	}
+
+	authors, err := acc.userDao.SelectByIDs(ctx, authorIDs)
+	if err != nil {
+		if database.IsNoRows(err) {
+			return []entity.Video{}, nil
+		}
+
+		return []entity.Video{}, err
+	}
+
+	return mapVideoEntriesAndUserEntriesToVideoEntities(videos, authors), nil
+}
+
+func (acc *VideoAccessor) AllByAuthorIDAndWherePublic(ctx context.Context, authorID entity.ID, opts port.FindOptions) ([]entity.Video, error) {
+	videos, err := acc.videoDao.SelectByAuthorIDWherePublic(ctx, authorID, database.SelectOptions(opts))
+	if err != nil {
+		if database.IsNoRows(err) {
+			return []entity.Video{}, nil
+		}
+
+		return []entity.Video{}, err
+	}
+
+	authorIDs := make([]entity.ID, 0, len(videos))
+	for _, video := range videos {
+		authorIDs = append(authorIDs, video.AuthorID)
+	}
+
+	authors, err := acc.userDao.SelectByIDs(ctx, authorIDs)
+	if err != nil {
+		if database.IsNoRows(err) {
+			return []entity.Video{}, nil
+		}
+
+		return []entity.Video{}, err
+	}
+
+	return mapVideoEntriesAndUserEntriesToVideoEntities(videos, authors), nil
+}
+
+func (acc *VideoAccessor) AllByAuthorID(ctx context.Context, author entity.ID, opts port.FindOptions) ([]entity.Video, error) {
+	videos, err := acc.videoDao.SelectByAuthorID(ctx, author, database.SelectOptions(opts))
+	if err != nil {
+		if database.IsNoRows(err) {
+			return []entity.Video{}, nil
+		}
+	}
+
+	authorIDs := make([]entity.ID, 0, len(videos))
+	for _, video := range videos {
+		authorIDs = append(authorIDs, video.AuthorID)
+	}
+
+	authors, err := acc.userDao.SelectByIDs(ctx, authorIDs)
+	if err != nil {
+		if database.IsNoRows(err) {
+			return []entity.Video{}, nil
+		}
+
+		return []entity.Video{}, err
+	}
+
+	return mapVideoEntriesAndUserEntriesToVideoEntities(videos, authors), nil
+}
+
+func (acc *VideoAccessor) AllByLikeTitleAndWherePublic(ctx context.Context, likeTitle string, opts port.FindOptions) ([]entity.Video, error) {
+	videos, err := acc.videoDao.SelectByLikeTitleAndWherePublic(ctx, likeTitle, database.SelectOptions(opts))
+	if err != nil {
+		if database.IsNoRows(err) {
+			return []entity.Video{}, nil
+		}
+
+		return []entity.Video{}, err
+	}
+
+	authorIDs := make([]entity.ID, 0, len(videos))
+	for _, video := range videos {
+		authorIDs = append(authorIDs, video.AuthorID)
+	}
+
+	authors, err := acc.userDao.SelectByIDs(ctx, authorIDs)
+	if err != nil {
+		if database.IsNoRows(err) {
+			return []entity.Video{}, nil
+		}
+
+		return []entity.Video{}, err
+	}
+
+	return mapVideoEntriesAndUserEntriesToVideoEntities(videos, authors), nil
+}
+
+func (acc *VideoAccessor) AllByLikeTitleAndByAuthorIDAndWherePublic(ctx context.Context, likeTitle string, author entity.ID, opts port.FindOptions) ([]entity.Video, error) {
+	videos, err := acc.videoDao.SelectByLikeTitleAndByAuthorIDAndWherePublic(ctx, likeTitle, author, database.SelectOptions(opts))
+	if err != nil {
+		if database.IsNoRows(err) {
+			return []entity.Video{}, nil
+		}
+
+		return []entity.Video{}, err
+	}
+
+	authorIDs := make([]entity.ID, 0, len(videos))
+	for _, video := range videos {
+		authorIDs = append(authorIDs, video.AuthorID)
+	}
+
+	authors, err := acc.userDao.SelectByIDs(ctx, authorIDs)
+	if err != nil {
+		if database.IsNoRows(err) {
+			return []entity.Video{}, nil
+		}
+
+		return []entity.Video{}, err
+	}
+
+	return mapVideoEntriesAndUserEntriesToVideoEntities(videos, authors), nil
+}
+
 func (acc *VideoAccessor) ByID(ctx context.Context, id entity.ID) (entity.Video, error) {
 	video, err := acc.videoDao.GetByID(ctx, id)
 	if err != nil {
@@ -86,4 +246,16 @@ func mapVideoEntryAndUserEntryToVideoEntity(video database.VideoEntry, user data
 		Public:        video.Public,
 		Views:         video.Views,
 	}
+}
+
+func mapVideoEntriesAndUserEntriesToVideoEntities(videos []database.VideoEntry, users []database.UserEntry) []entity.Video {
+	entities := make([]entity.Video, 0, len(videos))
+	for _, video := range videos {
+		for _, user := range users {
+			if video.AuthorID == user.ID {
+				entities = append(entities, mapVideoEntryAndUserEntryToVideoEntity(video, user))
+			}
+		}
+	}
+	return entities
 }

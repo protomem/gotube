@@ -54,6 +54,15 @@ type UpdateVideoDTO struct {
 
 type (
 	VideoAccessor interface {
+		AllWherePublic(ctx context.Context, opts FindOptions) ([]entity.Video, error)
+		AllWherePublicAndSortByViews(ctx context.Context, opts FindOptions) ([]entity.Video, error)
+
+		AllByAuthorIDAndWherePublic(ctx context.Context, authorID entity.ID, opts FindOptions) ([]entity.Video, error)
+		AllByAuthorID(ctx context.Context, authorID entity.ID, opts FindOptions) ([]entity.Video, error)
+
+		AllByLikeTitleAndWherePublic(ctx context.Context, likeTitle string, opts FindOptions) ([]entity.Video, error)
+		AllByLikeTitleAndByAuthorIDAndWherePublic(ctx context.Context, likeTitle string, authorID entity.ID, opts FindOptions) ([]entity.Video, error)
+
 		ByID(ctx context.Context, id entity.ID) (entity.Video, error)
 	}
 

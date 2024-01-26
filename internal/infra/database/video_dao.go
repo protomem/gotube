@@ -37,6 +37,114 @@ func (db *DB) VideoDAO() *VideoDAO {
 	}
 }
 
+func (dao *VideoDAO) SelectWherePublic(ctx context.Context, opts SelectOptions) ([]VideoEntry, error) {
+	const op = "database.VideoDAO.SelectWherePublic"
+
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	query := `SELECT * FROM videos WHERE is_public = true ORDER BY created_at DESC LIMIT $1 OFFSET $2`
+	args := []any{opts.Limit, opts.Offset}
+
+	videos := make([]VideoEntry, 0, opts.Limit)
+
+	if err := dao.db.SelectContext(ctx, &videos, query, args...); err != nil {
+		return []VideoEntry{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return videos, nil
+}
+
+func (dao *VideoDAO) SelectWherePublicAndSortByViews(ctx context.Context, opts SelectOptions) ([]VideoEntry, error) {
+	const op = "database.VideoDAO.SelectWherePublicAndSortByViews"
+
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	query := `SELECT * FROM videos WHERE is_public = true ORDER BY views DESC LIMIT $1 OFFSET $2`
+	args := []any{opts.Limit, opts.Offset}
+
+	videos := make([]VideoEntry, 0, opts.Limit)
+
+	if err := dao.db.SelectContext(ctx, &videos, query, args...); err != nil {
+		return []VideoEntry{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return videos, nil
+}
+
+func (dao *VideoDAO) SelectByAuthorIDWherePublic(ctx context.Context, authorID uuid.UUID, opts SelectOptions) ([]VideoEntry, error) {
+	const op = "database.VideoDAO.SelectByAuthorID"
+
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	query := `SELECT * FROM videos WHERE author_id = $1 AND is_public = true ORDER BY created_at DESC LIMIT $2 OFFSET $3`
+	args := []any{authorID, opts.Limit, opts.Offset}
+
+	videos := make([]VideoEntry, 0, opts.Limit)
+
+	if err := dao.db.SelectContext(ctx, &videos, query, args...); err != nil {
+		return []VideoEntry{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return videos, nil
+}
+
+func (dao *VideoDAO) SelectByAuthorID(ctx context.Context, authorID uuid.UUID, opts SelectOptions) ([]VideoEntry, error) {
+	const op = "database.VideoDAO.SelectByAuthorID"
+
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	query := `SELECT * FROM videos WHERE author_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`
+	args := []any{authorID, opts.Limit, opts.Offset}
+
+	videos := make([]VideoEntry, 0, opts.Limit)
+
+	if err := dao.db.SelectContext(ctx, &videos, query, args...); err != nil {
+		return []VideoEntry{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return videos, nil
+}
+
+func (dao *VideoDAO) SelectByLikeTitleAndWherePublic(ctx context.Context, likeTitle string, opts SelectOptions) ([]VideoEntry, error) {
+	const op = "database.VideoDAO.SelectByLikeTitleAndWherePublic"
+
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	query := `SELECT * FROM videos WHERE lower(videos.title) LIKE '%' || lower($1) || '%' AND is_public = true ORDER BY created_at DESC LIMIT $2 OFFSET $3`
+	args := []any{likeTitle, opts.Limit, opts.Offset}
+
+	videos := make([]VideoEntry, 0, opts.Limit)
+
+	if err := dao.db.SelectContext(ctx, &videos, query, args...); err != nil {
+		return []VideoEntry{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return videos, nil
+}
+
+func (dao *VideoDAO) SelectByLikeTitleAndByAuthorIDAndWherePublic(ctx context.Context, likeTitle string, authorID uuid.UUID, opts SelectOptions) ([]VideoEntry, error) {
+	const op = "database.VideoDAO.SelectByLikeTitle"
+
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	query := `SELECT * FROM videos WHERE lower(videos.title) LIKE '%' || lower($1) || '%' AND author_id = $2 AND is_public = true ORDER BY created_at DESC LIMIT $3 OFFSET $4`
+	args := []any{likeTitle, authorID, opts.Limit, opts.Offset}
+
+	videos := make([]VideoEntry, 0, opts.Limit)
+
+	if err := dao.db.SelectContext(ctx, &videos, query, args...); err != nil {
+		return []VideoEntry{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return videos, nil
+}
+
 func (dao *VideoDAO) GetByID(ctx context.Context, id uuid.UUID) (VideoEntry, error) {
 	const op = "database.VideoDAO.GetByID"
 

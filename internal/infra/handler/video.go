@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -15,20 +16,94 @@ import (
 	"github.com/protomem/gotube/pkg/validation"
 )
 
+const (
+	_defaultLimit  = 10
+	_defaultOffset = 0
+)
+
 type Video struct {
 	*Base
 
-	accessor port.VideoAccessor
-	mutator  port.VideoMutator
+	userAcc  port.UserAccessor
+	videoAcc port.VideoAccessor
+	videoMut port.VideoMutator
 }
 
-func NewVideo(accessor port.VideoAccessor, mutator port.VideoMutator) *Video {
+func NewVideo(userAcc port.UserAccessor, videoAcc port.VideoAccessor, videoMut port.VideoMutator) *Video {
 	return &Video{
 		Base: NewBase(),
 
-		accessor: accessor,
-		mutator:  mutator,
+		userAcc:  userAcc,
+		videoAcc: videoAcc,
+		videoMut: videoMut,
 	}
+}
+
+func (h *Video) HandleFind(w http.ResponseWriter, r *http.Request) {
+	findOpts, findOptsOk := h.getFindOptions(r)
+	if !findOptsOk {
+		h.BadRequest(w, r, errors.New("invalid limit or offset"))
+		return
+	}
+
+	searchQuery, searchQueryOk := h.getSearchQuery(r)
+	authorNickname, authorNicknameOk := h.getAuthorNickname(r)
+
+	sortBy := h.defaultSortBy(r, "new")
+
+	requester, isAuth := ctxstore.User(r.Context())
+
+	var (
+		err    error
+		videos []entity.Video
+	)
+
+	var author entity.User
+	if authorNicknameOk {
+		author, err = h.userAcc.ByNickname(r.Context(), authorNickname)
+		if err != nil {
+			if entity.IsError(err, entity.ErrUserNotFound) {
+				h.ErrorMessage(w, r, http.StatusNotFound, entity.ErrUserNotFound.Error(), nil)
+				return
+			}
+
+			h.ServerError(w, r, err)
+			return
+		}
+	}
+
+	if searchQueryOk {
+		if authorNicknameOk {
+			videos, err = h.videoAcc.AllByLikeTitleAndByAuthorIDAndWherePublic(r.Context(), searchQuery, author.ID, findOpts)
+		} else {
+			videos, err = h.videoAcc.AllByLikeTitleAndWherePublic(r.Context(), searchQuery, findOpts)
+		}
+	} else if authorNicknameOk {
+		if r.URL.Query().Has("private") {
+			if !isAuth || requester.ID != author.ID {
+				h.ErrorMessage(w, r, http.StatusForbidden, "access denied", nil)
+				return
+			}
+
+			videos, err = h.videoAcc.AllByAuthorID(r.Context(), author.ID, findOpts)
+		} else {
+			videos, err = h.videoAcc.AllByAuthorIDAndWherePublic(r.Context(), author.ID, findOpts)
+		}
+	} else {
+		switch sortBy {
+		case "new", "created_at":
+			videos, err = h.videoAcc.AllWherePublic(r.Context(), findOpts)
+		case "popular", "trends", "views":
+			videos, err = h.videoAcc.AllWherePublicAndSortByViews(r.Context(), findOpts)
+		}
+	}
+
+	if err != nil {
+		h.ServerError(w, r, err)
+		return
+	}
+
+	h.MustSendJSON(w, r, http.StatusOK, response.Data{"videos": videos})
 }
 
 func (h *Video) HandleGet(w http.ResponseWriter, r *http.Request) {
@@ -38,7 +113,7 @@ func (h *Video) HandleGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	video, err := h.accessor.ByID(r.Context(), videoID)
+	video, err := h.videoAcc.ByID(r.Context(), videoID)
 	if err != nil {
 		if entity.IsError(err, entity.ErrVideoNotFound) {
 			h.ErrorMessage(w, r, http.StatusNotFound, entity.ErrVideoNotFound.Error(), nil)
@@ -69,8 +144,8 @@ func (h *Video) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	input.AuthorID = requester.ID
 
 	deps := usecase.CreateVideoDeps{
-		Accessor: h.accessor,
-		Mutator:  h.mutator,
+		Accessor: h.videoAcc,
+		Mutator:  h.videoMut,
 	}
 	video, err := usecase.CreateVideo(deps).Invoke(r.Context(), input)
 	if err != nil {
@@ -106,8 +181,8 @@ func (h *Video) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	deps := usecase.UpdateVideoDeps{
-		Accessor: h.accessor,
-		Mutator:  h.mutator,
+		Accessor: h.videoAcc,
+		Mutator:  h.videoMut,
 	}
 	video, err := usecase.UpdateVideo(deps).Invoke(r.Context(), port.UpdateVideoInput{
 		ID:   videoID,
@@ -133,7 +208,7 @@ func (h *Video) HandleDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := h.accessor.ByID(r.Context(), videoID); err != nil {
+	if _, err := h.videoAcc.ByID(r.Context(), videoID); err != nil {
 		if entity.IsError(err, entity.ErrVideoNotFound) {
 			h.ErrorMessage(w, r, http.StatusNotFound, entity.ErrVideoNotFound.Error(), nil)
 			return
@@ -143,7 +218,7 @@ func (h *Video) HandleDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.mutator.Delete(r.Context(), videoID); err != nil {
+	if err := h.videoMut.Delete(r.Context(), videoID); err != nil {
 		h.ServerError(w, r, err)
 		return
 	}
@@ -160,4 +235,30 @@ func (h *Video) getVideoIDFromRequest(r *http.Request) (uuid.UUID, bool) {
 	}
 
 	return videoID, true
+}
+
+func (h *Video) getFindOptions(r *http.Request) (port.FindOptions, bool) {
+	limit, err := strconv.ParseUint(h.DefaultQueryValue(r, "limit", strconv.FormatUint(_defaultLimit, 10)), 10, 64)
+	if err != nil {
+		return port.FindOptions{}, false
+	}
+
+	offset, err := strconv.ParseUint(h.DefaultQueryValue(r, "offset", strconv.FormatUint(_defaultOffset, 10)), 10, 64)
+	if err != nil {
+		return port.FindOptions{}, false
+	}
+
+	return port.FindOptions{Limit: limit, Offset: offset}, true
+}
+
+func (h *Video) getSearchQuery(r *http.Request) (string, bool) {
+	return h.GetQueryValue(r, "q")
+}
+
+func (h *Video) getAuthorNickname(r *http.Request) (string, bool) {
+	return h.GetQueryValue(r, "author")
+}
+
+func (h *Video) defaultSortBy(r *http.Request, defaultValue string) string {
+	return h.DefaultQueryValue(r, "sortBy", defaultValue)
 }

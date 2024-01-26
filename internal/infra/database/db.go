@@ -43,3 +43,8 @@ func (db *DB) Connect(ctx context.Context) error {
 func (db *DB) Disconnect(ctx context.Context) error {
 	return db.DB.Close()
 }
+
+type SelectOptions struct {
+	Limit  uint64
+	Offset uint64
+}
