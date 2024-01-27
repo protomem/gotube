@@ -14,6 +14,7 @@ func Setup(
 	user *handler.User,
 	auth *handler.Auth,
 	video *handler.Video,
+	comment *handler.Comment,
 ) http.Handler {
 	mux := chi.NewRouter()
 
@@ -54,6 +55,8 @@ func Setup(
 		mux.With(auth.Require).Patch("/{videoId}", video.HandleUpdate)
 		mux.With(auth.Require).Delete("/{videoId}", video.HandleDelete)
 	})
+
+	mux.Route("/comments", func(mux chi.Router) {})
 
 	return mux
 }

@@ -59,3 +59,17 @@ type Video struct {
 	Public bool   `json:"isPublic"`
 	Views  uint64 `json:"views"`
 }
+
+var ErrCommentNotFound = NewError("comment", ErrNotFound)
+
+type Comment struct {
+	ID ID `json:"id"`
+
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+
+	Content string `json:"content"`
+
+	Author  User `json:"author"`
+	VideoID ID   `json:"videoId"`
+}
