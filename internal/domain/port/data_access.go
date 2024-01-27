@@ -72,3 +72,19 @@ type (
 		Delete(ctx context.Context, id entity.ID) error
 	}
 )
+
+type InsertCommentDTO struct {
+	Content  string
+	AuthorID entity.ID
+	VideoID  entity.ID
+}
+
+type (
+	CommentAccessor interface {
+		ByID(ctx context.Context, id entity.ID) (entity.Comment, error)
+	}
+
+	CommentMutator interface {
+		Insert(ctx context.Context, dto InsertCommentDTO) (entity.ID, error)
+	}
+)

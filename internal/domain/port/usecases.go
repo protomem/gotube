@@ -121,3 +121,13 @@ type (
 )
 
 type UpdateVideo = Usecase[UpdateVideoInput, entity.Video]
+
+type (
+	CreateCommentInput struct {
+		Content  string    `json:"content"`
+		AuthorID entity.ID `json:"-"`
+		VideoID  entity.ID `json:"-"`
+	}
+)
+
+type CreateComment = Usecase[CreateCommentInput, entity.Comment]

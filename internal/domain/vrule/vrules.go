@@ -36,3 +36,8 @@ func ThumbnailPath(v *validation.Validator, thumbnailPath string) {
 func VideoPath(v *validation.Validator, videoPath string) {
 	v.CheckField(validation.IsPath(videoPath), "videoPath", "must be a valid path")
 }
+
+func Content(v *validation.Validator, content string) {
+	v.CheckField(validation.MinRunes(content, 2), "content", "must be at least 2 characters long")
+	v.CheckField(validation.MaxRunes(content, 350), "content", "must be at most 350 characters long")
+}

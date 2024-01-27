@@ -29,11 +29,14 @@ func Create() fx.Option {
 			database.New,
 			flashstore.New,
 
+			as(adapter.NewSessionManager, new(port.SessionManager)),
+
 			as(adapter.NewUserAccessor, new(port.UserAccessor)),
 			as(adapter.NewUserMutator, new(port.UserMutator)),
-			as(adapter.NewSessionManager, new(port.SessionManager)),
 			as(adapter.NewVideoAccessor, new(port.VideoAccessor)),
 			as(adapter.NewVideoMutator, new(port.VideoMutator)),
+			as(adapter.NewCommentAccessor, new(port.CommentAccessor)),
+			as(adapter.NewCommentMutator, new(port.CommentMutator)),
 
 			handler.NewCommon,
 			handler.NewUser,

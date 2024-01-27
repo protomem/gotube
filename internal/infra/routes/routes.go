@@ -56,7 +56,9 @@ func Setup(
 		mux.With(auth.Require).Delete("/{videoId}", video.HandleDelete)
 	})
 
-	mux.Route("/comments", func(mux chi.Router) {})
+	mux.Route("/comments", func(mux chi.Router) {
+		mux.With(auth.Require).Post("/video/{videoId}", comment.HandleCreate)
+	})
 
 	return mux
 }
