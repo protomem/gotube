@@ -22,6 +22,33 @@ func NewCommentAccessor(db *database.DB) *CommentAccessor {
 	}
 }
 
+func (acc *CommentAccessor) AllByVideoID(ctx context.Context, videoID entity.ID, opts port.FindOptions) ([]entity.Comment, error) {
+	comments, err := acc.commentDao.SelectByVideoID(ctx, videoID, database.SelectOptions(opts))
+	if err != nil {
+		if database.IsNoRows(err) {
+			return []entity.Comment{}, nil
+		}
+
+		return nil, err
+	}
+
+	authorIDs := make([]entity.ID, 0, len(comments))
+	for _, comment := range comments {
+		authorIDs = append(authorIDs, comment.AuthorID)
+	}
+
+	authors, err := acc.userDao.SelectByIDs(ctx, authorIDs)
+	if err != nil {
+		if database.IsNoRows(err) {
+			return []entity.Comment{}, nil
+		}
+
+		return nil, err
+	}
+
+	return mapCommentEntriesAndUserEntriesToCommentEntities(comments, authors), nil
+}
+
 func (acc *CommentAccessor) ByID(ctx context.Context, id entity.ID) (entity.Comment, error) {
 	comment, err := acc.commentDao.GetByID(ctx, id)
 	if err != nil {
@@ -72,4 +99,17 @@ func mapCommentEntryAndUserEntryToCommentEntity(comment database.CommentEntry, u
 		Author:    entity.User(user),
 		VideoID:   comment.VideoID,
 	}
+}
+
+func mapCommentEntriesAndUserEntriesToCommentEntities(comments []database.CommentEntry, users []database.UserEntry) []entity.Comment {
+	entities := make([]entity.Comment, 0, len(comments))
+	for _, comment := range comments {
+		for _, user := range users {
+			if comment.AuthorID == user.ID {
+				entities = append(entities, mapCommentEntryAndUserEntryToCommentEntity(comment, user))
+				break
+			}
+		}
+	}
+	return entities
 }

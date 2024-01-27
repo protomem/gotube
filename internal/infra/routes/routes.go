@@ -57,6 +57,8 @@ func Setup(
 	})
 
 	mux.Route("/comments", func(mux chi.Router) {
+		mux.Get("/video/{videoId}", comment.HandleFind)
+
 		mux.With(auth.Require).Post("/video/{videoId}", comment.HandleCreate)
 	})
 

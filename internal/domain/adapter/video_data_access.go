@@ -254,6 +254,7 @@ func mapVideoEntriesAndUserEntriesToVideoEntities(videos []database.VideoEntry, 
 		for _, user := range users {
 			if video.AuthorID == user.ID {
 				entities = append(entities, mapVideoEntryAndUserEntryToVideoEntity(video, user))
+				break
 			}
 		}
 	}

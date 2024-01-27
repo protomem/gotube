@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -28,6 +29,28 @@ func NewComment(accessor port.CommentAccessor, mutator port.CommentMutator) *Com
 		accessor: accessor,
 		mutator:  mutator,
 	}
+}
+
+func (h *Comment) HandleFind(w http.ResponseWriter, r *http.Request) {
+	videoID, videoIDOk := h.getVideoIDFromRequest(r)
+	if !videoIDOk {
+		h.BadRequest(w, r, errors.New("missing or invalid video id"))
+		return
+	}
+
+	findOpts, findOptsOk := h.getFindOptions(r)
+	if !findOptsOk {
+		h.BadRequest(w, r, errors.New("invalid limit or offset"))
+		return
+	}
+
+	comments, err := h.accessor.AllByVideoID(r.Context(), videoID, findOpts)
+	if err != nil {
+		h.ServerError(w, r, err)
+		return
+	}
+
+	response.JSON(w, http.StatusOK, response.Data{"comments": comments})
 }
 
 func (h *Comment) HandleCreate(w http.ResponseWriter, r *http.Request) {
@@ -75,4 +98,18 @@ func (h *Comment) getVideoIDFromRequest(r *http.Request) (uuid.UUID, bool) {
 	}
 
 	return videoID, true
+}
+
+func (h *Comment) getFindOptions(r *http.Request) (port.FindOptions, bool) {
+	limit, err := strconv.ParseUint(h.DefaultQueryValue(r, "limit", strconv.FormatUint(_defaultLimit, 10)), 10, 64)
+	if err != nil {
+		return port.FindOptions{}, false
+	}
+
+	offset, err := strconv.ParseUint(h.DefaultQueryValue(r, "offset", strconv.FormatUint(_defaultOffset, 10)), 10, 64)
+	if err != nil {
+		return port.FindOptions{}, false
+	}
+
+	return port.FindOptions{Limit: limit, Offset: offset}, true
 }

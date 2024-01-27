@@ -30,6 +30,24 @@ func (db *DB) CommentDAO() *CommentDAO {
 	}
 }
 
+func (dao *CommentDAO) SelectByVideoID(ctx context.Context, videoID uuid.UUID, opts SelectOptions) ([]CommentEntry, error) {
+	const op = "database.CommentDAO.SelectByVideoID"
+
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	query := `SELECT * FROM comments WHERE video_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`
+	args := []any{videoID, opts.Limit, opts.Offset}
+
+	comments := make([]CommentEntry, 0, opts.Limit)
+
+	if err := dao.db.SelectContext(ctx, &comments, query, args...); err != nil {
+		return []CommentEntry{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return comments, nil
+}
+
 func (dao *CommentDAO) GetByID(ctx context.Context, id uuid.UUID) (CommentEntry, error) {
 	const op = "database.CommentDAO.GetByID"
 

@@ -81,6 +81,8 @@ type InsertCommentDTO struct {
 
 type (
 	CommentAccessor interface {
+		AllByVideoID(ctx context.Context, videoID entity.ID, opts FindOptions) ([]entity.Comment, error)
+
 		ByID(ctx context.Context, id entity.ID) (entity.Comment, error)
 	}
 
