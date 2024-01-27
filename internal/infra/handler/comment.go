@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/protomem/gotube/internal/ctxstore"
+	"github.com/protomem/gotube/internal/domain/entity"
 	"github.com/protomem/gotube/internal/domain/port"
 	"github.com/protomem/gotube/internal/domain/usecase"
 	"github.com/protomem/gotube/pkg/request"
@@ -38,7 +39,7 @@ func (h *Comment) HandleFind(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	findOpts, findOptsOk := h.getFindOptions(r)
+	findOpts, findOptsOk := h.getFindOptionsFromRequest(r)
 	if !findOptsOk {
 		h.BadRequest(w, r, errors.New("invalid limit or offset"))
 		return
@@ -89,6 +90,31 @@ func (h *Comment) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	h.MustSendJSON(w, r, http.StatusCreated, response.Data{"comment": comment})
 }
 
+func (h *Comment) HandleDelete(w http.ResponseWriter, r *http.Request) {
+	commentID, ok := h.getCommentIDFromRequest(r)
+	if !ok {
+		h.BadRequest(w, r, errors.New("missing or invalid comment id"))
+		return
+	}
+
+	if _, err := h.accessor.ByID(r.Context(), commentID); err != nil {
+		if entity.IsError(err, entity.ErrCommentNotFound) {
+			h.ErrorMessage(w, r, http.StatusNotFound, entity.ErrCommentNotFound.Error(), nil)
+			return
+		}
+
+		h.ServerError(w, r, err)
+		return
+	}
+
+	if err := h.mutator.Delete(r.Context(), commentID); err != nil {
+		h.ServerError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (h *Comment) getVideoIDFromRequest(r *http.Request) (uuid.UUID, bool) {
 	videoIDRaw := chi.URLParam(r, "videoId")
 
@@ -100,7 +126,18 @@ func (h *Comment) getVideoIDFromRequest(r *http.Request) (uuid.UUID, bool) {
 	return videoID, true
 }
 
-func (h *Comment) getFindOptions(r *http.Request) (port.FindOptions, bool) {
+func (h *Comment) getCommentIDFromRequest(r *http.Request) (uuid.UUID, bool) {
+	commentIDRaw := chi.URLParam(r, "commentId")
+
+	commentID, err := uuid.Parse(commentIDRaw)
+	if err != nil {
+		return uuid.UUID{}, false
+	}
+
+	return commentID, true
+}
+
+func (h *Comment) getFindOptionsFromRequest(r *http.Request) (port.FindOptions, bool) {
 	limit, err := strconv.ParseUint(h.DefaultQueryValue(r, "limit", strconv.FormatUint(_defaultLimit, 10)), 10, 64)
 	if err != nil {
 		return port.FindOptions{}, false

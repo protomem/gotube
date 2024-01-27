@@ -40,16 +40,16 @@ func NewVideo(userAcc port.UserAccessor, videoAcc port.VideoAccessor, videoMut p
 }
 
 func (h *Video) HandleFind(w http.ResponseWriter, r *http.Request) {
-	findOpts, findOptsOk := h.getFindOptions(r)
+	findOpts, findOptsOk := h.getFindOptionsFromRequest(r)
 	if !findOptsOk {
 		h.BadRequest(w, r, errors.New("invalid limit or offset"))
 		return
 	}
 
-	searchQuery, searchQueryOk := h.getSearchQuery(r)
-	authorNickname, authorNicknameOk := h.getAuthorNickname(r)
+	searchQuery, searchQueryOk := h.getSearchQueryFromRequest(r)
+	authorNickname, authorNicknameOk := h.getAuthorNicknameFromRequest(r)
 
-	sortBy := h.defaultSortBy(r, "new")
+	sortBy := h.defaultSortByFromRequest(r, "new")
 
 	requester, isAuth := ctxstore.User(r.Context())
 
@@ -237,7 +237,7 @@ func (h *Video) getVideoIDFromRequest(r *http.Request) (uuid.UUID, bool) {
 	return videoID, true
 }
 
-func (h *Video) getFindOptions(r *http.Request) (port.FindOptions, bool) {
+func (h *Video) getFindOptionsFromRequest(r *http.Request) (port.FindOptions, bool) {
 	limit, err := strconv.ParseUint(h.DefaultQueryValue(r, "limit", strconv.FormatUint(_defaultLimit, 10)), 10, 64)
 	if err != nil {
 		return port.FindOptions{}, false
@@ -251,14 +251,14 @@ func (h *Video) getFindOptions(r *http.Request) (port.FindOptions, bool) {
 	return port.FindOptions{Limit: limit, Offset: offset}, true
 }
 
-func (h *Video) getSearchQuery(r *http.Request) (string, bool) {
+func (h *Video) getSearchQueryFromRequest(r *http.Request) (string, bool) {
 	return h.GetQueryValue(r, "q")
 }
 
-func (h *Video) getAuthorNickname(r *http.Request) (string, bool) {
+func (h *Video) getAuthorNicknameFromRequest(r *http.Request) (string, bool) {
 	return h.GetQueryValue(r, "author")
 }
 
-func (h *Video) defaultSortBy(r *http.Request, defaultValue string) string {
+func (h *Video) defaultSortByFromRequest(r *http.Request, defaultValue string) string {
 	return h.DefaultQueryValue(r, "sortBy", defaultValue)
 }

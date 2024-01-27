@@ -60,6 +60,7 @@ func Setup(
 		mux.Get("/video/{videoId}", comment.HandleFind)
 
 		mux.With(auth.Require).Post("/video/{videoId}", comment.HandleCreate)
+		mux.With(auth.Require).Delete("/{commentId}", comment.HandleDelete)
 	})
 
 	return mux

@@ -90,6 +90,10 @@ func (mut *CommentMutator) Insert(ctx context.Context, dto port.InsertCommentDTO
 	return id, nil
 }
 
+func (mut *CommentMutator) Delete(ctx context.Context, id entity.ID) error {
+	return mut.dao.Delete(ctx, id)
+}
+
 func mapCommentEntryAndUserEntryToCommentEntity(comment database.CommentEntry, user database.UserEntry) entity.Comment {
 	return entity.Comment{
 		ID:        comment.ID,

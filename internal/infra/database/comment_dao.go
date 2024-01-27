@@ -86,3 +86,19 @@ func (dao *CommentDAO) Insert(ctx context.Context, dto InsertCommentDTO) (uuid.U
 
 	return id, nil
 }
+
+func (dao *CommentDAO) Delete(ctx context.Context, id uuid.UUID) error {
+	const op = "database.CommentDAO.Delete"
+
+	ctx, cancel := context.WithTimeout(ctx, _defaultTimeout)
+	defer cancel()
+
+	query := `DELETE FROM comments WHERE id = $1`
+	args := []any{id}
+
+	if _, err := dao.db.ExecContext(ctx, query, args...); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}

@@ -88,5 +88,6 @@ type (
 
 	CommentMutator interface {
 		Insert(ctx context.Context, dto InsertCommentDTO) (entity.ID, error)
+		Delete(ctx context.Context, id entity.ID) error
 	}
 )
