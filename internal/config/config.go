@@ -34,12 +34,20 @@ type Flash struct {
 	DSN string `env:"DSN" envDefault:"localhost:6379/0"`
 }
 
+type Blob struct {
+	Addr      string `env:"ADDR" envDefault:"localhost:9000"`
+	AccessKey string `env:"ACCESS_KEY,notEmpty"`
+	SecretKey string `env:"SECRET_KEY,notEmpty"`
+	Secure    bool   `env:"SECURE" envDefault:"false"`
+}
+
 type Config struct {
 	HTTP     `envPrefix:"HTTP_"`
 	Log      `envPrefix:"LOG_"`
 	Auth     `envPrefix:"AUTH_"`
 	Database `envPrefix:"DB_"`
 	Flash    `envPrefix:"FLASH_"`
+	Blob     `envPrefix:"BLOB_"`
 }
 
 func New() (Config, error) {

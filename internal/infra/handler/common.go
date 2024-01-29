@@ -22,7 +22,7 @@ func NewCommon() *Common {
 }
 
 func (h *Common) HandleStatus(w http.ResponseWriter, r *http.Request) {
-	h.MustSendJSON(w, r, http.StatusOK, response.Data{"status": "ok"})
+	h.MustSendJSON(w, r, http.StatusOK, response.Data{"status": "OK"})
 }
 
 func (h *Common) TraceID(next http.Handler) http.Handler {

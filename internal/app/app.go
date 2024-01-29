@@ -7,6 +7,7 @@ import (
 	"github.com/protomem/gotube/internal/config"
 	"github.com/protomem/gotube/internal/domain/adapter"
 	"github.com/protomem/gotube/internal/domain/port"
+	"github.com/protomem/gotube/internal/infra/blobstore"
 	"github.com/protomem/gotube/internal/infra/database"
 	"github.com/protomem/gotube/internal/infra/flashstore"
 	"github.com/protomem/gotube/internal/infra/handler"
@@ -28,6 +29,7 @@ func Create() fx.Option {
 
 			database.New,
 			flashstore.New,
+			blobstore.New,
 
 			as(adapter.NewSessionManager, new(port.SessionManager)),
 
@@ -53,7 +55,13 @@ func Create() fx.Option {
 	)
 }
 
-func registerRunners(lc fx.Lifecycle, db *database.DB, fstore *flashstore.Storage, srv *server.Server) {
+func registerRunners(
+	lc fx.Lifecycle,
+	db *database.DB,
+	fstore *flashstore.Storage,
+	bstore *blobstore.Storage,
+	srv *server.Server,
+) {
 	lc.Append(fx.Hook{
 		OnStart: db.Connect,
 		OnStop:  db.Disconnect,
@@ -62,6 +70,11 @@ func registerRunners(lc fx.Lifecycle, db *database.DB, fstore *flashstore.Storag
 	lc.Append(fx.Hook{
 		OnStart: fstore.Connect,
 		OnStop:  fstore.Disconnect,
+	})
+
+	lc.Append(fx.Hook{
+		OnStart: bstore.Connect,
+		OnStop:  bstore.Disconnect,
 	})
 
 	lc.Append(fx.Hook{

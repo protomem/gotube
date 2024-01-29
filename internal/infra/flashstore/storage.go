@@ -24,9 +24,8 @@ func New(conf config.Config) *Storage {
 }
 
 func (s *Storage) Connect(_ context.Context) error {
-	var err error
-
 	opts, err := redis.ParseURL("redis://" + s.conf.DSN)
+
 	if err != nil {
 		return err
 	}

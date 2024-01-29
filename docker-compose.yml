@@ -28,5 +28,18 @@ services:
     ports:
       - 6379:6379
 
+  s3:
+    image: quay.io/minio/minio:RELEASE.2023-08-31T15-31-16Z
+    command: server --console-address :9001 /data
+    restart: unless-stopped
+    ports:
+      - 9000:9000
+      - 9001:9001
+    env_file:
+      - .s3.env
+    volumes:
+      - obj_data:/data
+
 volumes:
   pg_data:
+  obj_data:

@@ -51,7 +51,7 @@ func (h *Comment) HandleFind(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.JSON(w, http.StatusOK, response.Data{"comments": comments})
+	h.MustSendJSON(w, r, http.StatusOK, response.Data{"comments": comments})
 }
 
 func (h *Comment) HandleCreate(w http.ResponseWriter, r *http.Request) {
