@@ -15,6 +15,7 @@ func Setup(
 	auth *handler.Auth,
 	video *handler.Video,
 	comment *handler.Comment,
+	media *handler.Media,
 ) http.Handler {
 	mux := chi.NewRouter()
 
@@ -61,6 +62,13 @@ func Setup(
 
 		mux.With(auth.Require).Post("/video/{videoId}", comment.HandleCreate)
 		mux.With(auth.Require).Delete("/{commentId}", comment.HandleDelete)
+	})
+
+	mux.Route("/media", func(mux chi.Router) {
+		mux.Get("/{parentName}/{fileName}", media.HandleGetFile)
+
+		mux.With(auth.Require).Post("/{parentName}/{fileName}", media.HandleSaveFile)
+		mux.With(auth.Require).Delete("/{parentName}/{fileName}", media.HandleRemoveFile)
 	})
 
 	return mux
