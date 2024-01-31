@@ -10,7 +10,7 @@ import (
 	"github.com/protomem/gotube/internal/infra/blobstore"
 )
 
-const _defaultMediaMaxUploadSize = 1024 * 1024 * 100
+const _defaultMediaMaxUploadSize = 1024 * 1024 * 100 // 100MB
 
 type Media struct {
 	*Base
@@ -82,6 +82,15 @@ func (h *Media) HandleSaveFile(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Media) HandleRemoveFile(w http.ResponseWriter, r *http.Request) {
+	parentName := h.baseParentName(h.mustGetParentNameFromRequest(r))
+	fileName := h.mustGetFileNameFromRequest(r)
+
+	if err := h.bstore.RemoveObject(r.Context(), parentName, fileName); err != nil {
+		h.ServerError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *Media) mustGetParentNameFromRequest(r *http.Request) string {
