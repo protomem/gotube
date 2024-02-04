@@ -1,14 +1,7 @@
-import {
-  Button,
-  Flex,
-  Heading,
-  IconButton,
-  Input,
-  InputGroup,
-  InputRightAddon,
-  Spacer,
-} from "@chakra-ui/react";
-import { FaSistrix } from "react-icons/fa6";
+import { Flex, Spacer } from "@chakra-ui/react";
+import Title from "@/components/title";
+import Searcher from "@/components/searcher";
+import ProfileMenu from "@/components/profile-menu";
 
 export default function AppBar() {
   return (
@@ -18,27 +11,17 @@ export default function AppBar() {
       direction="row"
       justifyItems="center"
       alignItems="center"
-      gap="4"
+      gap="6"
     >
-      <Heading size="lg">GoTube</Heading>
+      <Title />
 
       <Spacer />
 
-      <InputGroup maxW="2xl">
-        <Input rounded="full" placeholder="Search ..." textAlign="center" />
-        <InputRightAddon rounded="full" px="2">
-          <IconButton
-            aria-label="Search"
-            rounded="full"
-            variant="ghost"
-            icon={<FaSistrix />}
-          />
-        </InputRightAddon>
-      </InputGroup>
+      <Searcher />
 
       <Spacer />
 
-      <Button>Login</Button>
+      <ProfileMenu />
     </Flex>
   );
 }
