@@ -2,18 +2,29 @@ import { ReactNode } from "react";
 import { Box, Flex } from "@chakra-ui/react";
 
 interface Props {
-  appbar: ReactNode;
+  appBar: ReactNode;
+  sideBar?: ReactNode;
+  hideSideBar?: boolean;
   children: ReactNode;
 }
 
-export default function MainLayout({ appbar, children }: Props) {
+export default function MainLayout({
+  appBar,
+  sideBar,
+  hideSideBar = false,
+  children,
+}: Props) {
   return (
     <Flex w="100%" h="100svh" direction="column">
-      <Box h="7svh">{appbar}</Box>
+      <Box h="7svh">{appBar}</Box>
 
-      <Box h="93svh" overflowY="auto">
-        {children}
-      </Box>
+      <Flex w="100%" h="93svh" direction="row">
+        {sideBar && !hideSideBar && <Box w="2xs">{sideBar}</Box>}
+
+        <Box w="100%" overflowY="scroll">
+          {children}
+        </Box>
+      </Flex>
     </Flex>
   );
 }

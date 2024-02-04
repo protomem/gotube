@@ -49,7 +49,7 @@ func (h *Video) HandleFind(w http.ResponseWriter, r *http.Request) {
 	searchQuery, searchQueryOk := h.getSearchQueryFromRequest(r)
 	authorNickname, authorNicknameOk := h.getAuthorNicknameFromRequest(r)
 
-	sortBy := h.defaultSortByFromRequest(r, "new")
+	sortBy := h.defaultSortByFromRequest(r, "latest")
 
 	requester, isAuth := ctxstore.User(r.Context())
 
@@ -91,7 +91,7 @@ func (h *Video) HandleFind(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		switch sortBy {
-		case "new", "created_at":
+		case "latest", "news", "created_at":
 			videos, err = h.videoAcc.AllWherePublic(r.Context(), findOpts)
 		case "popular", "trends", "views":
 			videos, err = h.videoAcc.AllWherePublicAndSortByViews(r.Context(), findOpts)

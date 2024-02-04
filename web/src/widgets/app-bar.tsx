@@ -1,4 +1,14 @@
-import { Button, Flex, Heading, Input, Spacer } from "@chakra-ui/react";
+import {
+  Button,
+  Flex,
+  Heading,
+  IconButton,
+  Input,
+  InputGroup,
+  InputRightAddon,
+  Spacer,
+} from "@chakra-ui/react";
+import { FaSistrix } from "react-icons/fa6";
 
 export default function AppBar() {
   return (
@@ -14,12 +24,17 @@ export default function AppBar() {
 
       <Spacer />
 
-      <Input
-        maxW="2xl"
-        rounded="full"
-        placeholder="Search ..."
-        textAlign="center"
-      />
+      <InputGroup maxW="2xl">
+        <Input rounded="full" placeholder="Search ..." textAlign="center" />
+        <InputRightAddon rounded="full" px="2">
+          <IconButton
+            aria-label="Search"
+            rounded="full"
+            variant="ghost"
+            icon={<FaSistrix />}
+          />
+        </InputRightAddon>
+      </InputGroup>
 
       <Spacer />
 
