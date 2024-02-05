@@ -1,3 +1,7 @@
+import { useMutation } from "@tanstack/react-query";
+import authService from "@/domain/auth.service";
+import { useAuthStore } from "@/domain/stores/auth";
+import { useRouter } from "next/navigation";
 import NextLink from "next/link";
 import SingleObjectLayout from "@/layouts/single-object-layout";
 import { Field, Formik } from "formik";
@@ -15,9 +19,47 @@ import {
   Input,
   Link,
   VStack,
+  useToast,
 } from "@chakra-ui/react";
+import ModalSpinner from "@/components/modal-spinner";
+
+type FormValues = {
+  email: string;
+  password: string;
+};
+
+const initialValues: FormValues = {
+  email: "",
+  password: "",
+};
 
 export default function SignIn() {
+  const router = useRouter();
+  const toast = useToast();
+  const login = useAuthStore((state) => state.login);
+
+  const mutation = useMutation({
+    mutationFn: authService.signIn,
+    onSuccess: ({ data }) => {
+      login(data.user, data.accessToken, data.refreshToken);
+      router.push("/");
+    },
+    onError: (error) => {
+      toast({
+        title: "Sign In Failed",
+        description: "Oops, something went wrong. Please try again later.",
+        status: "error",
+        duration: 4000,
+        isClosable: true,
+      });
+      console.error(`sign-up-error: ${error}`);
+    },
+  });
+
+  const handleSubmit = (values: FormValues) => {
+    mutation.mutate(values);
+  };
+
   return (
     <SingleObjectLayout>
       <Card w="sm">
@@ -28,10 +70,7 @@ export default function SignIn() {
         </CardHeader>
 
         <CardBody>
-          <Formik
-            initialValues={{ email: "", password: "" }}
-            onSubmit={() => {}}
-          >
+          <Formik initialValues={initialValues} onSubmit={handleSubmit}>
             {({ handleSubmit, errors, touched }) => (
               <form onSubmit={handleSubmit}>
                 <VStack spacing={4} align="center">
@@ -89,6 +128,8 @@ export default function SignIn() {
           </Link>
         </CardFooter>
       </Card>
+
+      <ModalSpinner isOpen={mutation.isPending} />
     </SingleObjectLayout>
   );
 }

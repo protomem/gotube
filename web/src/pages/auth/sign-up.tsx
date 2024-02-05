@@ -1,3 +1,7 @@
+import { useRouter } from "next/navigation";
+import { useMutation } from "@tanstack/react-query";
+import authService from "@/domain/auth.service";
+import { useAuthStore } from "@/domain/stores/auth";
 import NextLink from "next/link";
 import SingleObjectLayout from "@/layouts/single-object-layout";
 import { Formik, Field } from "formik";
@@ -15,9 +19,49 @@ import {
   FormLabel,
   FormControl,
   FormErrorMessage,
+  useToast,
 } from "@chakra-ui/react";
+import ModalSpinner from "@/components/modal-spinner";
+
+type FormValues = {
+  nickname: string;
+  email: string;
+  password: string;
+};
+
+const initialValues: FormValues = {
+  nickname: "",
+  email: "",
+  password: "",
+};
 
 export default function SignUp() {
+  const router = useRouter();
+  const toast = useToast();
+  const login = useAuthStore((state) => state.login);
+
+  const mutation = useMutation({
+    mutationFn: authService.signUp,
+    onSuccess: ({ data }) => {
+      login(data.user, data.accessToken, data.refreshToken);
+      router.push("/");
+    },
+    onError: (error) => {
+      toast({
+        title: "Sign Up Failed",
+        description: "Oops, something went wrong. Please try again later.",
+        status: "error",
+        duration: 4000,
+        isClosable: true,
+      });
+      console.error(`sign-up-error: ${error}`);
+    },
+  });
+
+  const handleSubmit = (values: FormValues) => {
+    mutation.mutate(values);
+  };
+
   return (
     <SingleObjectLayout>
       <Card w="sm">
@@ -28,10 +72,7 @@ export default function SignUp() {
         </CardHeader>
 
         <CardBody>
-          <Formik
-            initialValues={{ nickname: "", email: "", password: "" }}
-            onSubmit={() => { }}
-          >
+          <Formik initialValues={initialValues} onSubmit={handleSubmit}>
             {({ handleSubmit, errors, touched }) => (
               <form onSubmit={handleSubmit}>
                 <VStack spacing={4} align="center">
@@ -101,6 +142,8 @@ export default function SignUp() {
           </Link>
         </CardFooter>
       </Card>
+
+      <ModalSpinner isOpen={mutation.isPending} />
     </SingleObjectLayout>
   );
 }
