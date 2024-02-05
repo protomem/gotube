@@ -1,6 +1,6 @@
 # https://taskfile.dev
 
-version: '3'
+version: "3"
 
 vars:
   PROJECT: gotube
@@ -25,7 +25,7 @@ tasks:
 
   test/cover:
     cmds:
-      - go test -v -race -buildvcs -coverprofile=/tmp/coverage.out ./... 
+      - go test -v -race -buildvcs -coverprofile=/tmp/coverage.out ./...
       - go tool cover -html=/tmp/coverage.out
 
   ci:
@@ -40,17 +40,55 @@ tasks:
 
   run/local:
     deps: [build/local]
+    vars:
+      conf_file: '{{.conf_file | default ".local.env"}}'
     cmds:
-      - /tmp/{{.PROJECT}}/api-server -conf .local.env
+      - /tmp/{{.PROJECT}}/api-server -conf {{.conf_file}}
 
-  run/docker:
-    deps: [ci]
+  run/infra/test/postgres:
+    vars:
+      user: '{{.user | default "admin"}}'
+      password: '{{.password | default "123456789"}}'
+      port: '{{.port | default "5432"}}'
     cmds:
-      - docker compose up --build -d
+      - docker run --rm --name {{.PROJECT}}-pgtest -e POSTGRES_USER={{.user}} -e POSTGRES_PASSWORD={{.password}} -p {{.port}}:5432 -d postgres:alpine
 
-  stop/docker:
+  stop/infra/test/postgres:
     cmds:
-      - docker compose down
+      - docker stop {{.PROJECT}}-pgtest
+
+  run/infra/test/redis:
+    vars:
+      port: '{{.port | default "6379"}}'
+    cmds:
+      - docker run --rm --name {{.PROJECT}}-rdtest -p {{.port}}:6379 -d redis:alpine
+
+  stop/infra/test/redis:
+    cmds:
+      - docker stop {{.PROJECT}}-rdtest
+
+  run/infra/test/s3:
+    vars:
+      access_key: '{{.access_key | default "admin"}}'
+      secret_key: '{{.secret_key | default "123456789"}}'
+      api_port: '{{.api_port | default "9000"}}'
+      console_port: '{{.console_port | default "9001"}}'
+    cmds:
+      - docker run --rm --name gotube-s3test -e MINIO_ROOT_USER={{.access_key}} -e MINIO_ROOT_PASSWORD={{.secret_key}} -p {{.api_port}}:9000 -p {{.console_port}}:9001 -d quay.io/minio/minio:RELEASE.2023-08-31T15-31-16Z minio server --console-address :9001 /data
+
+  stop/infra/test/s3:
+    cmds:
+      - docker stop gotube-s3test
+
+  run/infra/test:
+    cmds:
+      - task: run/infra/test/postgres
+      - task: run/infra/test/redis
+
+  stop/infra/test:
+    cmds:
+      - task: stop/infra/test/postgres
+      - task: stop/infra/test/redis
 
   migrate/new:
     cmds:
@@ -59,7 +97,7 @@ tasks:
   migrate/up:
     cmds:
       - migrate -path ./assets/migrations -database "postgres://{{.db_dsn}}" up
-  
+
   migrate/down:
     cmds:
       - migrate -path ./assets/migrations -database "postgres://{{.db_dsn}}" down
@@ -75,50 +113,3 @@ tasks:
   migrate/version:
     cmds:
       - migrate -path ./assets/migrations -database "postgres://{{.db_dsn}}" version
-
-  run/infra/test/postgres:
-    vars:
-      user: admin
-      password: "123456789"
-      port: 5432
-    cmds:
-      - docker run --rm --name gotube-pgtest -e POSTGRES_USER={{.user}} -e POSTGRES_PASSWORD={{.password}} -p {{.port}}:5432 -d postgres:alpine
-
-  stop/infra/test/postgres:
-    cmds:
-      - docker stop gotube-pgtest
-
-  run/infra/test/redis:
-    vars:
-      port: 6379
-    cmds:
-      - docker run --rm --name gotube-rdtest -p {{.port}}:6379 -d redis:alpine
-
-  stop/infra/test/redis:
-    cmds:
-      - docker stop gotube-rdtest
-
-  run/infra/test/s3:
-    vars:
-      access_key: "admin"
-      secret_key: "123456789"
-      api_port: 9000
-      console_port: 9001
-    cmds:
-      - docker run --rm --name gotube-s3test -e MINIO_ROOT_USER={{.access_key}} -e MINIO_ROOT_PASSWORD={{.secret_key}} -p {{.api_port}}:9000 -p {{.console_port}}:9001 -d quay.io/minio/minio:RELEASE.2023-08-31T15-31-16Z minio server --console-address :9001 /data
-
-  stop/infra/test/s3:
-    cmds:
-      - docker stop gotube-s3test
-
-  run/infra/test:
-    cmds:
-      - task: run/infra/test/postgres
-      - task: run/infra/test/redis
-      - task: run/infra/test/s3
-
-  stop/infra/test:
-    cmds:
-      - task: stop/infra/test/postgres
-      - task: stop/infra/test/redis
-      - task: stop/infra/test/s3

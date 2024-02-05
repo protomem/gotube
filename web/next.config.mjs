@@ -5,7 +5,7 @@ const nextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:8080/:path*", // TODO: Move to .env
+        destination: `${process.env.API_ADDR}/:path*`,
       },
     ];
   },
