@@ -21,7 +21,7 @@ export default function MainLayout({
       <Flex w="100%" h="93svh" direction="row">
         {sideBar && !hideSideBar && <Box w="2xs">{sideBar}</Box>}
 
-        <Box w="100%" overflowY="scroll">
+        <Box w="100%" overflowY="auto">
           {children}
         </Box>
       </Flex>

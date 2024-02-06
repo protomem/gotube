@@ -84,11 +84,13 @@ tasks:
     cmds:
       - task: run/infra/test/postgres
       - task: run/infra/test/redis
+      - task: run/infra/test/s3
 
   stop/infra/test:
     cmds:
       - task: stop/infra/test/postgres
       - task: stop/infra/test/redis
+      - task: stop/infra/test/s3
 
   migrate/new:
     cmds:
