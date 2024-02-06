@@ -7,7 +7,7 @@ interface Props {
 
 export default function SideBar({ navMenuItemSelected }: Props) {
   return (
-    <VStack pl="2">
+    <VStack pl="4">
       <NavMenu labelSelected={navMenuItemSelected} />
     </VStack>
   );

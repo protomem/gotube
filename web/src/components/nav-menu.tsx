@@ -1,8 +1,9 @@
 import _ from "lodash";
-import { JSX } from "react";
+import { JSX, useRef } from "react";
+import { useSize } from "@chakra-ui/react-use-size";
 import NextLink from "next/link";
 import { FaFire, FaHouse } from "react-icons/fa6";
-import { Button, List, ListItem } from "@chakra-ui/react";
+import { Button, IconButton, List, ListItem } from "@chakra-ui/react";
 
 export type NavItem = {
   icon: JSX.Element;
@@ -49,25 +50,45 @@ export default function NavMenu({
     return currentLabelSelected;
   };
 
+  const ref = useRef<HTMLUListElement>(null);
+  const size = useSize(ref);
+
+  const isShort = size && size.width && size.width < 100;
+
   return (
-    <List spacing="2" w="100%">
+    <List ref={ref} spacing="2" w="100%">
       {navItems.map((item) => (
         <ListItem key={item.label}>
-          <Button
-            w="100%"
-            as={NextLink}
-            href={item.href}
-            leftIcon={item.icon}
-            variant={
-              chooseSelectedLabel(item.label, item.selected, labelSelected)
-                ? "solid"
-                : "ghost"
-            }
-            justifyContent="start"
-            gap="2"
-          >
-            {item.label}
-          </Button>
+          {isShort ? (
+            <IconButton
+              aria-label={`Icon ${item.label}`}
+              as={NextLink}
+              href={item.href}
+              icon={item.icon}
+              variant={
+                chooseSelectedLabel(item.label, item.selected, labelSelected)
+                  ? "solid"
+                  : "ghost"
+              }
+            />
+          ) : (
+            <Button
+              w="100%"
+              p="3"
+              as={NextLink}
+              href={item.href}
+              leftIcon={item.icon}
+              variant={
+                chooseSelectedLabel(item.label, item.selected, labelSelected)
+                  ? "solid"
+                  : "ghost"
+              }
+              justifyContent="start"
+              gap="2"
+            >
+              {item.label}
+            </Button>
+          )}
         </ListItem>
       ))}
     </List>
