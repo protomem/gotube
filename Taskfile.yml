@@ -34,64 +34,47 @@ tasks:
       - task: audit
       - task: test
 
-  build/local:
+  build/app/local:
     cmds:
       - go build -v -o /tmp/{{.PROJECT}}/api-server ./cmd/api-server
 
-  run/local:
+  run/app/local:
     deps: [build/local]
     vars:
-      conf_file: '{{.conf_file | default ".local.env"}}'
+      conf_file: '{{.conf_file | default "./configs/local.env"}}'
     cmds:
       - /tmp/{{.PROJECT}}/api-server -conf {{.conf_file}}
 
-  run/infra/test/postgres:
-    vars:
-      user: '{{.user | default "admin"}}'
-      password: '{{.password | default "123456789"}}'
-      port: '{{.port | default "5432"}}'
+  run/web/local:
+    dir: ./web
     cmds:
-      - docker run --rm --name {{.PROJECT}}-pgtest -e POSTGRES_USER={{.user}} -e POSTGRES_PASSWORD={{.password}} -p {{.port}}:5432 -d postgres:alpine
+      - npm run dev
 
-  stop/infra/test/postgres:
+  run/app/stage:
+    deps: []
     cmds:
-      - docker stop {{.PROJECT}}-pgtest
+      - docker compose -p {{.PROJECT}}-app -f ./build/app.docker-compose.yml up -d
 
-  run/infra/test/redis:
-    vars:
-      port: '{{.port | default "6379"}}'
+  stop/app/stage:
     cmds:
-      - docker run --rm --name {{.PROJECT}}-rdtest -p {{.port}}:6379 -d redis:alpine
+      - docker compose -p {{.PROJECT}}-app -f ./build/app.docker-compose.yml down
 
-  stop/infra/test/redis:
+  run/web/stage:
     cmds:
-      - docker stop {{.PROJECT}}-rdtest
+      - docker compose -p {{.PROJECT}}-web -f ./build/web.docker-compose.yml up -d
 
-  run/infra/test/s3:
-    vars:
-      access_key: '{{.access_key | default "admin"}}'
-      secret_key: '{{.secret_key | default "123456789"}}'
-      api_port: '{{.api_port | default "9000"}}'
-      console_port: '{{.console_port | default "9001"}}'
+  stop/web/stage:
     cmds:
-      - docker run --rm --name gotube-s3test -e MINIO_ROOT_USER={{.access_key}} -e MINIO_ROOT_PASSWORD={{.secret_key}} -p {{.api_port}}:9000 -p {{.console_port}}:9001 -d quay.io/minio/minio:RELEASE.2023-08-31T15-31-16Z minio server --console-address :9001 /data
+      - docker compose -p {{.PROJECT}}-web -f ./build/web.docker-compose.yml down
 
-  stop/infra/test/s3:
+  run/infra:
     cmds:
-      - docker stop gotube-s3test
+      - docker compose -p {{.PROJECT}}-infra -f ./build/infra.docker-compose.yml up -d
 
-  run/infra/test:
+  stop/infra:
     cmds:
-      - task: run/infra/test/postgres
-      - task: run/infra/test/redis
-      - task: run/infra/test/s3
-
-  stop/infra/test:
-    cmds:
-      - task: stop/infra/test/postgres
-      - task: stop/infra/test/redis
-      - task: stop/infra/test/s3
-
+      - docker compose -p {{.PROJECT}}-infra -f ./build/infra.docker-compose.yml down
+  
   migrate/new:
     cmds:
       - migrate create -ext sql -dir ./assets/migrations -seq {{.name}}

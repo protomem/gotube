@@ -1,0 +1,14 @@
+version: "3.9"
+
+services:
+  api-server:
+    build:
+      context: ../
+      dockerfile: ./build/Dockerfile
+    restart: unless-stopped
+    ports:
+      - 8080:8080
+    env_file:
+      - ../configs/stage.env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
