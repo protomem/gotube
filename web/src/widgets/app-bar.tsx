@@ -3,7 +3,11 @@ import Title from "@/components/title";
 import Searcher from "@/components/searcher";
 import ProfileMenu from "@/components/profile-menu";
 
-export default function AppBar() {
+interface Props {
+  searchTerm?: string;
+}
+
+export default function AppBar({ searchTerm }: Props) {
   return (
     <Flex
       h="100%"
@@ -17,7 +21,7 @@ export default function AppBar() {
 
       <Spacer />
 
-      <Searcher />
+      <Searcher defaultTerm={searchTerm} />
 
       <Spacer />
 

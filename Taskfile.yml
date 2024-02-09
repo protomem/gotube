@@ -39,7 +39,7 @@ tasks:
       - go build -v -o /tmp/{{.PROJECT}}/api-server ./cmd/api-server
 
   run/app/local:
-    deps: [build/local]
+    deps: [build/app/local]
     vars:
       conf_file: '{{.conf_file | default "./configs/local.env"}}'
     cmds:
@@ -74,7 +74,7 @@ tasks:
   stop/infra:
     cmds:
       - docker compose -p {{.PROJECT}}-infra -f ./build/infra.docker-compose.yml down
-  
+
   migrate/new:
     cmds:
       - migrate create -ext sql -dir ./assets/migrations -seq {{.name}}

@@ -22,6 +22,15 @@ const videoService = {
       `/videos?sortBy=popular&limit=${limit}&offset=${offset}`,
     );
   },
+
+  async searchVideos(
+    term: string,
+    { limit = 10, offset = 0 }: FindVideosRequest,
+  ) {
+    return apiClient.get<FindVideosResponse>(
+      `/videos?q=${term}&limit=${limit}&offset=${offset}`,
+    );
+  },
 };
 
 export default videoService;
