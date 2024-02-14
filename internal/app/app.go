@@ -18,7 +18,11 @@ import (
 	sqlitedb "github.com/protomem/gotube/internal/database/sqlite"
 	"github.com/protomem/gotube/internal/handler"
 	"github.com/protomem/gotube/internal/middleware"
+	"github.com/protomem/gotube/internal/repository"
+	sqliterepo "github.com/protomem/gotube/internal/repository/sqlite"
+	"github.com/protomem/gotube/internal/service"
 	"github.com/protomem/gotube/pkg/closing"
+	"github.com/protomem/gotube/pkg/hashing/bcrypt"
 	"github.com/protomem/gotube/pkg/logging"
 	stdlog "github.com/protomem/gotube/pkg/logging/std"
 )
@@ -30,8 +34,10 @@ type App struct {
 	db     database.DB
 	bstore blobstore.Storage
 
-	handlers    *handler.Handlers
-	middlewares *middleware.Middlewares
+	repositories *repository.Repositories
+	services     *service.Services
+	handlers     *handler.Handlers
+	middlewares  *middleware.Middlewares
 
 	router *mux.Router
 	server *http.Server
@@ -55,7 +61,9 @@ func (app *App) Run() error {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	app.handlers = handler.New()
+	app.repositories = sqliterepo.New(app.logger, app.db)
+	app.services = service.New(app.repositories, bcrypt.New(bcrypt.DefaultCost))
+	app.handlers = handler.New(app.logger, app.services)
 	app.middlewares = middleware.New()
 
 	app.registerOnShutdown()
@@ -154,6 +162,7 @@ func (app *App) initServer() error {
 func (app *App) registerOnShutdown() {
 	app.closer.Add(app.server.Shutdown)
 	app.closer.Add(app.db.Close)
+	app.closer.Add(app.bstore.Close)
 	app.closer.Add(func(ctx context.Context) error {
 		return app.logger.WithContext(ctx).Sync()
 	})
