@@ -2,9 +2,18 @@ package database
 
 import "context"
 
-type Rows interface{}
+type Scanner interface {
+	Scan(...any) error
+}
 
-type Row interface{}
+type Rows interface {
+	Scanner
+	Next() bool
+}
+
+type Row interface {
+	Scanner
+}
 
 type DB interface {
 	Exec(ctx context.Context, query string, args ...any) error

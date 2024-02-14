@@ -177,6 +177,10 @@ func (app *App) setupRoutes() {
 	app.router.MethodNotAllowedHandler = http.HandlerFunc(app.handlers.MethodNotAllowed)
 
 	app.router.HandleFunc("/health", app.handlers.Health()).Methods(http.MethodGet)
+
+	{
+		app.router.HandleFunc("/users", app.handlers.User.Create()).Methods(http.MethodPost)
+	}
 }
 
 func (app *App) serverStart(ctx context.Context, errs chan<- error) {
