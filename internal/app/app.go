@@ -179,6 +179,7 @@ func (app *App) setupRoutes() {
 	app.router.HandleFunc("/health", app.handlers.Health()).Methods(http.MethodGet)
 
 	{
+		app.router.HandleFunc("/users/{userNickname}", app.handlers.User.Get()).Methods(http.MethodGet)
 		app.router.HandleFunc("/users", app.handlers.User.Create()).Methods(http.MethodPost)
 	}
 }

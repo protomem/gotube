@@ -58,6 +58,25 @@ func (r *User) Get(ctx context.Context, id model.ID) (model.User, error) {
 	return user, nil
 }
 
+func (r *User) GetByNickname(ctx context.Context, nickname string) (model.User, error) {
+	const op = "repository.User.Get"
+
+	query := `SELECT * FROM users WHERE nickname = ?`
+	args := []any{nickname}
+
+	row := r.db.QueryRow(ctx, query, args...)
+	user, err := r.scan(row)
+	if err != nil {
+		if sqlite.IsNoRows(err) {
+			return model.User{}, fmt.Errorf("%s: %w", op, model.ErrUserNotFound)
+		}
+
+		return model.User{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return user, nil
+}
+
 func (r *User) Create(ctx context.Context, dto repository.CreateUserDTO) (model.ID, error) {
 	const op = "repository.User.Create"
 

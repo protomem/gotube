@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/protomem/gotube/internal/model"
 	"github.com/protomem/gotube/internal/service"
 	"github.com/protomem/gotube/pkg/httplib"
@@ -20,6 +21,22 @@ func NewUser(logger logging.Logger, serv service.User) *User {
 		logger: logger.With("handler", "user"),
 		serv:   serv,
 	}
+}
+
+func (h *User) Get() http.HandlerFunc {
+	return httplib.NewEndpointWithErroHandler(func(w http.ResponseWriter, r *http.Request) error {
+		userNickname, ok := mux.Vars(r)["userNickname"]
+		if !ok {
+			return httplib.NewAPIError(http.StatusBadRequest, "missing nickname")
+		}
+
+		user, err := h.serv.GetByNickname(r.Context(), userNickname)
+		if err != nil {
+			return err
+		}
+
+		return httplib.WriteJSON(w, http.StatusOK, httplib.JSON{"user": user})
+	}, h.errorHandler("handler.User.Get"))
 }
 
 func (h *User) Create() http.HandlerFunc {
@@ -39,7 +56,7 @@ func (h *User) Create() http.HandlerFunc {
 			return err
 		}
 
-		return httplib.WriteJSON(w, http.StatusOK, httplib.JSON{"user": user})
+		return httplib.WriteJSON(w, http.StatusCreated, httplib.JSON{"user": user})
 	}, h.errorHandler("handler.User.Create"))
 }
 
