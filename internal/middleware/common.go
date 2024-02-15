@@ -35,16 +35,14 @@ func (*Common) LogAccess(logger logging.Logger) mux.MiddlewareFunc {
 				method = r.Method
 				url    = r.URL.String()
 				proto  = r.Proto
-				tid    = ctxstore.MustTraceID(r.Context())
 			)
 
 			mw := httplib.NewMetricsResponseWriter(w)
 
 			next(mw, r)
 
-			logger.Info(
+			logger.WithContext(r.Context()).Info(
 				"incoming request",
-				"traceId", tid,
 				"method", method,
 				"url", url,
 				"statusCode", mw.StatusCode,

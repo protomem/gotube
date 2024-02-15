@@ -62,7 +62,7 @@ func (h *User) Create() http.HandlerFunc {
 
 func (h *User) errorHandler(op string) httplib.ErroHandler {
 	return func(w http.ResponseWriter, r *http.Request, err error) {
-		h.logger.Error("failed to handle request", "operation", op, "err", err)
+		h.logger.WithContext(r.Context()).Error("failed to handle request", "operation", op, "err", err)
 
 		if errors.Is(err, model.ErrUserNotFound) {
 			err = httplib.NewAPIError(http.StatusNotFound, model.ErrUserNotFound.Error())

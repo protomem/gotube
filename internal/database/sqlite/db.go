@@ -32,13 +32,13 @@ func Connect(ctx context.Context, logger logging.Logger, dsn string) (*DB, error
 
 	return &DB{
 		DB:     db,
-		logger: logger.With("component", "database", "type", "sqlite3"),
+		logger: logger.With("component", "sqlite/database"),
 	}, nil
 }
 
 func (db *DB) Exec(ctx context.Context, query string, args ...any) error {
 	const op = "database.Exec"
-	db.logger.Debug("query exec", "query", query, "args", args, "operation", op)
+	db.logger.WithContext(ctx).Debug("query exec", "query", query, "args", args, "operation", op)
 
 	if _, err := db.DB.ExecContext(ctx, query, args...); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
@@ -48,7 +48,7 @@ func (db *DB) Exec(ctx context.Context, query string, args ...any) error {
 
 func (db *DB) Query(ctx context.Context, query string, args ...any) (database.Rows, error) {
 	const op = "database.Query"
-	db.logger.Debug("query exec", "query", query, "args", args, "operation", op)
+	db.logger.WithContext(ctx).Debug("query exec", "query", query, "args", args, "operation", op)
 
 	rows, err := db.DB.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -59,7 +59,7 @@ func (db *DB) Query(ctx context.Context, query string, args ...any) (database.Ro
 
 func (db *DB) QueryRow(ctx context.Context, query string, args ...any) database.Row {
 	const op = "database.QueryRow"
-	db.logger.Debug("query exec", "query", query, "args", args, "operation", op)
+	db.logger.WithContext(ctx).Debug("query exec", "query", query, "args", args, "operation", op)
 
 	return db.DB.QueryRowContext(ctx, query, args...)
 }

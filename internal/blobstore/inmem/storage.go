@@ -20,18 +20,18 @@ type Storage struct {
 
 func New(logger logging.Logger) (*Storage, error) {
 	return &Storage{
-		logger: logger.With("component", "blobstore", "type", "in-memory"),
+		logger: logger.With("component", "in-memory/blobstore"),
 		store:  make(map[string]blobstore.Object),
 	}, nil
 }
 
-func (s *Storage) Get(_ context.Context, parent, name string) (blobstore.Object, error) {
+func (s *Storage) Get(ctx context.Context, parent, name string) (blobstore.Object, error) {
 	const op = "blobstore.Get"
 
 	s.mux.RLock()
 	defer s.mux.RUnlock()
 
-	s.logger.Debug("get object", "parent", parent, "name", name)
+	s.logger.WithContext(ctx).Debug("get object", "parent", parent, "name", name)
 
 	obj, ok := s.store[s.fmtKey(parent, name)]
 	if !ok {
@@ -41,7 +41,7 @@ func (s *Storage) Get(_ context.Context, parent, name string) (blobstore.Object,
 	return obj, nil
 }
 
-func (s *Storage) Put(_ context.Context, parent, name string, obj blobstore.Object) error {
+func (s *Storage) Put(ctx context.Context, parent, name string, obj blobstore.Object) error {
 	const op = "blobstore.Put"
 
 	copyObj, err := obj.Clone()
@@ -52,18 +52,18 @@ func (s *Storage) Put(_ context.Context, parent, name string, obj blobstore.Obje
 	s.mux.Lock()
 	defer s.mux.Unlock()
 
-	s.logger.Debug("put object", "parent", parent, "name", name, "objSize", copyObj.Size, "objType", copyObj.Type)
+	s.logger.WithContext(ctx).Debug("put object", "parent", parent, "name", name, "objSize", copyObj.Size, "objType", copyObj.Type)
 
 	s.store[s.fmtKey(parent, name)] = copyObj
 
 	return nil
 }
 
-func (s *Storage) Del(_ context.Context, parent, name string) error {
+func (s *Storage) Del(ctx context.Context, parent, name string) error {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 
-	s.logger.Debug("delete object", "parent", parent, "name", name)
+	s.logger.WithContext(ctx).Debug("delete object", "parent", parent, "name", name)
 
 	delete(s.store, s.fmtKey(parent, name))
 

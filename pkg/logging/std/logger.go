@@ -15,6 +15,7 @@ var _ logging.Logger = (*Logger)(nil)
 type Logger struct {
 	*slog.Logger
 	ctx context.Context
+	ex  func(context.Context) []any
 }
 
 func New(level string, out io.Writer) (*Logger, error) {
@@ -28,6 +29,7 @@ func New(level string, out io.Writer) (*Logger, error) {
 	return &Logger{
 		Logger: slog.New(slog.NewJSONHandler(out, &slog.HandlerOptions{Level: parsedLevel})),
 		ctx:    context.Background(),
+		ex:     nil,
 	}, nil
 }
 
@@ -51,6 +53,7 @@ func (l *Logger) With(args ...any) logging.Logger {
 	return &Logger{
 		Logger: l.Logger.With(args...),
 		ctx:    l.ctx,
+		ex:     l.ex,
 	}
 }
 
@@ -59,10 +62,19 @@ func (l *Logger) Context() context.Context {
 }
 
 func (l *Logger) WithContext(ctx context.Context) logging.Logger {
+	args := make([]any, 0)
+	if l.ex != nil {
+		args = append(args, l.ex(ctx)...)
+	}
+
 	return &Logger{
-		Logger: l.Logger,
+		Logger: l.Logger.With(args...),
 		ctx:    ctx,
 	}
+}
+
+func (l *Logger) Extractor(fn func(context.Context) []any) {
+	l.ex = fn
 }
 
 func (l *Logger) Sync() error {

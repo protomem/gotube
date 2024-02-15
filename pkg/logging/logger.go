@@ -13,5 +13,7 @@ type Logger interface {
 	Context() context.Context
 	WithContext(ctx context.Context) Logger
 
+	Extractor(fn func(context.Context) []any)
+
 	Sync() error
 }

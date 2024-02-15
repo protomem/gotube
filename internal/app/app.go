@@ -14,6 +14,7 @@ import (
 	"github.com/protomem/gotube/internal/blobstore"
 	inmembstore "github.com/protomem/gotube/internal/blobstore/inmem"
 	"github.com/protomem/gotube/internal/config"
+	"github.com/protomem/gotube/internal/ctxstore"
 	"github.com/protomem/gotube/internal/database"
 	sqlitedb "github.com/protomem/gotube/internal/database/sqlite"
 	"github.com/protomem/gotube/internal/handler"
@@ -119,6 +120,14 @@ func (app *App) initLogger() error {
 	if err != nil {
 		return err
 	}
+
+	app.logger.Extractor(func(ctx context.Context) []any {
+		args := []any{}
+		if tid, ok := ctxstore.TraceID(ctx); ok {
+			args = append(args, "traceId", tid)
+		}
+		return args
+	})
 
 	return nil
 }
