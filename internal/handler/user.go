@@ -97,6 +97,21 @@ func (h *User) Update() http.HandlerFunc {
 	}, h.errorHandler("handler.User.Update"))
 }
 
+func (h *User) Delete() http.HandlerFunc {
+	return httplib.NewEndpointWithErroHandler(func(w http.ResponseWriter, r *http.Request) error {
+		userNickname, ok := mux.Vars(r)["userNickname"]
+		if !ok {
+			return httplib.NewAPIError(http.StatusBadRequest, "missing nickname")
+		}
+
+		if err := h.serv.DeleteByNickname(r.Context(), userNickname); err != nil {
+			return err
+		}
+
+		return httplib.NoContent(w)
+	}, h.errorHandler("handler.User.Delete"))
+}
+
 func (h *User) errorHandler(op string) httplib.ErroHandler {
 	return func(w http.ResponseWriter, r *http.Request, err error) {
 		h.logger.WithContext(r.Context()).Error("failed to handle request", "operation", op, "err", err)

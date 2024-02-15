@@ -28,4 +28,5 @@ type User interface {
 	GetByNickname(ctx context.Context, nickname string) (model.User, error)
 	Create(ctx context.Context, dto CreateUserDTO) (model.ID, error)
 	Update(ctx context.Context, id model.ID, dto UpdateUserDTO) error
+	Delete(ctx context.Context, id model.ID) error
 }

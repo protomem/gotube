@@ -16,3 +16,8 @@ func WriteJSON(w http.ResponseWriter, status int, v any) error {
 func DecodeJSON(r *http.Request, v any) error {
 	return json.NewDecoder(r.Body).Decode(v)
 }
+
+func NoContent(w http.ResponseWriter) error {
+	w.WriteHeader(http.StatusNoContent)
+	return nil
+}

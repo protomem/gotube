@@ -36,6 +36,7 @@ type (
 		GetByNickname(ctx context.Context, nickname string) (model.User, error)
 		Create(ctx context.Context, dto CreateUserDTO) (model.User, error)
 		UpdateByNickname(ctx context.Context, nickname string, dto UpdateUserDTO) (model.User, error)
+		DeleteByNickname(ctx context.Context, nickname string) error
 	}
 
 	UserImpl struct {
@@ -135,4 +136,19 @@ func (s *UserImpl) UpdateByNickname(ctx context.Context, nickname string, dto Up
 	}
 
 	return newUser, nil
+}
+
+func (s *UserImpl) DeleteByNickname(ctx context.Context, nickname string) error {
+	const op = "service.User.DeleteByNickname"
+
+	user, err := s.repo.GetByNickname(ctx, nickname)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	if err := s.repo.Delete(ctx, user.ID); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
 }

@@ -178,19 +178,24 @@ func (app *App) registerOnShutdown() {
 }
 
 func (app *App) setupRoutes() {
-	app.router.Use(app.middlewares.TraceID())
-	app.router.Use(app.middlewares.LogAccess(app.logger))
-	app.router.Use(app.middlewares.Recovery(app.logger))
+	router := app.router
+	middlewares := app.middlewares
+	handlers := app.handlers
 
-	app.router.NotFoundHandler = http.HandlerFunc(app.handlers.Common.NotFound)
-	app.router.MethodNotAllowedHandler = http.HandlerFunc(app.handlers.MethodNotAllowed)
+	router.Use(middlewares.TraceID())
+	router.Use(middlewares.LogAccess(app.logger))
+	router.Use(middlewares.Recovery(app.logger))
 
-	app.router.HandleFunc("/health", app.handlers.Health()).Methods(http.MethodGet)
+	router.NotFoundHandler = http.HandlerFunc(handlers.Common.NotFound)
+	router.MethodNotAllowedHandler = http.HandlerFunc(handlers.MethodNotAllowed)
+
+	router.HandleFunc("/health", handlers.Health()).Methods(http.MethodGet)
 
 	{
-		app.router.HandleFunc("/users/{userNickname}", app.handlers.User.Get()).Methods(http.MethodGet)
-		app.router.HandleFunc("/users", app.handlers.User.Create()).Methods(http.MethodPost)
-		app.router.HandleFunc("/users/{userNickname}", app.handlers.User.Update()).Methods(http.MethodPut, http.MethodPatch)
+		router.HandleFunc("/users/{userNickname}", handlers.User.Get()).Methods(http.MethodGet)
+		router.HandleFunc("/users", handlers.User.Create()).Methods(http.MethodPost)
+		router.HandleFunc("/users/{userNickname}", handlers.User.Update()).Methods(http.MethodPut, http.MethodPatch)
+		router.HandleFunc("/users/{userNickname}", handlers.User.Delete()).Methods(http.MethodDelete)
 	}
 }
 

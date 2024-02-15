@@ -146,6 +146,19 @@ func (r *User) Update(ctx context.Context, id model.ID, dto repository.UpdateUse
 	return nil
 }
 
+func (r *User) Delete(ctx context.Context, id model.ID) error {
+	const op = "repository.User.Delete"
+
+	query := `DELETE FROM users WHERE id = ?`
+	args := []any{id.String()}
+
+	if err := r.db.Exec(ctx, query, args...); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}
+
 func (*User) scan(s database.Scanner) (model.User, error) {
 	var entry userEntry
 	if err := s.Scan(
