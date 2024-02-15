@@ -103,6 +103,49 @@ func (r *User) Create(ctx context.Context, dto repository.CreateUserDTO) (model.
 	return model.ID(id), nil
 }
 
+func (r *User) Update(ctx context.Context, id model.ID, dto repository.UpdateUserDTO) error {
+	const op = "repository.User.Update"
+
+	now := time.Now()
+
+	query := `UPDATE users SET updated_at = ?`
+	args := []any{now.Unix()}
+
+	if dto.Nickname != nil {
+		query += `, nickname = ?`
+		args = append(args, *dto.Nickname)
+	}
+	if dto.Password != nil {
+		query += `, password = ?`
+		args = append(args, *dto.Password)
+	}
+	if dto.Email != nil {
+		query += `, email = ?`
+		args = append(args, *dto.Email)
+	}
+	if dto.Verified != nil {
+		query += `, is_verified = ?`
+		args = append(args, *dto.Verified)
+	}
+	if dto.AvatarPath != nil {
+		query += `, avatar_path = ?`
+		args = append(args, *dto.AvatarPath)
+	}
+	if dto.Description != nil {
+		query += `, description = ?`
+		args = append(args, *dto.Description)
+	}
+
+	query += ` WHERE id = ?`
+	args = append(args, id.String())
+
+	if err := r.db.Exec(ctx, query, args...); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}
+
 func (*User) scan(s database.Scanner) (model.User, error) {
 	var entry userEntry
 	if err := s.Scan(
