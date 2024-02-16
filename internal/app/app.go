@@ -62,8 +62,13 @@ func (app *App) Run() error {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
+	authConf, err := app.conf.Auth()
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
 	app.repositories = sqliterepo.New(app.logger, app.db)
-	app.services = service.New(app.repositories, bcrypt.New(bcrypt.DefaultCost))
+	app.services = service.New(authConf, app.repositories, bcrypt.New(bcrypt.DefaultCost))
 	app.handlers = handler.New(app.logger, app.services)
 	app.middlewares = middleware.New()
 
@@ -196,6 +201,10 @@ func (app *App) setupRoutes() {
 		router.HandleFunc("/users", handlers.User.Create()).Methods(http.MethodPost)
 		router.HandleFunc("/users/{userNickname}", handlers.User.Update()).Methods(http.MethodPut, http.MethodPatch)
 		router.HandleFunc("/users/{userNickname}", handlers.User.Delete()).Methods(http.MethodDelete)
+	}
+
+	{
+		router.Handle("/auth/login", handlers.Auth.Login()).Methods(http.MethodPost)
 	}
 }
 

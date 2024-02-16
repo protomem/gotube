@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"time"
 )
 
 type Server struct {
@@ -38,6 +39,20 @@ type SQLiteDB struct {
 func (c *Config) SQLiteDB() (SQLiteDB, error) {
 	prefix := "SQLITE"
 	conf, err := newConfigParser[SQLiteDB](c.cache).parse(c.fmtPrefix(prefix))
+	if err != nil {
+		return conf, fmt.Errorf("config.%s: %w", prefix, err)
+	}
+	return conf, nil
+}
+
+type Auth struct {
+	Secret         string        `env:"SECRET" envDefault:"secret"`
+	AccessTokenTTL time.Duration `env:"ACCESS_TOKEN_TTL" envDefault:"72h"`
+}
+
+func (c *Config) Auth() (Auth, error) {
+	prefix := "AUTH"
+	conf, err := newConfigParser[Auth](c.cache).parse(c.fmtPrefix(prefix))
 	if err != nil {
 		return conf, fmt.Errorf("config.%s: %w", prefix, err)
 	}
