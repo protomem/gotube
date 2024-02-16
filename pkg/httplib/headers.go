@@ -1,7 +1,8 @@
 package httplib
 
 const (
-	HeaderContentType = "Content-Type"
+	HeaderContentType   = "Content-Type"
+	HeaderAuthorization = "Authorization"
 )
 
 const (

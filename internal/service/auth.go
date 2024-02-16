@@ -9,6 +9,8 @@ import (
 	"github.com/protomem/gotube/pkg/jwt"
 )
 
+const _defaultTokenIssuer = "gotube"
+
 var _ Auth = (*AuthImpl)(nil)
 
 type (
@@ -21,6 +23,7 @@ type (
 type (
 	Auth interface {
 		Login(ctx context.Context, dto LoginDTO) (token string, user model.User, err error)
+		Verify(ctx context.Context, token string) (model.User, error)
 	}
 
 	AuthImpl struct {
@@ -48,11 +51,30 @@ func (s *AuthImpl) Login(ctx context.Context, dto LoginDTO) (string, model.User,
 		SigningKey: s.conf.Secret,
 		TTL:        s.conf.AccessTokenTTL,
 		Subject:    user.Nickname,
-		Issuer:     "gotube",
+		Issuer:     _defaultTokenIssuer,
 	})
 	if err != nil {
 		return "", model.User{}, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return token, user, nil
+}
+
+func (s *AuthImpl) Verify(ctx context.Context, token string) (model.User, error) {
+	const op = "service.Auth.Verify"
+
+	subject, err := jwt.Parse(token, jwt.ParseParams{
+		SigningKey: s.conf.Secret,
+		Issuer:     _defaultTokenIssuer,
+	})
+	if err != nil {
+		return model.User{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	user, err := s.userServ.GetByNickname(ctx, subject)
+	if err != nil {
+		return model.User{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return user, nil
 }

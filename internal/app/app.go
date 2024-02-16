@@ -70,7 +70,7 @@ func (app *App) Run() error {
 	app.repositories = sqliterepo.New(app.logger, app.db)
 	app.services = service.New(authConf, app.repositories, bcrypt.New(bcrypt.DefaultCost))
 	app.handlers = handler.New(app.logger, app.services)
-	app.middlewares = middleware.New()
+	app.middlewares = middleware.New(app.logger, app.services)
 
 	app.registerOnShutdown()
 	app.setupRoutes()
@@ -191,6 +191,8 @@ func (app *App) setupRoutes() {
 	router.Use(middlewares.LogAccess(app.logger))
 	router.Use(middlewares.Recovery(app.logger))
 
+	router.Use(middlewares.Authenticate())
+
 	router.NotFoundHandler = http.HandlerFunc(handlers.Common.NotFound)
 	router.MethodNotAllowedHandler = http.HandlerFunc(handlers.MethodNotAllowed)
 
@@ -199,8 +201,16 @@ func (app *App) setupRoutes() {
 	{
 		router.HandleFunc("/users/{userNickname}", handlers.User.Get()).Methods(http.MethodGet)
 		router.HandleFunc("/users", handlers.User.Create()).Methods(http.MethodPost)
-		router.HandleFunc("/users/{userNickname}", handlers.User.Update()).Methods(http.MethodPut, http.MethodPatch)
-		router.HandleFunc("/users/{userNickname}", handlers.User.Delete()).Methods(http.MethodDelete)
+
+		router.Handle(
+			"/users/{userNickname}",
+			middlewares.Protect()(handlers.User.Update()),
+		).Methods(http.MethodPut, http.MethodPatch)
+		router.Handle(
+			"/users/{userNickname}",
+			middlewares.Protect()(handlers.User.Delete()),
+		).Methods(http.MethodDelete)
+
 	}
 
 	{
