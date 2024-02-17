@@ -9,12 +9,14 @@ type Handlers struct {
 	*Common
 	*User
 	*Auth
+	*Subscription
 }
 
 func New(logger logging.Logger, servs *service.Services) *Handlers {
 	return &Handlers{
-		Common: NewCommon(),
-		User:   NewUser(logger, servs.User),
-		Auth:   NewAuth(logger, servs.Auth),
+		Common:       NewCommon(),
+		User:         NewUser(logger, servs.User),
+		Auth:         NewAuth(logger, servs.Auth),
+		Subscription: NewSubscription(logger, servs.Subscription),
 	}
 }

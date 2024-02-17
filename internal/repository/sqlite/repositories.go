@@ -8,6 +8,7 @@ import (
 
 func New(logger logging.Logger, db database.DB) *repository.Repositories {
 	return &repository.Repositories{
-		User: NewUser(logger, db),
+		User:         NewUser(logger, db),
+		Subscription: NewSubscription(logger, db),
 	}
 }

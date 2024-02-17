@@ -216,6 +216,18 @@ func (app *App) setupRoutes() {
 	{
 		router.Handle("/auth/login", handlers.Auth.Login()).Methods(http.MethodPost)
 	}
+
+	{
+		router.HandleFunc("/subs/{userNickname}", handlers.Subscription.Count()).Methods(http.MethodGet)
+		router.Handle(
+			"/subs/{userNickname}",
+			middlewares.Protect()(handlers.Subscription.Subscribe()),
+		).Methods(http.MethodPost)
+		router.Handle(
+			"/subs/{userNickname}",
+			middlewares.Protect()(handlers.Subscription.Unsubscribe()),
+		).Methods(http.MethodDelete)
+	}
 }
 
 func (app *App) serverStart(ctx context.Context, errs chan<- error) {

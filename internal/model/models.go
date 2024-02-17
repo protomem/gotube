@@ -15,8 +15,10 @@ type Model struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
-var ErrUserNotFound = errors.New("user not found")
-var ErrUserExists = errors.New("user already exists")
+var (
+	ErrUserNotFound = errors.New("user not found")
+	ErrUserExists   = errors.New("user already exists")
+)
 
 type User struct {
 	Model
@@ -29,4 +31,13 @@ type User struct {
 
 	AvatarPath  string `json:"avatarPath"`
 	Description string `json:"description"`
+}
+
+var ErrSubscriptionNotFound = errors.New("subscription not found")
+
+type Subscription struct {
+	Model
+
+	FromUser User `json:"fromUser"`
+	ToUser   User `json:"toUser"`
 }
