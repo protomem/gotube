@@ -4,6 +4,8 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/gorilla/mux"
+	"github.com/protomem/gotube/internal/ctxstore"
 	"github.com/protomem/gotube/internal/model"
 	"github.com/protomem/gotube/internal/service"
 	"github.com/protomem/gotube/pkg/httplib"
@@ -30,13 +32,41 @@ func (h *Subscription) Count() http.HandlerFunc {
 
 func (h *Subscription) Subscribe() http.HandlerFunc {
 	return httplib.NewEndpointWithErroHandler(func(w http.ResponseWriter, r *http.Request) error {
-		return httplib.WriteJSON(w, http.StatusInternalServerError, httplib.JSON{"message": "unimplemented"})
+		toUserNickname, ok := mux.Vars(r)["userNickname"]
+		if !ok {
+			return httplib.NewAPIError(http.StatusBadRequest, "missing nickname")
+		}
+
+		fromUser := ctxstore.MustUser(r.Context())
+
+		if err := h.serv.Subscribe(r.Context(), service.SubscriptionDTO{
+			FromUserNickname: fromUser.Nickname,
+			ToUserNickname:   toUserNickname,
+		}); err != nil {
+			return err
+		}
+
+		return httplib.NoContent(w)
 	}, h.errorHandler("handler.Subscription.Subscribe"))
 }
 
 func (h *Subscription) Unsubscribe() http.HandlerFunc {
 	return httplib.NewEndpointWithErroHandler(func(w http.ResponseWriter, r *http.Request) error {
-		return httplib.WriteJSON(w, http.StatusInternalServerError, httplib.JSON{"message": "unimplemented"})
+		toUserNickname, ok := mux.Vars(r)["userNickname"]
+		if !ok {
+			return httplib.NewAPIError(http.StatusBadRequest, "missing nickname")
+		}
+
+		fromUser := ctxstore.MustUser(r.Context())
+
+		if err := h.serv.Unsubscribe(r.Context(), service.SubscriptionDTO{
+			FromUserNickname: fromUser.Nickname,
+			ToUserNickname:   toUserNickname,
+		}); err != nil {
+			return err
+		}
+
+		return httplib.NoContent(w)
 	}, h.errorHandler("handler.Subscription.Unsubscribe"))
 }
 

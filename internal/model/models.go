@@ -33,7 +33,10 @@ type User struct {
 	Description string `json:"description"`
 }
 
-var ErrSubscriptionNotFound = errors.New("subscription not found")
+var (
+	ErrSubscriptionNotFound = errors.New("subscription not found")
+	ErrSubscriptionExists   = errors.New("subscription already exists")
+)
 
 type Subscription struct {
 	Model
