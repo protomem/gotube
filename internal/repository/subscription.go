@@ -13,6 +13,7 @@ type CreateSubscriptionDTO struct {
 
 type Subscription interface {
 	GetByFromUserIDAndToUserID(ctx context.Context, fromUserID, toUserID model.ID) (model.Subscription, error)
+	CountByToUserID(ctx context.Context, toUserID model.ID) (int64, error)
 	Create(ctx context.Context, dto CreateSubscriptionDTO) (model.ID, error)
 	Delete(ctx context.Context, id model.ID) error
 }

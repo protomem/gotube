@@ -18,6 +18,7 @@ type SubscriptionDTO struct {
 
 type (
 	Subscription interface {
+		CountSubscribers(ctx context.Context, userNickname string) (int64, error)
 		Subscribe(ctx context.Context, dto SubscriptionDTO) error
 		Unsubscribe(ctx context.Context, dto SubscriptionDTO) error
 	}
@@ -33,6 +34,22 @@ func NewSubscription(repo repository.Subscription, userServ User) *SubscriptionI
 		repo:     repo,
 		userServ: userServ,
 	}
+}
+
+func (s *SubscriptionImpl) CountSubscribers(ctx context.Context, userNickname string) (int64, error) {
+	const op = "service.Subscription.CountSubscribers"
+
+	user, err := s.userServ.GetByNickname(ctx, userNickname)
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	count, err := s.repo.CountByToUserID(ctx, user.ID)
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return count, nil
 }
 
 func (s *SubscriptionImpl) Subscribe(ctx context.Context, dto SubscriptionDTO) error {

@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/protomem/gotube/internal/ctxstore"
@@ -26,7 +27,19 @@ func NewSubscription(logger logging.Logger, serv service.Subscription) *Subscrip
 
 func (h *Subscription) Count() http.HandlerFunc {
 	return httplib.NewEndpointWithErroHandler(func(w http.ResponseWriter, r *http.Request) error {
-		return httplib.WriteJSON(w, http.StatusInternalServerError, httplib.JSON{"message": "unimplemented"})
+		userNickname, ok := mux.Vars(r)["userNickname"]
+		if !ok {
+			return httplib.NewAPIError(http.StatusBadRequest, "missing nickname")
+		}
+
+		count, err := h.serv.CountSubscribers(r.Context(), userNickname)
+		if err != nil {
+			return err
+		}
+
+		return httplib.WriteJSON(w, http.StatusInternalServerError, httplib.JSON{
+			"subscribers": strconv.FormatInt(count, 10),
+		})
 	}, h.errorHandler("handler.Subscription.Get"))
 }
 

@@ -63,6 +63,26 @@ func (r *Subscription) GetByFromUserIDAndToUserID(ctx context.Context, fromUserI
 	return sub, nil
 }
 
+func (r *Subscription) CountByToUserID(ctx context.Context, toUserID model.ID) (int64, error) {
+	const op = "repository.Subscription.CountByToUserID"
+
+	query := `SELECT COUNT(id) FROM subscriptions WHERE to_user_id = ?`
+	args := []any{toUserID.String()}
+
+	var count int64
+
+	row := r.db.QueryRow(ctx, query, args...)
+	if err := row.Scan(&count); err != nil {
+		if sqlite.IsNoRows(err) {
+			return 0, nil
+		}
+
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return count, nil
+}
+
 func (r *Subscription) Create(ctx context.Context, dto repository.CreateSubscriptionDTO) (model.ID, error) {
 	const op = "repository.Subscription.Create"
 
