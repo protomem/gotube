@@ -40,7 +40,7 @@ func (h *Subscription) Count() http.HandlerFunc {
 		return httplib.WriteJSON(w, http.StatusInternalServerError, httplib.JSON{
 			"subscribers": strconv.FormatInt(count, 10),
 		})
-	}, h.errorHandler("handler.Subscription.Get"))
+	}, h.errorHandler("handler.Subscription.Count"))
 }
 
 func (h *Subscription) Subscribe() http.HandlerFunc {

@@ -193,7 +193,7 @@ func (app *App) setupRoutes() {
 
 	router.Use(middlewares.Authenticate())
 
-	router.NotFoundHandler = http.HandlerFunc(handlers.Common.NotFound)
+	router.NotFoundHandler = http.HandlerFunc(handlers.NotFound)
 	router.MethodNotAllowedHandler = http.HandlerFunc(handlers.MethodNotAllowed)
 
 	router.HandleFunc("/health", handlers.Health()).Methods(http.MethodGet)
@@ -226,6 +226,22 @@ func (app *App) setupRoutes() {
 		router.Handle(
 			"/subs/{userNickname}",
 			middlewares.Protect()(handlers.Subscription.Unsubscribe()),
+		).Methods(http.MethodDelete)
+	}
+
+	{
+		router.HandleFunc("/videos/{videoId}", handlers.Video.Get()).Methods(http.MethodGet)
+		router.Handle(
+			"/videos/{videoId}",
+			middlewares.Protect()(handlers.Video.Creaate()),
+		).Methods(http.MethodPost)
+		router.Handle(
+			"/videos/{videoId}",
+			middlewares.Protect()(handlers.Video.Update()),
+		).Methods(http.MethodPut, http.MethodPatch)
+		router.Handle(
+			"/videos/{videoId}",
+			middlewares.Protect()(handlers.Video.Delete()),
 		).Methods(http.MethodDelete)
 	}
 }

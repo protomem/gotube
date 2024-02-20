@@ -10,6 +10,7 @@ type Handlers struct {
 	*User
 	*Auth
 	*Subscription
+	*Video
 }
 
 func New(logger logging.Logger, servs *service.Services) *Handlers {
@@ -18,5 +19,6 @@ func New(logger logging.Logger, servs *service.Services) *Handlers {
 		User:         NewUser(logger, servs.User),
 		Auth:         NewAuth(logger, servs.Auth),
 		Subscription: NewSubscription(logger, servs.Subscription),
+		Video:        NewVideo(logger, servs.Video),
 	}
 }

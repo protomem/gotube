@@ -44,3 +44,23 @@ type Subscription struct {
 	FromUser User `json:"fromUser"`
 	ToUser   User `json:"toUser"`
 }
+
+var (
+	ErrVideoNotFound = errors.New("video not found")
+	ErrVideoExists   = errors.New("video already exists")
+)
+
+type Vidoe struct {
+	Model
+
+	Title       string `json:"title"`
+	Description string `json:"description"`
+
+	ThumbnailPath string `json:"thumbnailPath"`
+	VideoPath     string `json:"videoPath"`
+
+	Author User `json:"author"`
+
+	Public bool  `json:"isPublic"`
+	Views  int64 `json:"views"`
+}
