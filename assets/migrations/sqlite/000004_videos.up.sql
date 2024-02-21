@@ -15,4 +15,4 @@ CREATE TABLE IF NOT EXISTS videos (
     views INTEGER NOT NULL DEFAULT 0,
 
     FOREIGN KEY (author_id) REFERENCES users (id) ON DELETE CASCADE
-;
+);

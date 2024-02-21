@@ -1,8 +1,13 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
+	"github.com/protomem/gotube/internal/ctxstore"
+	"github.com/protomem/gotube/internal/model"
 	"github.com/protomem/gotube/internal/service"
 	"github.com/protomem/gotube/pkg/httplib"
 	"github.com/protomem/gotube/pkg/logging"
@@ -22,13 +27,59 @@ func NewVideo(logger logging.Logger, serv service.Video) *Video {
 
 func (h *Video) Get() http.HandlerFunc {
 	return httplib.NewEndpointWithErroHandler(func(w http.ResponseWriter, r *http.Request) error {
-		return httplib.WriteJSON(w, http.StatusInternalServerError, httplib.JSON{"message": "not implemented"})
+		videoIDRaw, ok := mux.Vars(r)["videoId"]
+		if !ok {
+			return httplib.NewAPIError(http.StatusBadRequest, "missing video id")
+		}
+
+		videoID, err := uuid.Parse(videoIDRaw)
+		if err != nil {
+			return httplib.NewAPIError(http.StatusBadRequest, "invalid video id").WithInternal(err)
+		}
+
+		video, err := h.serv.Get(r.Context(), videoID)
+		if err != nil {
+			return err
+		}
+
+		author, isAuth := ctxstore.User(r.Context())
+		if video.Public || (!video.Public && isAuth && author.ID == video.Author.ID) {
+			return httplib.WriteJSON(w, http.StatusOK, httplib.JSON{"video": video})
+		}
+
+		return model.ErrVideoNotFound
 	}, h.errorHandler("handler.Video.Get"))
 }
 
 func (h *Video) Creaate() http.HandlerFunc {
 	return httplib.NewEndpointWithErroHandler(func(w http.ResponseWriter, r *http.Request) error {
-		return httplib.WriteJSON(w, http.StatusInternalServerError, httplib.JSON{"message": "not implemented"})
+		var request struct {
+			Title         string
+			Description   *string
+			ThumbnailPath string
+			VideoPath     string
+			Public        *bool
+		}
+
+		if err := httplib.DecodeJSON(r, &request); err != nil {
+			return err
+		}
+
+		author := ctxstore.MustUser(r.Context())
+
+		video, err := h.serv.Create(r.Context(), service.CreateVideoDTO{
+			Title:         request.Title,
+			Description:   request.Description,
+			ThumbnailPath: request.ThumbnailPath,
+			VideoPath:     request.VideoPath,
+			AuthorID:      author.ID,
+			Public:        request.Public,
+		})
+		if err != nil {
+			return err
+		}
+
+		return httplib.WriteJSON(w, http.StatusCreated, httplib.JSON{"video": video})
 	}, h.errorHandler("handler.Video.Create"))
 }
 
@@ -47,6 +98,14 @@ func (h *Video) Delete() http.HandlerFunc {
 func (h *Video) errorHandler(op string) httplib.ErroHandler {
 	return func(w http.ResponseWriter, r *http.Request, err error) {
 		h.logger.WithContext(r.Context()).Error("failed to handle request", "operation", op, "err", err)
+
+		if errors.Is(err, model.ErrVideoNotFound) {
+			err = httplib.NewAPIError(http.StatusNotFound, model.ErrVideoNotFound.Error())
+		}
+		if errors.Is(err, model.ErrVideoExists) {
+			err = httplib.NewAPIError(http.StatusConflict, model.ErrVideoExists.Error())
+		}
+
 		httplib.DefaultErrorHandler(w, r, err)
 	}
 }

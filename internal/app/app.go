@@ -232,7 +232,7 @@ func (app *App) setupRoutes() {
 	{
 		router.HandleFunc("/videos/{videoId}", handlers.Video.Get()).Methods(http.MethodGet)
 		router.Handle(
-			"/videos/{videoId}",
+			"/videos",
 			middlewares.Protect()(handlers.Video.Creaate()),
 		).Methods(http.MethodPost)
 		router.Handle(

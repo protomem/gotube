@@ -50,7 +50,7 @@ var (
 	ErrVideoExists   = errors.New("video already exists")
 )
 
-type Vidoe struct {
+type Video struct {
 	Model
 
 	Title       string `json:"title"`
