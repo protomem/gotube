@@ -35,6 +35,7 @@ type (
 		Get(ctx context.Context, id model.ID) (model.Video, error)
 		Create(ctx context.Context, dto CreateVideoDTO) (model.Video, error)
 		Update(ctx context.Context, id model.ID, dto UpdateVideoDTO) (model.Video, error)
+		Delete(ctx context.Context, id model.ID) error
 	}
 
 	VideoImpl struct {
@@ -109,6 +110,16 @@ func (s *VideoImpl) Update(ctx context.Context, id model.ID, dto UpdateVideoDTO)
 	}
 
 	return newVideo, nil
+}
+
+func (s *VideoImpl) Delete(ctx context.Context, id model.ID) error {
+	const op = "service.Video.Delete"
+
+	if err := s.repo.Delete(ctx, id); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
 }
 
 func (s *VideoImpl) autoGenerateVideoDescription() string {

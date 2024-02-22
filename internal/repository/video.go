@@ -29,4 +29,5 @@ type Video interface {
 	Get(ctx context.Context, id model.ID) (model.Video, error)
 	Create(ctx context.Context, dto CreateVideoDTO) (model.ID, error)
 	Update(ctx context.Context, id model.ID, dto UpdateVideoDTO) error
+	Delete(ctx context.Context, id model.ID) error
 }

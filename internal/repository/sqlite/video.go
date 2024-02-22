@@ -130,6 +130,19 @@ func (r *Video) Update(ctx context.Context, id model.ID, dto repository.UpdateVi
 	return nil
 }
 
+func (r *Video) Delete(ctx context.Context, id model.ID) error {
+	const op = "repository.Video.Delete"
+
+	query := `DELETE FROM videos WHERE id = ?`
+	args := []any{id.String()}
+
+	if err := r.db.Exec(ctx, query, args...); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}
+
 func (r *Video) scan(s database.Scanner) (model.Video, error) {
 	var entry videoEntry
 	if err := s.Scan(

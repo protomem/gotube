@@ -118,7 +118,21 @@ func (h *Video) Update() http.HandlerFunc {
 
 func (h *Video) Delete() http.HandlerFunc {
 	return httplib.NewEndpointWithErroHandler(func(w http.ResponseWriter, r *http.Request) error {
-		return httplib.WriteJSON(w, http.StatusInternalServerError, httplib.JSON{"message": "not implemented"})
+		videoIDRaw, ok := mux.Vars(r)["videoId"]
+		if !ok {
+			return httplib.NewAPIError(http.StatusBadRequest, "missing video id")
+		}
+
+		videoID, err := uuid.Parse(videoIDRaw)
+		if err != nil {
+			return httplib.NewAPIError(http.StatusBadRequest, "invalid video id").WithInternal(err)
+		}
+
+		if err := h.serv.Delete(r.Context(), videoID); err != nil {
+			return err
+		}
+
+		return httplib.NoContent(w)
 	}, h.errorHandler("handler.Video.Delete"))
 }
 
