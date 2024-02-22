@@ -53,7 +53,25 @@ func (h *Video) List() http.HandlerFunc {
 
 		findOpts := service.FindOptions{Limit: limit, Offset: offset}
 
-		videos, err := h.serv.FindLatest(r.Context(), findOpts)
+		var sortBy string = "latest"
+		if r.URL.Query().Has("sortBy") {
+			sortBy = r.URL.Query().Get("sortBy")
+		}
+
+		var (
+			err    error
+			videos []model.Video
+		)
+
+		switch sortBy {
+		case "latest", "news", "createdAt":
+			videos, err = h.serv.FindLatest(r.Context(), findOpts)
+		case "popular", "trends", "views":
+			videos, err = h.serv.FindPopular(r.Context(), findOpts)
+		default:
+			return httplib.NewAPIError(http.StatusBadRequest, "invalid sortBy")
+		}
+
 		if err != nil {
 			return err
 		}
