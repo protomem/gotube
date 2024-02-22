@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -11,6 +12,11 @@ import (
 	"github.com/protomem/gotube/internal/service"
 	"github.com/protomem/gotube/pkg/httplib"
 	"github.com/protomem/gotube/pkg/logging"
+)
+
+const (
+	_defaultLimit  = 10
+	_defaultOffset = 0
 )
 
 type Video struct {
@@ -23,6 +29,37 @@ func NewVideo(logger logging.Logger, serv service.Video) *Video {
 		logger: logger.With("handler", "video"),
 		serv:   serv,
 	}
+}
+
+func (h *Video) List() http.HandlerFunc {
+	return httplib.NewEndpointWithErroHandler(func(w http.ResponseWriter, r *http.Request) error {
+		var limit uint64 = _defaultLimit
+		if r.URL.Query().Has("limit") {
+			value, err := strconv.ParseUint(r.URL.Query().Get("limit"), 10, 64)
+			if err != nil {
+				return httplib.NewAPIError(http.StatusBadRequest, "invalid limit").WithInternal(err)
+			}
+			limit = value
+		}
+
+		var offset uint64 = _defaultOffset
+		if r.URL.Query().Has("offset") {
+			value, err := strconv.ParseUint(r.URL.Query().Get("offset"), 10, 64)
+			if err != nil {
+				return httplib.NewAPIError(http.StatusBadRequest, "invalid offset").WithInternal(err)
+			}
+			offset = value
+		}
+
+		findOpts := service.FindOptions{Limit: limit, Offset: offset}
+
+		videos, err := h.serv.FindLatest(r.Context(), findOpts)
+		if err != nil {
+			return err
+		}
+
+		return httplib.WriteJSON(w, http.StatusOK, httplib.JSON{"videos": videos})
+	}, h.errorHandler("handler.Video.List"))
 }
 
 func (h *Video) Get() http.HandlerFunc {

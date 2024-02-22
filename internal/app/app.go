@@ -230,6 +230,7 @@ func (app *App) setupRoutes() {
 	}
 
 	{
+		router.HandleFunc("/videos", handlers.Video.List()).Methods(http.MethodGet)
 		router.HandleFunc("/videos/{videoId}", handlers.Video.Get()).Methods(http.MethodGet)
 		router.Handle(
 			"/videos",

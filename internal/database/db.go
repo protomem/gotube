@@ -1,6 +1,9 @@
 package database
 
-import "context"
+import (
+	"context"
+	"io"
+)
 
 type Scanner interface {
 	Scan(...any) error
@@ -8,6 +11,8 @@ type Scanner interface {
 
 type Rows interface {
 	Scanner
+	io.Closer
+
 	Next() bool
 }
 

@@ -32,6 +32,7 @@ type (
 
 type (
 	Video interface {
+		FindLatest(ctx context.Context, opts FindOptions) ([]model.Video, error)
 		Get(ctx context.Context, id model.ID) (model.Video, error)
 		Create(ctx context.Context, dto CreateVideoDTO) (model.Video, error)
 		Update(ctx context.Context, id model.ID, dto UpdateVideoDTO) (model.Video, error)
@@ -47,6 +48,17 @@ func NewVideo(repo repository.Video) Video {
 	return &VideoImpl{
 		repo: repo,
 	}
+}
+
+func (s *VideoImpl) FindLatest(ctx context.Context, opts FindOptions) ([]model.Video, error) {
+	const op = "service.Video.FindLatest"
+
+	videos, err := s.repo.FindSortByCreatedAtWherePublic(ctx, repository.FindOptions(opts))
+	if err != nil {
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return videos, nil
 }
 
 func (s *VideoImpl) Get(ctx context.Context, id model.ID) (model.Video, error) {
