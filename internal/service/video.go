@@ -20,12 +20,21 @@ type (
 		AuthorID      model.ID
 		Public        *bool
 	}
+
+	UpdateVideoDTO struct {
+		Title         *string
+		Description   *string
+		ThumbnailPath *string
+		VideoPath     *string
+		Public        *bool
+	}
 )
 
 type (
 	Video interface {
 		Get(ctx context.Context, id model.ID) (model.Video, error)
 		Create(ctx context.Context, dto CreateVideoDTO) (model.Video, error)
+		Update(ctx context.Context, id model.ID, dto UpdateVideoDTO) (model.Video, error)
 	}
 
 	VideoImpl struct {
@@ -81,6 +90,25 @@ func (s *VideoImpl) Create(ctx context.Context, dto CreateVideoDTO) (model.Video
 	}
 
 	return video, nil
+}
+
+func (s *VideoImpl) Update(ctx context.Context, id model.ID, dto UpdateVideoDTO) (model.Video, error) {
+	const op = "service.Video.Update"
+
+	if _, err := s.repo.Get(ctx, id); err != nil {
+		return model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	if err := s.repo.Update(ctx, id, repository.UpdateVideoDTO(dto)); err != nil {
+		return model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	newVideo, err := s.repo.Get(ctx, id)
+	if err != nil {
+		return model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return newVideo, nil
 }
 
 func (s *VideoImpl) autoGenerateVideoDescription() string {

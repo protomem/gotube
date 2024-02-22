@@ -91,6 +91,45 @@ func (r *Video) Create(ctx context.Context, dto repository.CreateVideoDTO) (mode
 	return id, nil
 }
 
+func (r *Video) Update(ctx context.Context, id model.ID, dto repository.UpdateVideoDTO) error {
+	const op = "repository.Video.Update"
+
+	now := time.Now()
+
+	query := `UPDATE videos SET updated_at = ?`
+	args := []any{now.Unix()}
+
+	if dto.Title != nil {
+		query += `, title = ?`
+		args = append(args, *dto.Title)
+	}
+	if dto.Description != nil {
+		query += `, description = ?`
+		args = append(args, *dto.Description)
+	}
+	if dto.ThumbnailPath != nil {
+		query += `, thumbnail_path = ?`
+		args = append(args, *dto.ThumbnailPath)
+	}
+	if dto.VideoPath != nil {
+		query += `, video_path = ?`
+		args = append(args, *dto.VideoPath)
+	}
+	if dto.Public != nil {
+		query += `, is_public = ?`
+		args = append(args, *dto.Public)
+	}
+
+	query += ` WHERE id = ?`
+	args = append(args, id.String())
+
+	if err := r.db.Exec(ctx, query, args...); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}
+
 func (r *Video) scan(s database.Scanner) (model.Video, error) {
 	var entry videoEntry
 	if err := s.Scan(

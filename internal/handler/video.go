@@ -85,7 +85,34 @@ func (h *Video) Creaate() http.HandlerFunc {
 
 func (h *Video) Update() http.HandlerFunc {
 	return httplib.NewEndpointWithErroHandler(func(w http.ResponseWriter, r *http.Request) error {
-		return httplib.WriteJSON(w, http.StatusInternalServerError, httplib.JSON{"message": "not implemented"})
+		videoIDRaw, ok := mux.Vars(r)["videoId"]
+		if !ok {
+			return httplib.NewAPIError(http.StatusBadRequest, "missing video id")
+		}
+
+		videoID, err := uuid.Parse(videoIDRaw)
+		if err != nil {
+			return httplib.NewAPIError(http.StatusBadRequest, "invalid video id").WithInternal(err)
+		}
+
+		var request struct {
+			Title         *string `json:"title"`
+			Description   *string `json:"description"`
+			ThumbnailPath *string `json:"thumbnailPath"`
+			VideoPath     *string `json:"videoPath"`
+			Public        *bool   `json:"isPublic"`
+		}
+
+		if err := httplib.DecodeJSON(r, &request); err != nil {
+			return err
+		}
+
+		video, err := h.serv.Update(r.Context(), videoID, service.UpdateVideoDTO(request))
+		if err != nil {
+			return err
+		}
+
+		return httplib.WriteJSON(w, http.StatusOK, httplib.JSON{"video": video})
 	}, h.errorHandler("handler.Video.Update"))
 }
 
