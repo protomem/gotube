@@ -64,3 +64,12 @@ type Video struct {
 	Public bool  `json:"isPublic"`
 	Views  int64 `json:"views"`
 }
+
+type Rating struct {
+	Model
+
+	UserID  ID `json:"userId"`
+	VideoID ID `json:"videoId"`
+
+	Like bool `json:"isLike"`
+}

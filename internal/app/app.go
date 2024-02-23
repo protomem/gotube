@@ -244,6 +244,18 @@ func (app *App) setupRoutes() {
 			"/videos/{videoId}",
 			middlewares.Protect()(handlers.Video.Delete()),
 		).Methods(http.MethodDelete)
+
+		{
+			router.HandleFunc("/videos/{videoId}/rating", handlers.Rating.Count()).Methods(http.MethodGet)
+			router.Handle(
+				"/videos/{videoId}/rating",
+				middlewares.Protect()(handlers.Rating.Like()),
+			).Methods(http.MethodPost)
+			router.Handle(
+				"/videos/{videoId}/rating",
+				middlewares.Protect()(handlers.Rating.Dislike()),
+			).Methods(http.MethodDelete)
+		}
 	}
 }
 

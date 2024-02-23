@@ -11,14 +11,16 @@ type Services struct {
 	Auth
 	Subscription
 	Video
+	Rating
 }
 
 func New(authConf config.Auth, repos *repository.Repositories, hasher hashing.Hasher) *Services {
 	var (
-		user  = NewUser(repos.User, hasher)
-		auth  = NewAuth(authConf, user)
-		sub   = NewSubscription(repos.Subscription, user)
-		video = NewVideo(repos.Video, user)
+		user   = NewUser(repos.User, hasher)
+		auth   = NewAuth(authConf, user)
+		sub    = NewSubscription(repos.Subscription, user)
+		video  = NewVideo(repos.Video, user)
+		rating = NewRating(repos.Rating)
 	)
 
 	return &Services{
@@ -26,5 +28,6 @@ func New(authConf config.Auth, repos *repository.Repositories, hasher hashing.Ha
 		Auth:         auth,
 		Subscription: sub,
 		Video:        video,
+		Rating:       rating,
 	}
 }
