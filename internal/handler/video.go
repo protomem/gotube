@@ -12,6 +12,7 @@ import (
 	"github.com/protomem/gotube/internal/service"
 	"github.com/protomem/gotube/pkg/httplib"
 	"github.com/protomem/gotube/pkg/logging"
+	"github.com/samber/lo"
 )
 
 const (
@@ -59,13 +60,18 @@ func (h *Video) List() http.HandlerFunc {
 		}
 
 		authorNickname, authorNicknameOk := r.URL.Query().Get("author"), r.URL.Query().Has("author")
+		searchTerm, searchTermOk := r.URL.Query().Get("q"), r.URL.Query().Has("q")
+
+		requester, isAuth := ctxstore.User(r.Context())
 
 		var (
 			err    error
 			videos []model.Video
 		)
 
-		if authorNicknameOk {
+		if searchTermOk {
+			videos, err = h.serv.Search(r.Context(), searchTerm, findOpts)
+		} else if authorNicknameOk {
 			videos, err = h.serv.FindByAuthor(r.Context(), authorNickname, findOpts)
 		} else {
 			switch sortBy {
@@ -81,6 +87,19 @@ func (h *Video) List() http.HandlerFunc {
 		if err != nil {
 			return err
 		}
+
+		// TODO: is it worth using?
+		videos = lo.Filter(videos, func(video model.Video, _ int) bool {
+			if video.Public {
+				return true
+			}
+
+			if isAuth && video.Author.ID == requester.ID {
+				return true
+			}
+
+			return false
+		})
 
 		return httplib.WriteJSON(w, http.StatusOK, httplib.JSON{"videos": videos})
 	}, h.errorHandler("handler.Video.List"))

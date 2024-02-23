@@ -29,6 +29,7 @@ type Video interface {
 	FindSortByCreatedAtWherePublic(ctx context.Context, opts FindOptions) ([]model.Video, error)
 	FindSortByViewsWherePublic(ctx context.Context, opts FindOptions) ([]model.Video, error)
 	FindByAuthorSortByCreatedAt(ctx context.Context, authorID model.ID, opts FindOptions) ([]model.Video, error)
+	FindLikeByTitleWherePublic(ctx context.Context, likeTitle string, opts FindOptions) ([]model.Video, error)
 	Get(ctx context.Context, id model.ID) (model.Video, error)
 	Create(ctx context.Context, dto CreateVideoDTO) (model.ID, error)
 	Update(ctx context.Context, id model.ID, dto UpdateVideoDTO) error

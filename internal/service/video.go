@@ -35,6 +35,7 @@ type (
 		FindLatest(ctx context.Context, opts FindOptions) ([]model.Video, error)
 		FindPopular(ctx context.Context, opts FindOptions) ([]model.Video, error)
 		FindByAuthor(ctx context.Context, authorNickname string, opts FindOptions) ([]model.Video, error)
+		Search(ctx context.Context, term string, opts FindOptions) ([]model.Video, error)
 		Get(ctx context.Context, id model.ID) (model.Video, error)
 		Create(ctx context.Context, dto CreateVideoDTO) (model.Video, error)
 		Update(ctx context.Context, id model.ID, dto UpdateVideoDTO) (model.Video, error)
@@ -85,6 +86,17 @@ func (s *VideoImpl) FindByAuthor(ctx context.Context, authorNickname string, opt
 	}
 
 	videos, err := s.repo.FindByAuthorSortByCreatedAt(ctx, author.ID, repository.FindOptions(opts))
+	if err != nil {
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return videos, nil
+}
+
+func (s *VideoImpl) Search(ctx context.Context, term string, opts FindOptions) ([]model.Video, error) {
+	const op = "service.Video.Search"
+
+	videos, err := s.repo.FindLikeByTitleWherePublic(ctx, term, repository.FindOptions(opts))
 	if err != nil {
 		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
 	}

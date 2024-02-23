@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-// ? TODO: integrate middleware and endpoint
+//  TODO: integrate middleware and endpoint?
 
 type Middleware func(next http.Handler) http.Handler
 

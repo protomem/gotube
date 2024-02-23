@@ -77,7 +77,7 @@ func (r *Video) FindSortByCreatedAtWherePublic(ctx context.Context, opts reposit
 }
 
 func (r *Video) FindSortByViewsWherePublic(ctx context.Context, opts repository.FindOptions) ([]model.Video, error) {
-	const op = "repository.Video.FindSortByCreatedAtWherePublic"
+	const op = "repository.Video.FindSortByViewsWherePublic"
 
 	query := `
 		SELECT videos.*, authors.* FROM videos
@@ -112,7 +112,7 @@ func (r *Video) FindSortByViewsWherePublic(ctx context.Context, opts repository.
 }
 
 func (r *Video) FindByAuthorSortByCreatedAt(ctx context.Context, authorID model.ID, opts repository.FindOptions) ([]model.Video, error) {
-	const op = "repository.Video.FindSortByCreatedAtWherePublic"
+	const op = "repository.Video.FindByAuthorSortByCreatedAt"
 
 	query := `
 		SELECT videos.*, authors.* FROM videos
@@ -122,6 +122,40 @@ func (r *Video) FindByAuthorSortByCreatedAt(ctx context.Context, authorID model.
 		LIMIT ? OFFSET ?
 	`
 	args := []any{authorID.String(), opts.Limit, opts.Offset}
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		if sqlite.IsNoRows(err) {
+			return []model.Video{}, nil
+		}
+
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	videos := make([]model.Video, 0, opts.Limit)
+	for rows.Next() {
+		video, err := r.scan(rows)
+		if err != nil {
+			return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		videos = append(videos, video)
+	}
+
+	return videos, nil
+}
+
+func (r *Video) FindLikeByTitleWherePublic(ctx context.Context, likeTitle string, opts repository.FindOptions) ([]model.Video, error) {
+	const op = "repository.Video.FindLikeByTitleWherePublic"
+
+	query := `
+		SELECT videos.*, authors.* FROM videos
+		JOIN users AS authors ON videos.author_id = authors.id
+		WHERE videos.is_public > 0 AND lower(videos.title) LIKE '%' || lower($3) || '%'
+		LIMIT ? OFFSET ?
+	`
+	args := []any{likeTitle, opts.Limit, opts.Offset}
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
