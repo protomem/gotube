@@ -34,6 +34,7 @@ type (
 	Video interface {
 		FindLatest(ctx context.Context, opts FindOptions) ([]model.Video, error)
 		FindPopular(ctx context.Context, opts FindOptions) ([]model.Video, error)
+		FindByAuthor(ctx context.Context, authorNickname string, opts FindOptions) ([]model.Video, error)
 		Get(ctx context.Context, id model.ID) (model.Video, error)
 		Create(ctx context.Context, dto CreateVideoDTO) (model.Video, error)
 		Update(ctx context.Context, id model.ID, dto UpdateVideoDTO) (model.Video, error)
@@ -41,13 +42,15 @@ type (
 	}
 
 	VideoImpl struct {
-		repo repository.Video
+		repo     repository.Video
+		userServ User
 	}
 )
 
-func NewVideo(repo repository.Video) Video {
+func NewVideo(repo repository.Video, userServ User) Video {
 	return &VideoImpl{
-		repo: repo,
+		repo:     repo,
+		userServ: userServ,
 	}
 }
 
@@ -66,6 +69,22 @@ func (s *VideoImpl) FindPopular(ctx context.Context, opts FindOptions) ([]model.
 	const op = "service.Video.FindPopular"
 
 	videos, err := s.repo.FindSortByViewsWherePublic(ctx, repository.FindOptions(opts))
+	if err != nil {
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return videos, nil
+}
+
+func (s *VideoImpl) FindByAuthor(ctx context.Context, authorNickname string, opts FindOptions) ([]model.Video, error) {
+	const op = "service.Video.FindByAuthor"
+
+	author, err := s.userServ.GetByNickname(ctx, authorNickname)
+	if err != nil {
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	videos, err := s.repo.FindByAuthorSortByCreatedAt(ctx, author.ID, repository.FindOptions(opts))
 	if err != nil {
 		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
 	}

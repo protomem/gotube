@@ -18,7 +18,7 @@ func New(authConf config.Auth, repos *repository.Repositories, hasher hashing.Ha
 		user  = NewUser(repos.User, hasher)
 		auth  = NewAuth(authConf, user)
 		sub   = NewSubscription(repos.Subscription, user)
-		video = NewVideo(repos.Video)
+		video = NewVideo(repos.Video, user)
 	)
 
 	return &Services{

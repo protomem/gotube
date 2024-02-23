@@ -111,6 +111,41 @@ func (r *Video) FindSortByViewsWherePublic(ctx context.Context, opts repository.
 	return videos, nil
 }
 
+func (r *Video) FindByAuthorSortByCreatedAt(ctx context.Context, authorID model.ID, opts repository.FindOptions) ([]model.Video, error) {
+	const op = "repository.Video.FindSortByCreatedAtWherePublic"
+
+	query := `
+		SELECT videos.*, authors.* FROM videos
+		JOIN users AS authors ON videos.author_id = authors.id
+		WHERE authors.id = ?
+		ORDER BY videos.created_at DESC
+		LIMIT ? OFFSET ?
+	`
+	args := []any{authorID.String(), opts.Limit, opts.Offset}
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		if sqlite.IsNoRows(err) {
+			return []model.Video{}, nil
+		}
+
+		return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	videos := make([]model.Video, 0, opts.Limit)
+	for rows.Next() {
+		video, err := r.scan(rows)
+		if err != nil {
+			return []model.Video{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		videos = append(videos, video)
+	}
+
+	return videos, nil
+}
+
 func (r *Video) Get(ctx context.Context, id model.ID) (model.Video, error) {
 	const op = "repository.Video.Get"
 

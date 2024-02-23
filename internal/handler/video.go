@@ -58,18 +58,24 @@ func (h *Video) List() http.HandlerFunc {
 			sortBy = r.URL.Query().Get("sortBy")
 		}
 
+		authorNickname, authorNicknameOk := r.URL.Query().Get("author"), r.URL.Query().Has("author")
+
 		var (
 			err    error
 			videos []model.Video
 		)
 
-		switch sortBy {
-		case "latest", "news", "createdAt":
-			videos, err = h.serv.FindLatest(r.Context(), findOpts)
-		case "popular", "trends", "views":
-			videos, err = h.serv.FindPopular(r.Context(), findOpts)
-		default:
-			return httplib.NewAPIError(http.StatusBadRequest, "invalid sortBy")
+		if authorNicknameOk {
+			videos, err = h.serv.FindByAuthor(r.Context(), authorNickname, findOpts)
+		} else {
+			switch sortBy {
+			case "latest", "news", "createdAt":
+				videos, err = h.serv.FindLatest(r.Context(), findOpts)
+			case "popular", "trends", "views":
+				videos, err = h.serv.FindPopular(r.Context(), findOpts)
+			default:
+				return httplib.NewAPIError(http.StatusBadRequest, "invalid sortBy")
+			}
 		}
 
 		if err != nil {
@@ -200,6 +206,9 @@ func (h *Video) errorHandler(op string) httplib.ErroHandler {
 		}
 		if errors.Is(err, model.ErrVideoExists) {
 			err = httplib.NewAPIError(http.StatusConflict, model.ErrVideoExists.Error())
+		}
+		if errors.Is(err, model.ErrUserNotFound) {
+			err = httplib.NewAPIError(http.StatusNotFound, model.ErrUserNotFound.Error())
 		}
 
 		httplib.DefaultErrorHandler(w, r, err)
