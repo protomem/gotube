@@ -20,9 +20,7 @@ type subscriptionEntry struct {
 	CreatedAt  int64
 	UpdatedAt  int64
 	FromUserID string
-	FromUser   userEntry
 	ToUserID   string
-	ToUser     userEntry
 }
 
 type Subscription struct {
@@ -37,14 +35,13 @@ func NewSubscription(logger logging.Logger, db database.DB) *Subscription {
 	}
 }
 
-func (r *Subscription) GetByFromUserIDAndToUserID(ctx context.Context, fromUserID, toUserID model.ID) (model.Subscription, error) {
-	const op = "repository.Subscription.GetByFromUserIDAndToUserID"
+func (r *Subscription) GetByFromUserAndToUser(ctx context.Context, fromUserID, toUserID model.ID) (model.Subscription, error) {
+	const op = "repository.Subscription.GetByFromUserAndToUser"
 
 	query := `
-		SELECT sub.*, from_user.*, to_user.* FROM subscriptions AS sub 
-		JOIN users AS from_user ON from_user.id = sub.from_user_id
-		JOIN users AS to_user ON to_user.id = sub.to_user_id
+		SELECT * FROM subscriptions
 		WHERE from_user_id = ? AND to_user_id = ?
+		LIMIT 1
 	`
 	args := []any{fromUserID.String(), toUserID.String()}
 
@@ -63,8 +60,8 @@ func (r *Subscription) GetByFromUserIDAndToUserID(ctx context.Context, fromUserI
 	return sub, nil
 }
 
-func (r *Subscription) CountByToUserID(ctx context.Context, toUserID model.ID) (int64, error) {
-	const op = "repository.Subscription.CountByToUserID"
+func (r *Subscription) CountByToUser(ctx context.Context, toUserID model.ID) (int64, error) {
+	const op = "repository.Subscription.CountByToUser"
 
 	query := `SELECT COUNT(id) FROM subscriptions WHERE to_user_id = ?`
 	args := []any{toUserID.String()}
@@ -127,16 +124,6 @@ func (r *Subscription) scan(s database.Scanner) (model.Subscription, error) {
 	if err := s.Scan(
 		&entry.ID, &entry.CreatedAt, &entry.UpdatedAt,
 		&entry.FromUserID, &entry.ToUserID,
-
-		&entry.FromUser.ID, &entry.FromUser.CreatedAt, &entry.FromUser.UpdatedAt,
-		&entry.FromUser.Nickname, &entry.FromUser.Password,
-		&entry.FromUser.Email, &entry.FromUser.Verified,
-		&entry.FromUser.AvatarPath, &entry.FromUser.Description,
-
-		&entry.ToUser.ID, &entry.ToUser.CreatedAt, &entry.ToUser.UpdatedAt,
-		&entry.ToUser.Nickname, &entry.ToUser.Password,
-		&entry.ToUser.Email, &entry.ToUser.Verified,
-		&entry.ToUser.AvatarPath, &entry.ToUser.Description,
 	); err != nil {
 		return model.Subscription{}, err
 	}
@@ -154,16 +141,10 @@ func (r *Subscription) scan(s database.Scanner) (model.Subscription, error) {
 		return model.Subscription{}, err
 	}
 
-	fromUserCreatedAt := time.Unix(entry.FromUser.CreatedAt, 0)
-	fromUserUpdatedAt := time.Unix(entry.FromUser.UpdatedAt, 0)
-
 	toUserID, err := uuid.Parse(entry.ToUserID)
 	if err != nil {
 		return model.Subscription{}, err
 	}
-
-	toUserCreatedAt := time.Unix(entry.ToUser.CreatedAt, 0)
-	toUserUpdatedAt := time.Unix(entry.ToUser.UpdatedAt, 0)
 
 	return model.Subscription{
 		Model: model.Model{
@@ -171,31 +152,7 @@ func (r *Subscription) scan(s database.Scanner) (model.Subscription, error) {
 			CreatedAt: createdAt,
 			UpdatedAt: updatedAt,
 		},
-		FromUser: model.User{
-			Model: model.Model{
-				ID:        fromUserID,
-				CreatedAt: fromUserCreatedAt,
-				UpdatedAt: fromUserUpdatedAt,
-			},
-			Nickname:    entry.FromUser.Nickname,
-			Password:    entry.FromUser.Password,
-			Email:       entry.FromUser.Email,
-			Verified:    entry.FromUser.Verified,
-			AvatarPath:  entry.FromUser.AvatarPath,
-			Description: entry.FromUser.Description,
-		},
-		ToUser: model.User{
-			Model: model.Model{
-				ID:        toUserID,
-				CreatedAt: toUserCreatedAt,
-				UpdatedAt: toUserUpdatedAt,
-			},
-			Nickname:    entry.ToUser.Nickname,
-			Password:    entry.ToUser.Password,
-			Email:       entry.ToUser.Email,
-			Verified:    entry.ToUser.Verified,
-			AvatarPath:  entry.ToUser.AvatarPath,
-			Description: entry.ToUser.Description,
-		},
+		FromUserID: fromUserID,
+		ToUserID:   toUserID,
 	}, nil
 }

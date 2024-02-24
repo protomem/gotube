@@ -44,7 +44,7 @@ func (s *SubscriptionImpl) CountSubscribers(ctx context.Context, userNickname st
 		return 0, fmt.Errorf("%s: %w", op, err)
 	}
 
-	count, err := s.repo.CountByToUserID(ctx, user.ID)
+	count, err := s.repo.CountByToUser(ctx, user.ID)
 	if err != nil {
 		return 0, fmt.Errorf("%s: %w", op, err)
 	}
@@ -82,7 +82,7 @@ func (s *SubscriptionImpl) Unsubscribe(ctx context.Context, dto SubscriptionDTO)
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	sub, err := s.repo.GetByFromUserIDAndToUserID(ctx, fromUser.ID, toUser.ID)
+	sub, err := s.repo.GetByFromUserAndToUser(ctx, fromUser.ID, toUser.ID)
 	if err != nil {
 		if errors.Is(err, model.ErrSubscriptionNotFound) {
 			return nil

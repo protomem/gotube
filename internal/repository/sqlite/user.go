@@ -42,7 +42,7 @@ func NewUser(logger logging.Logger, db database.DB) *User {
 func (r *User) Get(ctx context.Context, id model.ID) (model.User, error) {
 	const op = "repository.User.Get"
 
-	query := `SELECT * FROM users WHERE id = ?`
+	query := `SELECT * FROM users WHERE id = ? LIMIT 1`
 	args := []any{id.String()}
 
 	row := r.db.QueryRow(ctx, query, args...)
@@ -61,7 +61,7 @@ func (r *User) Get(ctx context.Context, id model.ID) (model.User, error) {
 func (r *User) GetByNickname(ctx context.Context, nickname string) (model.User, error) {
 	const op = "repository.User.Get"
 
-	query := `SELECT * FROM users WHERE nickname = ?`
+	query := `SELECT * FROM users WHERE nickname = ? LIMIT 1`
 	args := []any{nickname}
 
 	row := r.db.QueryRow(ctx, query, args...)
@@ -80,7 +80,7 @@ func (r *User) GetByNickname(ctx context.Context, nickname string) (model.User, 
 func (r *User) GetByEmail(ctx context.Context, email string) (model.User, error) {
 	const op = "repository.User.Get"
 
-	query := `SELECT * FROM users WHERE email = ?`
+	query := `SELECT * FROM users WHERE email = ? LIMIT 1`
 	args := []any{email}
 
 	row := r.db.QueryRow(ctx, query, args...)

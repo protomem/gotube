@@ -41,8 +41,8 @@ var (
 type Subscription struct {
 	Model
 
-	FromUser User `json:"fromUser"`
-	ToUser   User `json:"toUser"`
+	FromUserID ID `json:"fromUser"`
+	ToUserID   ID `json:"toUser"`
 }
 
 var (
