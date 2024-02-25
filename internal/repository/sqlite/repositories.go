@@ -11,5 +11,6 @@ func New(logger logging.Logger, db database.DB) *repository.Repositories {
 		User:         NewUser(logger, db),
 		Subscription: NewSubscription(logger, db),
 		Video:        NewVideo(logger, db),
+		Rating:       NewRating(logger, db),
 	}
 }

@@ -65,6 +65,11 @@ type Video struct {
 	Views  int64 `json:"views"`
 }
 
+var (
+	ErrRatingNotFound = errors.New("rating not found")
+	ErrRatingExists   = errors.New("rating already exists")
+)
+
 type Rating struct {
 	Model
 
