@@ -73,6 +73,28 @@ func (h *Rating) Dislike() http.HandlerFunc {
 	}, h.errorHandler("handler.Rating.Dislike"))
 }
 
+func (h *Rating) Delete() http.HandlerFunc {
+	return httplib.NewEndpointWithErroHandler(func(w http.ResponseWriter, r *http.Request) error {
+		videoIDRaw, ok := mux.Vars(r)["videoId"]
+		if !ok {
+			return httplib.NewAPIError(http.StatusBadRequest, "missing video id")
+		}
+
+		videoID, err := uuid.Parse(videoIDRaw)
+		if err != nil {
+			return httplib.NewAPIError(http.StatusBadRequest, "invalid video id").WithInternal(err)
+		}
+
+		user := ctxstore.MustUser(r.Context())
+
+		if err := h.serv.Delete(r.Context(), service.RatingDTO{UserID: user.ID, VideoID: videoID}); err != nil {
+			return err
+		}
+
+		return httplib.NoContent(w)
+	}, h.errorHandler("handler.Rating.Delete"))
+}
+
 func (h *Rating) errorHandler(op string) httplib.ErroHandler {
 	return func(w http.ResponseWriter, r *http.Request, err error) {
 		h.logger.WithContext(r.Context()).Error("failed to handle request", "operation", op, "err", err)

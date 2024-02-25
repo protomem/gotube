@@ -248,13 +248,17 @@ func (app *App) setupRoutes() {
 		{
 			router.HandleFunc("/videos/{videoId}/rating", handlers.Rating.Count()).Methods(http.MethodGet)
 			router.Handle(
-				"/videos/{videoId}/like",
+				"/videos/{videoId}/rating/like",
 				middlewares.Protect()(handlers.Rating.Like()),
 			).Methods(http.MethodPost)
 			router.Handle(
-				"/videos/{videoId}/dislike",
+				"/videos/{videoId}/rating/dislike",
 				middlewares.Protect()(handlers.Rating.Dislike()),
 			).Methods(http.MethodPost)
+			router.Handle(
+				"/videos/{videoId}/rating",
+				middlewares.Protect()(handlers.Rating.Delete()),
+			).Methods(http.MethodDelete)
 		}
 	}
 }

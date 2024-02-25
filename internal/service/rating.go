@@ -22,6 +22,7 @@ type (
 	Rating interface {
 		Like(ctx context.Context, dto RatingDTO) error
 		Dislike(ctx context.Context, dto RatingDTO) error
+		Delete(ctx context.Context, dto RatingDTO) error
 	}
 
 	RatingImpl struct {
@@ -81,6 +82,16 @@ func (s *RatingImpl) Dislike(ctx context.Context, dto RatingDTO) error {
 	}
 
 	if _, err := s.repo.Create(ctx, repoDTO); err != nil && !errors.Is(err, model.ErrRatingExists) {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}
+
+func (s *RatingImpl) Delete(ctx context.Context, dto RatingDTO) error {
+	const op = "service.Rating.Delete"
+
+	if err := s.repo.Delete(ctx, repository.RatingDTO(dto)); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
