@@ -25,7 +25,25 @@ func NewRating(logger logging.Logger, serv service.Rating) *Rating {
 
 func (h *Rating) Count() http.HandlerFunc {
 	return httplib.NewEndpointWithErroHandler(func(w http.ResponseWriter, r *http.Request) error {
-		return httplib.WriteJSON(w, http.StatusInternalServerError, httplib.JSON{"message": "unimplemented"})
+		videoIDRaw, ok := mux.Vars(r)["videoId"]
+		if !ok {
+			return httplib.NewAPIError(http.StatusBadRequest, "missing video id")
+		}
+
+		videoID, err := uuid.Parse(videoIDRaw)
+		if err != nil {
+			return httplib.NewAPIError(http.StatusBadRequest, "invalid video id").WithInternal(err)
+		}
+
+		likes, dislikes, err := h.serv.Count(r.Context(), videoID)
+		if err != nil {
+			return err
+		}
+
+		return httplib.WriteJSON(w, http.StatusOK, httplib.JSON{
+			"likes":    likes,
+			"dislikes": dislikes,
+		})
 	}, h.errorHandler("handler.Rating.Count"))
 }
 

@@ -36,6 +36,46 @@ func NewRating(logger logging.Logger, db database.DB) *Rating {
 	}
 }
 
+func (r *Rating) CountLikes(ctx context.Context, videoID model.ID) (int64, error) {
+	const op = "repository.Rating.CountLikes"
+
+	query := `SELECT COUNT(id) FROM ratings WHERE video_id = ? AND is_like > 0`
+	args := []any{videoID.String()}
+
+	var count int64
+
+	row := r.db.QueryRow(ctx, query, args...)
+	if err := row.Scan(&count); err != nil {
+		if sqlite.IsNoRows(err) {
+			return 0, nil
+		}
+
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return count, nil
+}
+
+func (r *Rating) CountDislikes(ctx context.Context, videoID model.ID) (int64, error) {
+	const op = "repository.Rating.CountDislikes"
+
+	query := `SELECT COUNT(id) FROM ratings WHERE video_id = ? AND is_like <= 0`
+	args := []any{videoID.String()}
+
+	var count int64
+
+	row := r.db.QueryRow(ctx, query, args...)
+	if err := row.Scan(&count); err != nil {
+		if sqlite.IsNoRows(err) {
+			return 0, nil
+		}
+
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return count, nil
+}
+
 func (r *Rating) Get(ctx context.Context, dto repository.RatingDTO) (model.Rating, error) {
 	const op = "repository.Rating.Get"
 

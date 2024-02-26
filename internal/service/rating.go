@@ -20,6 +20,7 @@ type (
 
 type (
 	Rating interface {
+		Count(ctx context.Context, videoID model.ID) (likes int64, unlikes int64, err error)
 		Like(ctx context.Context, dto RatingDTO) error
 		Dislike(ctx context.Context, dto RatingDTO) error
 		Delete(ctx context.Context, dto RatingDTO) error
@@ -34,6 +35,22 @@ func NewRating(repo repository.Rating) *RatingImpl {
 	return &RatingImpl{
 		repo: repo,
 	}
+}
+
+func (s *RatingImpl) Count(ctx context.Context, videoID model.ID) (int64, int64, error) {
+	const op = "service.Rating.Count"
+
+	likes, err := s.repo.CountLikes(ctx, videoID)
+	if err != nil {
+		return 0, 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	dislikes, err := s.repo.CountDislikes(ctx, videoID)
+	if err != nil {
+		return 0, 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return likes, dislikes, nil
 }
 
 func (s *RatingImpl) Like(ctx context.Context, dto RatingDTO) error {
