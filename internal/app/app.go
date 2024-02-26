@@ -260,6 +260,21 @@ func (app *App) setupRoutes() {
 				middlewares.Protect()(handlers.Rating.Delete()),
 			).Methods(http.MethodDelete)
 		}
+
+		{
+			router.HandleFunc("/videos/{videoId}/comments", handlers.Comment.List()).Methods(http.MethodGet)
+			router.Handle(
+				"/videos/{videoId}/comments",
+				middlewares.Protect()(handlers.Comment.Create()),
+			).Methods(http.MethodPost)
+		}
+	}
+
+	{
+		router.Handle(
+			"/comments/{commentId}",
+			middlewares.Protect()(handlers.Comment.Delete()),
+		).Methods(http.MethodDelete)
 	}
 }
 

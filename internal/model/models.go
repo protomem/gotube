@@ -78,3 +78,14 @@ type Rating struct {
 
 	Like bool `json:"isLike"`
 }
+
+var ErrCommentNotFound = errors.New("comment not found")
+
+type Comment struct {
+	Model
+
+	Message string `json:"message"`
+
+	VideoID ID   `json:"videoId"`
+	Author  User `json:"author"`
+}

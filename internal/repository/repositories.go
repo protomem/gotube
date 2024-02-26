@@ -5,4 +5,5 @@ type Repositories struct {
 	Subscription
 	Video
 	Rating
+	Comment
 }

@@ -12,6 +12,7 @@ type Handlers struct {
 	*Subscription
 	*Video
 	*Rating
+	*Comment
 }
 
 func New(logger logging.Logger, servs *service.Services) *Handlers {
@@ -22,5 +23,6 @@ func New(logger logging.Logger, servs *service.Services) *Handlers {
 		Subscription: NewSubscription(logger, servs.Subscription),
 		Video:        NewVideo(logger, servs.Video),
 		Rating:       NewRating(logger, servs.Rating),
+		Comment:      NewComment(logger, servs.Comment),
 	}
 }
