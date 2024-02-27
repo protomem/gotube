@@ -80,6 +80,19 @@ func (r *Comment) Create(ctx context.Context, dto repository.CreateCommentDTO) (
 	return id, nil
 }
 
+func (r *Comment) Delete(ctx context.Context, id model.ID) error {
+	const op = "repository.Comment.Delete"
+
+	query := `DELETE FROM comments WHERE id = ?`
+	args := []any{id.String()}
+
+	if err := r.db.Exec(ctx, query, args...); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}
+
 func (r *Comment) scan(s database.Scanner) (model.Comment, error) {
 	var entry commentEntry
 	if err := s.Scan(

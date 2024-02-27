@@ -17,4 +17,5 @@ type (
 type Comment interface {
 	Get(ctx context.Context, id model.ID) (model.Comment, error)
 	Create(ctx context.Context, dto CreateCommentDTO) (model.ID, error)
+	Delete(ctx context.Context, id model.ID) error
 }

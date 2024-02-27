@@ -66,7 +66,21 @@ func (h *Comment) Create() http.HandlerFunc {
 
 func (h *Comment) Delete() http.HandlerFunc {
 	return httplib.NewEndpointWithErroHandler(func(w http.ResponseWriter, r *http.Request) error {
-		return httplib.WriteJSON(w, http.StatusInternalServerError, httplib.JSON{"message": "unimplemented"})
+		commentIDRaw, ok := mux.Vars(r)["commentId"]
+		if !ok {
+			return httplib.NewAPIError(http.StatusBadRequest, "missing comment id")
+		}
+
+		commentID, err := uuid.Parse(commentIDRaw)
+		if err != nil {
+			return httplib.NewAPIError(http.StatusBadRequest, "invalid comment id").WithInternal(err)
+		}
+
+		if err := h.serv.Delete(r.Context(), commentID); err != nil {
+			return err
+		}
+
+		return httplib.NoContent(w)
 	}, h.errorHandler("handler.Comment.List"))
 }
 
