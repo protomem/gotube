@@ -37,6 +37,40 @@ func NewComment(logger logging.Logger, db database.DB) *Comment {
 	}
 }
 
+func (r *Comment) FindByVideo(ctx context.Context, videoID model.ID, opts repository.FindOptions) ([]model.Comment, error) {
+	const op = "repository.Comment.FindByVideo"
+
+	query := `
+		SELECT comments.*, authors.* FROM comments
+		JOIN users AS authors ON comments.author_id = authors.id
+		WHERE comments.video_id = ?
+		ORDER BY comments.created_at DESC
+	`
+	args := []any{videoID.String()}
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		if sqlite.IsNoRows(err) {
+			return []model.Comment{}, nil
+		}
+
+		return []model.Comment{}, fmt.Errorf("%s: %w", op, err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	comments := make([]model.Comment, 0, opts.Limit)
+	for rows.Next() {
+		comment, err := r.scan(rows)
+		if err != nil {
+			return []model.Comment{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		comments = append(comments, comment)
+	}
+
+	return comments, nil
+}
+
 func (r *Comment) Get(ctx context.Context, id model.ID) (model.Comment, error) {
 	const op = "repository.Comment.Find"
 

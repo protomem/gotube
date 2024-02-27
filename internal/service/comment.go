@@ -20,6 +20,7 @@ type (
 
 type (
 	Comment interface {
+		FindByVideo(ctx context.Context, videoID model.ID, opts FindOptions) ([]model.Comment, error)
 		Create(ctx context.Context, dto CreateCommentDTO) (model.Comment, error)
 		Delete(ctx context.Context, id model.ID) error
 	}
@@ -33,6 +34,17 @@ func NewComment(repo repository.Comment) *CommentImpl {
 	return &CommentImpl{
 		repo: repo,
 	}
+}
+
+func (s *CommentImpl) FindByVideo(ctx context.Context, videoID model.ID, opts FindOptions) ([]model.Comment, error) {
+	const op = "service.Comment.FindByVideo"
+
+	comments, err := s.repo.FindByVideo(ctx, videoID, repository.FindOptions(opts))
+	if err != nil {
+		return []model.Comment{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return comments, nil
 }
 
 func (s *CommentImpl) Create(ctx context.Context, dto CreateCommentDTO) (model.Comment, error) {
