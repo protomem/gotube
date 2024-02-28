@@ -276,9 +276,21 @@ func (app *App) setupRoutes() {
 			middlewares.Protect()(handlers.Comment.Delete()),
 		).Methods(http.MethodDelete)
 	}
+
+	{
+		router.HandleFunc("/media/{parent}/{file}", handlers.Media.Get()).Methods(http.MethodGet)
+		router.Handle(
+			"/media/{parent}/{file}",
+			middlewares.Protect()(handlers.Media.Create()),
+		).Methods(http.MethodPost)
+		router.Handle(
+			"/media/{parent}/{file}",
+			middlewares.Protect()(handlers.Media.Delete()),
+		).Methods(http.MethodDelete)
+	}
 }
 
-func (app *App) serverStart(ctx context.Context, errs chan<- error) {
+func (app *App) serverStart(_ context.Context, errs chan<- error) {
 	app.logger.Info("app starting server ...", "addr", app.server.Addr)
 
 	if err := app.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {

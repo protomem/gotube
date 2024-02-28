@@ -13,6 +13,7 @@ type Handlers struct {
 	*Video
 	*Rating
 	*Comment
+	*Media
 }
 
 func New(logger logging.Logger, servs *service.Services) *Handlers {
@@ -24,5 +25,6 @@ func New(logger logging.Logger, servs *service.Services) *Handlers {
 		Video:        NewVideo(logger, servs.Video),
 		Rating:       NewRating(logger, servs.Rating),
 		Comment:      NewComment(logger, servs.Comment),
+		Media:        NewMedia(logger),
 	}
 }
