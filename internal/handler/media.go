@@ -83,7 +83,7 @@ func (h *Media) Save() http.HandlerFunc {
 		}
 
 		if err := h.bstore.Put(r.Context(), parentName, fileName, obj); err != nil {
-			return httplib.WriteJSON(w, http.StatusInternalServerError, httplib.JSON{"message": "could not save file"})
+			return err
 		}
 
 		return httplib.SendStatus(w, http.StatusCreated)

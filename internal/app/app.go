@@ -12,7 +12,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/protomem/gotube/internal/blobstore"
-	inmembstore "github.com/protomem/gotube/internal/blobstore/inmem"
+	fsbstore "github.com/protomem/gotube/internal/blobstore/filesystem"
 	"github.com/protomem/gotube/internal/config"
 	"github.com/protomem/gotube/internal/ctxstore"
 	"github.com/protomem/gotube/internal/database"
@@ -154,7 +154,17 @@ func (app *App) initDB(ctx context.Context) error {
 }
 
 func (app *App) initBStore() error {
-	app.bstore, _ = inmembstore.New(app.logger)
+	var err error
+
+	conf, err := app.conf.FileStorage()
+	if err != nil {
+		return err
+	}
+
+	app.bstore, err = fsbstore.New(app.logger, conf.Folder)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

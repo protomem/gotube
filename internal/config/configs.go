@@ -58,3 +58,16 @@ func (c *Config) Auth() (Auth, error) {
 	}
 	return conf, nil
 }
+
+type FileStorage struct {
+	Folder string `env:"FOLDER" envDefault:"./uploads"`
+}
+
+func (c *Config) FileStorage() (FileStorage, error) {
+	prefix := "FS"
+	conf, err := newConfigParser[FileStorage](c.cache).parse(c.fmtPrefix(prefix))
+	if err != nil {
+		return conf, fmt.Errorf("config.%s: %w", prefix, err)
+	}
+	return conf, nil
+}
