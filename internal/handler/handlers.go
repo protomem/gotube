@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"github.com/protomem/gotube/internal/blobstore"
 	"github.com/protomem/gotube/internal/service"
 	"github.com/protomem/gotube/pkg/logging"
 )
@@ -16,7 +17,7 @@ type Handlers struct {
 	*Media
 }
 
-func New(logger logging.Logger, servs *service.Services) *Handlers {
+func New(logger logging.Logger, servs *service.Services, bstore blobstore.Storage) *Handlers {
 	return &Handlers{
 		Common:       NewCommon(),
 		User:         NewUser(logger, servs.User),
@@ -25,6 +26,6 @@ func New(logger logging.Logger, servs *service.Services) *Handlers {
 		Video:        NewVideo(logger, servs.Video),
 		Rating:       NewRating(logger, servs.Rating),
 		Comment:      NewComment(logger, servs.Comment),
-		Media:        NewMedia(logger),
+		Media:        NewMedia(logger, bstore),
 	}
 }

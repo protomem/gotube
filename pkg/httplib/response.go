@@ -17,7 +17,11 @@ func DecodeJSON(r *http.Request, v any) error {
 	return json.NewDecoder(r.Body).Decode(v)
 }
 
-func NoContent(w http.ResponseWriter) error {
-	w.WriteHeader(http.StatusNoContent)
+func SendStatus(w http.ResponseWriter, status int) error {
+	w.WriteHeader(status)
 	return nil
+}
+
+func NoContent(w http.ResponseWriter) error {
+	return SendStatus(w, http.StatusNoContent)
 }

@@ -69,7 +69,7 @@ func (app *App) Run() error {
 
 	app.repositories = sqliterepo.New(app.logger, app.db)
 	app.services = service.New(authConf, app.repositories, bcrypt.New(bcrypt.DefaultCost))
-	app.handlers = handler.New(app.logger, app.services)
+	app.handlers = handler.New(app.logger, app.services, app.bstore)
 	app.middlewares = middleware.New(app.logger, app.services)
 
 	app.registerOnShutdown()
@@ -281,7 +281,7 @@ func (app *App) setupRoutes() {
 		router.HandleFunc("/media/{parent}/{file}", handlers.Media.Get()).Methods(http.MethodGet)
 		router.Handle(
 			"/media/{parent}/{file}",
-			middlewares.Protect()(handlers.Media.Create()),
+			middlewares.Protect()(handlers.Media.Save()),
 		).Methods(http.MethodPost)
 		router.Handle(
 			"/media/{parent}/{file}",
