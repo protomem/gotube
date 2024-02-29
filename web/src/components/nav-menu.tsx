@@ -1,64 +1,96 @@
-import { FaHome, FaMeteor, FaUserFriends } from "react-icons/fa";
-import { Button, Text, VStack } from "@chakra-ui/react";
+import _ from "lodash";
+import { JSX, useRef } from "react";
+import { useSize } from "@chakra-ui/react-use-size";
+import NextLink from "next/link";
+import { FaFire, FaHouse } from "react-icons/fa6";
+import { Button, IconButton, List, ListItem } from "@chakra-ui/react";
 
-export enum NavMenuItem {
-  Home = "Home",
-  Trends = "Trends",
-  Subscriptions = "Subscriptions",
+export type NavItem = {
+  icon: JSX.Element;
+  label: string;
+  href: string;
+  selected: boolean;
+};
+
+export const defaultNavItems: NavItem[] = [
+  {
+    icon: <FaHouse />,
+    label: "Home",
+    href: "/?videos=home",
+    selected: false,
+  },
+  {
+    icon: <FaFire />,
+    label: "Trends",
+    href: "/?videos=trends",
+    selected: false,
+  },
+];
+
+interface Props {
+  navItems?: NavItem[];
+  labelSelected?: string;
 }
 
-export const resolveNavMenuItem = (s: string | null) => {
-  switch (s) {
-    case "popular":
-    case NavMenuItem.Trends.toLowerCase():
-      return NavMenuItem.Trends;
+export default function NavMenu({
+  labelSelected,
+  navItems = defaultNavItems,
+}: Props) {
+  navItems = _.uniqBy(navItems, (item) => item.label);
+  const chooseSelectedLabel = (
+    currentLabel: string,
+    currentLabelSelected: boolean,
+    labelSelected?: string,
+  ): boolean => {
+    if (
+      labelSelected !== undefined &&
+      labelSelected.toLowerCase() === currentLabel.toLowerCase()
+    )
+      return true;
+    return currentLabelSelected;
+  };
 
-    case "subs":
-    case NavMenuItem.Subscriptions.toLowerCase():
-      return NavMenuItem.Subscriptions;
+  const ref = useRef<HTMLUListElement>(null);
+  const size = useSize(ref);
 
-    default:
-      return NavMenuItem.Home;
-  }
-};
+  const isShort = size && size.width && size.width < 100;
 
-const NavMenuItemIcons = {
-  [NavMenuItem.Home]: <FaHome />,
-  [NavMenuItem.Trends]: <FaMeteor />,
-  [NavMenuItem.Subscriptions]: <FaUserFriends />,
-};
-
-type Props = {
-  type?: "minimal" | "expanded";
-  selectedItem?: NavMenuItem;
-  items?: NavMenuItem[];
-  onItemSelect?: (item: NavMenuItem) => void;
-};
-
-const NavMenu = ({ type, selectedItem, items, onItemSelect }: Props) => {
   return (
-    <VStack align="start">
-      {items?.map((item) => (
-        <Button
-          key={item}
-          w="full"
-          size="md"
-          variant={selectedItem === item ? "solid" : "ghost"}
-          colorScheme={selectedItem === item ? "teal" : "gray"}
-          leftIcon={type === "expanded" ? NavMenuItemIcons[item] : undefined}
-          onClick={() => onItemSelect?.(item)}
-          alignContent="start"
-          sx={{ justifyContent: "start" }}
-        >
-          {type === "expanded" ? (
-            <Text fontSize="sm">{item}</Text>
+    <List ref={ref} spacing="2" w="100%">
+      {navItems.map((item) => (
+        <ListItem key={item.label}>
+          {isShort ? (
+            <IconButton
+              aria-label={`Icon ${item.label}`}
+              as={NextLink}
+              href={item.href}
+              icon={item.icon}
+              variant={
+                chooseSelectedLabel(item.label, item.selected, labelSelected)
+                  ? "solid"
+                  : "ghost"
+              }
+            />
           ) : (
-            NavMenuItemIcons[item]
+            <Button
+              w="100%"
+              p="3"
+              as={NextLink}
+              href={item.href}
+              leftIcon={item.icon}
+              variant={
+                chooseSelectedLabel(item.label, item.selected, labelSelected)
+                  ? "solid"
+                  : "ghost"
+              }
+              justifyContent="start"
+              gap="2"
+            >
+              {item.label}
+            </Button>
           )}
-        </Button>
+        </ListItem>
       ))}
-    </VStack>
+    </List>
   );
-};
-
-export default NavMenu;
+}

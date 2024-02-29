@@ -1,71 +1,43 @@
-import { ReactNode, useRef } from "react";
-import { useSideBarState } from "../providers/side-bar-state-provider";
-import AppBar from "../components/app-bar";
-import SideBar from "../components/side-bar";
-import Logo from "../components/logo";
-import { NavMenuItem } from "../components/nav-menu";
-import {
-  Box,
-  Drawer,
-  DrawerContent,
-  DrawerOverlay,
-  Flex,
-  useDimensions,
-} from "@chakra-ui/react";
+import { ReactNode } from "react";
+import { useSideBarStore } from "@/domain/stores/side-bar";
+import { Box, Drawer, DrawerBody, DrawerOverlay, Flex } from "@chakra-ui/react";
 
-type Props = {
-  children: ReactNode;
+interface Props {
+  appBar: ReactNode;
+  sideBar?: ReactNode;
   hideSideBar?: boolean;
-  selectedNavMenuItem?: NavMenuItem;
-};
+  children: ReactNode;
+}
 
-const MainLayout = ({ children, hideSideBar, selectedNavMenuItem }: Props) => {
-  hideSideBar = hideSideBar || false;
-
-  const appBarElement = useRef<HTMLDivElement>(null);
-  const appBarDimensions = useDimensions(appBarElement);
-
-  const { isOpen, onClose, onToggle: handleSwtchSideBar } = useSideBarState();
+export default function MainLayout({
+  appBar,
+  sideBar,
+  hideSideBar = false,
+  children,
+}: Props) {
+  const [isOpen, close] = useSideBarStore((state) => [
+    state.isOpen,
+    state.close,
+  ]);
 
   return (
-    <Flex direction="column" h="100dvh">
-      <AppBar switchSideBar={handleSwtchSideBar} ref={appBarElement} />
+    <Flex w="100%" h="100svh" direction="column">
+      <Box h="7svh">{appBar}</Box>
 
-      <Flex
-        direction="row"
-        h={`calc(100dvh - ${appBarDimensions?.borderBox.height}px)`}
-      >
-        {!hideSideBar ? (
-          <Box overflow="auto" pr="2">
-            <SideBar
-              type={isOpen ? "minimal" : "expanded"}
-              selectedNavMenuItem={selectedNavMenuItem}
-            />
-          </Box>
+      <Flex w="100%" h="93svh" direction="row">
+        {sideBar && !hideSideBar ? (
+          <Box w={isOpen ? "2xs" : "4rem"}>{sideBar}</Box>
         ) : (
-          <Drawer isOpen={isOpen} onClose={onClose} placement="left">
+          <Drawer isOpen={isOpen} placement="left" onClose={close}>
             <DrawerOverlay />
-            <DrawerContent
-              paddingTop="2"
-              backgroundColor="gray.800"
-              maxW="14rem"
-            >
-              <Box paddingLeft="5" paddingBottom="4">
-                <Logo switchSideBar={handleSwtchSideBar} />
-              </Box>
-
-              <SideBar
-                type="expanded"
-                selectedNavMenuItem={selectedNavMenuItem}
-              />
-            </DrawerContent>
+            <DrawerBody>cdscd</DrawerBody>
           </Drawer>
         )}
 
-        <Box flex="1">{children}</Box>
+        <Box w="100%" overflowY="auto">
+          {children}
+        </Box>
       </Flex>
     </Flex>
   );
-};
-
-export default MainLayout;
+}

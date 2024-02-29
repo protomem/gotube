@@ -1,45 +1,57 @@
-import { useState, ChangeEvent } from "react";
-import { SearchIcon } from "@chakra-ui/icons";
+import { useFormik } from "formik";
+import { FaSistrix } from "react-icons/fa6";
 import {
+  Box,
   IconButton,
   Input,
   InputGroup,
   InputRightAddon,
 } from "@chakra-ui/react";
+import { useRouter } from "next/navigation";
 
-type Props = {
-  defaultQuery?: string;
-};
+interface Props {
+  defaultTerm?: string;
+}
 
-const Searcher = ({ defaultQuery }: Props) => {
-  const [query, setQuery] = useState(defaultQuery);
+export default function Searcher({ defaultTerm = "" }: Props) {
+  const router = useRouter()
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setQuery(e.target.value);
-  };
+  const formik = useFormik({
+    initialValues: {
+      term: defaultTerm,
+    },
+    onSubmit: ({ term }) => {
+      if (term === "") return;
+      router.push(`/search?term=${term}`);
+    },
+  });
 
   return (
-    <InputGroup>
-      <Input
-        placeholder="Search..."
-        _placeholder={{ color: "gray.200" }}
-        value={query}
-        onChange={handleChange}
-        w={{ sm: "xs", md: "md", lg: "lg", xl: "2xl" }}
-        rounded="full"
-        sx={{ textAlign: "center" }}
-      />
-      ;
-      <InputRightAddon rounded="full" pl="2" pr="4">
-        <IconButton
-          aria-label="search"
-          icon={<SearchIcon />}
-          variant="ghost"
-          rounded="full"
-        />
-      </InputRightAddon>
-    </InputGroup>
+    <Box w="2xl">
+      <form onSubmit={formik.handleSubmit}>
+        <InputGroup w="100%">
+          <Input
+            id="term"
+            name="term"
+            type="text"
+            rounded="full"
+            placeholder="Search ..."
+            textAlign="center"
+            onChange={formik.handleChange}
+            value={formik.values.term}
+            autoComplete="off"
+          />
+          <InputRightAddon rounded="full" px="2">
+            <IconButton
+              aria-label="Search"
+              rounded="full"
+              variant="ghost"
+              icon={<FaSistrix />}
+              type="submit"
+            />
+          </InputRightAddon>
+        </InputGroup>
+      </form>
+    </Box>
   );
-};
-
-export default Searcher;
+}

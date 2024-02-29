@@ -1,50 +1,63 @@
-import { useAuth } from "../providers/auth-provider";
-import { User } from "../domain/entities";
-import { resolveAddr } from "../domain/api.client";
+import { useAuthStore } from "@/domain/stores/auth";
+import NextLink from "next/link";
+import { FaRegUser } from "react-icons/fa6";
 import {
-  Avatar,
   Button,
+  IconButton,
   Menu,
   MenuButton,
   MenuItem,
   MenuList,
 } from "@chakra-ui/react";
 
-type Props = {
-  user: User;
-};
-
-const ProfileMenu = ({ user }: Props) => {
-  const { logout } = useAuth();
+export default function ProfileMenu() {
+  const [isAuthenticated, user, logout] = useAuthStore((state) => [
+    state.isAuthenticated,
+    state.user,
+    state.logout,
+  ]);
 
   return (
-    <Menu>
-      <MenuButton
-        as={Button}
-        variant="ghost"
-        size="lg"
-        ml={2}
-        rightIcon={
-          <Avatar
-            name={user.nickname}
-            src={resolveAddr(user.avatarPath)}
-            size="sm"
+    <>
+      {!(isAuthenticated() && user) ? (
+        <Button as={NextLink} href="/auth/sign-in">
+          login
+        </Button>
+      ) : (
+        <Menu>
+          <MenuButton
+            as={IconButton}
+            aria-label="Profile Menu"
+            icon={<FaRegUser />}
+            size="lg"
+            rounded="full"
+            variant="ghost"
           />
-        }
-        gap="2"
-      >
-        {user.nickname}
-      </MenuButton>
-      <MenuList p="0">
-        <MenuItem>Profile</MenuItem>
-        <MenuItem>Settings</MenuItem>
-        <MenuItem>Studio</MenuItem>
-        <MenuItem bg="red.500" onClick={logout}>
-          Logout
-        </MenuItem>
-      </MenuList>
-    </Menu>
-  );
-};
 
-export default ProfileMenu;
+          <MenuList>
+            <MenuItem as={NextLink} href={`/profile/${user.nickname}`}>
+              Profile
+            </MenuItem>
+            <MenuItem as={NextLink} href={`/studio?section=profile`}>
+              Settings
+            </MenuItem>
+            <MenuItem as={NextLink} href="/studio">
+              Studio
+            </MenuItem>
+            <MenuItem
+              as={Button}
+              onClick={logout}
+              colorScheme="red"
+              justifyContent="start"
+              variant="solid"
+              rounded="none"
+              size="sm"
+            >
+              Logout
+            </MenuItem>
+          </MenuList>
+        </Menu>
+      )}
+    </>
+  );
+}

@@ -1,26 +1,37 @@
 package blobstore
 
 import (
+	"bytes"
+	"context"
+	"errors"
 	"fmt"
-
-	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
+	"io"
 )
 
-type Storage struct {
-	*minio.Client
+var ErrObjectNotFound = errors.New("object not found")
+
+type Storage interface {
+	Get(ctx context.Context, parent, name string) (Object, error)
+	Put(ctx context.Context, parent, name string, obj Object) error
+	Del(ctx context.Context, parent, name string) error
+
+	Close(ctx context.Context) error
 }
 
-func New(addr, accessKey, secretKey string, secure bool) (*Storage, error) {
-	opts := &minio.Options{
-		Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
-		Secure: secure,
-	}
+type Object struct {
+	Type string
+	Size int64
+	Body io.Reader
+}
 
-	client, err := minio.New(addr, opts)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "blobstore.New", err)
+func (o Object) Clone() (Object, error) {
+	buf := bytes.NewBuffer(make([]byte, 0, o.Size))
+	if _, err := io.CopyN(buf, o.Body, o.Size); err != nil {
+		return Object{}, fmt.Errorf("blobstore.Object: copy object: %w", err)
 	}
-
-	return &Storage{client}, nil
+	return Object{
+		Type: o.Type,
+		Size: o.Size,
+		Body: buf,
+	}, nil
 }

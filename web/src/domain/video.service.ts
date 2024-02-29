@@ -1,20 +1,36 @@
-import { apiClient } from "./api.client";
-import { Video } from "./entities";
+import { Video } from "@/domain/entites";
+import apiClient from "@/lib/api";
 
-type GetVideosRequest = {
-  limit: number;
-  offset: number;
-  type: "new" | "popular";
+type FindVideosRequest = {
+  limit?: number;
+  offset?: number;
 };
 
-type GetVideosResponse = {
+type FindVideosResponse = {
   videos: Video[];
 };
 
-export const videoService = {
-  async getVideos({ limit, offset, type }: GetVideosRequest) {
-    return apiClient.get<GetVideosResponse>(
-      `/videos/${type}?limit=${limit}&offset=${offset}`,
+const videoService = {
+  async findLatestVideos({ limit = 10, offset = 0 }: FindVideosRequest) {
+    return apiClient.get<FindVideosResponse>(
+      `/videos?sortBy=latest&limit=${limit}&offset=${offset}`,
+    );
+  },
+
+  async findTrendingVideos({ limit = 10, offset = 0 }: FindVideosRequest) {
+    return apiClient.get<FindVideosResponse>(
+      `/videos?sortBy=popular&limit=${limit}&offset=${offset}`,
+    );
+  },
+
+  async searchVideos(
+    term: string,
+    { limit = 10, offset = 0 }: FindVideosRequest,
+  ) {
+    return apiClient.get<FindVideosResponse>(
+      `/videos?q=${term}&limit=${limit}&offset=${offset}`,
     );
   },
 };
+
+export default videoService;

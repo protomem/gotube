@@ -1,23 +1,21 @@
-import React from "react";
-import {
-  ChakraProvider,
-  extendTheme,
-  type ThemeConfig,
-} from "@chakra-ui/react";
+import { ReactNode } from "react";
+import { ChakraProvider, extendTheme } from "@chakra-ui/react";
 
-const config: ThemeConfig = {
-  initialColorMode: "dark",
-  useSystemColorMode: false,
-};
+const theme = extendTheme({
+  fonts: {
+    heading: "var(--font-rubik)",
+    body: "var(--font-rubik)",
+  },
+  config: {
+    initialColorMode: "dark",
+    useSystemColorMode: false,
+  },
+});
 
-const theme = extendTheme({ config });
+interface Props {
+  children: ReactNode;
+}
 
-type Props = {
-  children: React.ReactNode;
-};
-
-const ThemeProvider = ({ children }: Props) => {
+export default function ThemeProvider({ children }: Props) {
   return <ChakraProvider theme={theme}>{children}</ChakraProvider>;
-};
-
-export default ThemeProvider;
+}

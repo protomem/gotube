@@ -1,59 +1,37 @@
-import { apiClient } from "./api.client";
-import { User } from "./entities";
+import { User } from "@/domain/entites";
+import apiClient from "@/lib/api";
 
-type LoginRequest = {
-  email: string;
-  password: string;
-};
-
-type LoginResponse = {
-  accessToken: string;
-  refreshToken: string;
-  user: User;
-};
-
-type RegisterRequest = {
+type SignUpRequest = {
   nickname: string;
   email: string;
   password: string;
 };
 
-type RegisterResponse = {
-  accessToken: string;
-  refreshToken: string;
+type SignUpResponse = {
   user: User;
-};
-
-type RefreshTokenRequest = {
-  refreshToken: string;
-};
-
-type RefreshTokenResponse = {
   accessToken: string;
   refreshToken: string;
 };
 
-export const authService = {
-  async login({ email, password }: LoginRequest) {
-    return await apiClient.post<LoginResponse>("/auth/login", {
-      email,
-      password,
-    });
+type SignInRequest = {
+  email: string;
+  password: string;
+};
+
+type SignInResponse = {
+  user: User;
+  accessToken: string;
+  refreshToken: string;
+};
+
+const authService = {
+  async signUp(req: SignUpRequest) {
+    return await apiClient.post<SignUpResponse>("/auth/register", req);
   },
 
-  async register({ nickname, email, password }: RegisterRequest) {
-    return await apiClient.post<RegisterResponse>("/auth/register", {
-      nickname,
-      email,
-      password,
-    });
-  },
-
-  async refreshToken({ refreshToken }: RefreshTokenRequest) {
-    return await apiClient.get<RefreshTokenResponse>("/auth/refresh", {
-      headers: {
-        "X-Refresh-Token": refreshToken,
-      },
-    });
+  async signIn(req: SignInRequest) {
+    return await apiClient.post<SignInResponse>("/auth/login", req);
   },
 };
+
+export default authService;

@@ -2,63 +2,28 @@ package database
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"time"
-
-	"github.com/protomem/gotube/assets"
-
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/source/iofs"
-	"github.com/jmoiron/sqlx"
-
-	_ "github.com/golang-migrate/migrate/v4/database/postgres"
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"io"
 )
 
-const _defaultTimeout = 3 * time.Second
-
-type DB struct {
-	*sqlx.DB
+type Scanner interface {
+	Scan(...any) error
 }
 
-func New(dsn string, automigrate bool) (*DB, error) {
-	const op = "database.New"
+type Rows interface {
+	Scanner
+	io.Closer
 
-	ctx, cancel := context.WithTimeout(context.Background(), _defaultTimeout)
-	defer cancel()
+	Next() bool
+}
 
-	db, err := sqlx.ConnectContext(ctx, "pgx", "postgres://"+dsn)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
+type Row interface {
+	Scanner
+}
 
-	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(25)
-	db.SetConnMaxIdleTime(5 * time.Minute)
-	db.SetConnMaxLifetime(2 * time.Hour)
+type DB interface {
+	Exec(ctx context.Context, query string, args ...any) error
+	Query(ctx context.Context, query string, args ...any) (Rows, error)
+	QueryRow(ctx context.Context, query string, args ...any) Row
 
-	if automigrate {
-		const subOp = op + ": automigrate"
-
-		iofsDriver, err := iofs.New(assets.Assets, "migrations")
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", subOp, err)
-		}
-
-		migrator, err := migrate.NewWithSourceInstance("iofs", iofsDriver, "postgres://"+dsn)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", subOp, err)
-		}
-
-		err = migrator.Up()
-		switch {
-		case errors.Is(err, migrate.ErrNoChange):
-			break
-		case err != nil:
-			return nil, fmt.Errorf("%s: %w", subOp, err)
-		}
-	}
-
-	return &DB{db}, nil
+	Close(ctx context.Context) error
 }
