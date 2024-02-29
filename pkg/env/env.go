@@ -20,3 +20,10 @@ func Parse(v any) error {
 	}
 	return nil
 }
+
+func ParseWithPrefix(v any, prefix string) error {
+	if err := env.ParseWithOptions(v, env.Options{Prefix: prefix}); err != nil {
+		return fmt.Errorf("env.ParseWithPrefix: %w", err)
+	}
+	return nil
+}
