@@ -3,10 +3,101 @@
 version: '3'
 
 vars:
-  GREETING: Hello, World!
+  PROJECT: gotube
 
 tasks:
-  default:
+  tidy:
     cmds:
-      - echo "{{.GREETING}}"
-    silent: true
+      - go fmt ./...
+      - go mod tidy
+
+  audit:
+    cmds:
+      - go mod verify
+      - go vet ./...
+      - golangci-lint run ./...
+      - govulncheck ./...
+      - go test -race -buildvcs -vet=off ./...
+
+  test:
+    cmds:
+      - go test -v -race -buildvcs ./...
+
+  test/cover:
+    cmds:
+      - go test -v -race -buildvcs -coverprofile=/tmp/coverage.out ./...
+      - go tool cover -html=/tmp/coverage.out
+
+  ci:
+    cmds:
+      - task: tidy
+      - task: audit
+      - task: test
+
+  build/app/local:
+    cmds:
+      - CGO_ENABLED=1 go build -v -o /tmp/{{.PROJECT}}/gotube ./cmd/gotube
+
+  run/app/local:
+    deps: [build/app/local]
+    vars:
+      conf_file: '{{.conf_file | default "./configs/local.env"}}'
+    cmds:
+      - /tmp/{{.PROJECT}}/gotube -conf {{.conf_file}}
+
+  run/web/local:
+    dir: ./web
+    cmds:
+      - npm run dev
+
+  run/app/stage:
+    deps: []
+    cmds:
+      - docker compose -p {{.PROJECT}}-app -f ./build/app.docker-compose.yml up -d
+
+  stop/app/stage:
+    cmds:
+      - docker compose -p {{.PROJECT}}-app -f ./build/app.docker-compose.yml down
+
+  run/web/stage:
+    cmds:
+      - docker compose -p {{.PROJECT}}-web -f ./build/web.docker-compose.yml up -d
+
+  stop/web/stage:
+    cmds:
+      - docker compose -p {{.PROJECT}}-web -f ./build/web.docker-compose.yml down
+
+  #
+  # run/infra:
+  #   cmds:
+  #     - docker compose -p {{.PROJECT}}-infra -f ./build/infra.docker-compose.yml up -d
+  #
+  # stop/infra:
+  #   cmds:
+  #     - docker compose -p {{.PROJECT}}-infra -f ./build/infra.docker-compose.yml down
+  #
+  
+  migrate/new:
+    cmds:
+      - migrate create -ext sql -dir ./assets/migrations/sqlite -seq {{.name}}
+
+  migrate/up:
+    cmds:
+      - migrate -path ./assets/migrations/sqlite -database "sqlite3://{{.db_dsn}}" up
+
+  migrate/down:
+    cmds:
+      - migrate -path ./assets/migrations/sqlite -database "sqlite3://{{.db_dsn}}" down
+
+  migrate/goto:
+    cmds:
+      - migrate -path ./assets/migrations/sqlite -database "sqlite3://{{.db_dsn}}" goto {{.version}}
+
+  migrate/force:
+    cmds:
+      - migrate -path ./assets/migrations/sqlite -database "sqlite3://{{.db_dsn}}" force {{.version}}
+
+  migrate/version:
+    cmds:
+      - migrate -path ./assets/migrations/sqlite -database "sqlite3://{{.db_dsn}}" version
+      

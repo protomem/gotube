@@ -88,8 +88,7 @@ func (h *Subscription) errorHandler(op string) httplib.ErroHandler {
 		h.logger.WithContext(r.Context()).Error("failed to handle request", "operation", op, "err", err)
 
 		if errors.Is(err, model.ErrUserNotFound) {
-			httplib.WriteJSON(w, http.StatusNotFound, httplib.JSON{"message": model.ErrUserNotFound.Error()})
-			return
+			err = httplib.NewAPIError(http.StatusNotFound, model.ErrUserNotFound.Error())
 		}
 
 		httplib.DefaultErrorHandler(w, r, err)
