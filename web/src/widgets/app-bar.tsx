@@ -2,6 +2,7 @@ import { Flex, Spacer } from "@chakra-ui/react";
 import Title from "@/components/title";
 import Searcher from "@/components/searcher";
 import ProfileMenu from "@/components/profile-menu";
+import UploadVideoMenu from "@/components/upload-video-menu";
 
 interface Props {
   searchTerm?: string;
@@ -25,6 +26,7 @@ export default function AppBar({ searchTerm }: Props) {
 
       <Spacer />
 
+      <UploadVideoMenu />
       <ProfileMenu />
     </Flex>
   );
