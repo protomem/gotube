@@ -6,7 +6,7 @@ services:
       context: ../web
       dockerfile: Dockerfile
     ports:
-      - 80:3000
+      - 80:80
     restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"

@@ -1,20 +1,18 @@
-import { ReactNode } from "react";
+import { FC, PropsWithChildren } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnWindowFocus: true
-    }
-  }
+      refetchOnWindowFocus: false,
+    },
+  },
 });
 
-interface Props {
-  children: ReactNode;
-}
-
-export default function QueryProvider({ children }: Props) {
+const QueryProvider: FC<PropsWithChildren> = ({ children }) => {
   return (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
-}
+};
+
+export default QueryProvider;
