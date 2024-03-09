@@ -2,12 +2,12 @@ import { FC } from "react";
 import MainLayout from "../components/MainLayout";
 import { Heading } from "@chakra-ui/react";
 
-const Home: FC = () => {
+const SignIn: FC = () => {
   return (
     <MainLayout>
-      <Heading>Home</Heading>
+      <Heading>SignIn</Heading>
     </MainLayout>
   );
 };
 
-export default Home;
+export default SignIn;
